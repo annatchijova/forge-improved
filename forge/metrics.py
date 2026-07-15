@@ -18,6 +18,7 @@ from typing import Any, Iterable
 from forge.models import ModuleClass
 from forge.canonical import canonical_json
 from forge.severity import finding_family
+from forge.disposition import determine_disposition
 
 
 def _ratio(covered: int, total: int) -> dict[str, int]:
@@ -140,6 +141,7 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
     finding_metrics["finding_digest"] = finding_digest
     executable_count = len(skills)
     quality = {"repository_coverage": _ratio(coverage.files_analyzed, coverage.files_discovered), "module_coverage": _ratio(analyzed_modules, len(triage.modules)), "contract_coverage": _ratio(applicability["APPLICABLE"], sum(applicability.values()) or 1), "contract_coverage_note": f"{executable_count} executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.", "evidence_completeness": None, "evidence_completeness_note": "Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.", "verification_coverage": None, "verification_coverage_note": "Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons."}
+    disposition = determine_disposition(coverage=coverage, triage=triage, governance=governance, findings=findings)
     limitations = list(governance.limitations) + list(hypothesis_limitations)
     if coverage.files_skipped:
         limitations.append(f"{coverage.files_skipped} discovered file(s) were skipped; see skipped_reasons for the exact paths and policy categories.")
@@ -151,4 +153,4 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
         limitations.append(f"{len(bug_findings)} hypothesis/hypotheses survived structural verification without dynamic induction; they remain plausible hypotheses, not confirmed defects.")
     # Preserve ordering while avoiding repeated limitation text from multiple layers.
     limitations = list(dict.fromkeys(limitations))
-    return {"metrics_schema_version": "1.0", "repository": repo, "scope": scope, "discovery": discovery, "domain_classification": {"modules_by_domain": dict(sorted(domains.items())), "hypothesis_confidence": [{"module_path": item.module_path, "domains": item.domains, "confidence": {"numerator": item.confidence.numerator, "denominator": item.confidence.denominator}, "alternatives": item.alternatives, "evidence_count": len(item.evidence)} for item in governance.hypotheses]}, "skill_runtime": skill_counts, "agents": agent, "evidence": evidence_metrics, "findings": finding_metrics, "audit_trail": trace_metrics, "reproducibility": reproducibility, "honest_degradation": {"skipped_reasons": coverage.skipped_reasons, "limitations": limitations}, "quality": quality}
+    return {"metrics_schema_version": "1.0", "repository": repo, "scope": scope, "discovery": discovery, "domain_classification": {"modules_by_domain": dict(sorted(domains.items())), "hypothesis_confidence": [{"module_path": item.module_path, "domains": item.domains, "confidence": {"numerator": item.confidence.numerator, "denominator": item.confidence.denominator}, "alternatives": item.alternatives, "evidence_count": len(item.evidence)} for item in governance.hypotheses]}, "skill_runtime": skill_counts, "agents": agent, "evidence": evidence_metrics, "findings": finding_metrics, "audit_disposition": disposition.to_dict(), "audit_trail": trace_metrics, "reproducibility": reproducibility, "honest_degradation": {"skipped_reasons": coverage.skipped_reasons, "limitations": limitations}, "quality": quality}

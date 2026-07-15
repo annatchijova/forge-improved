@@ -35,3 +35,20 @@ def test_held_out_timeout_degrades_honestly(monkeypatch):
     monkeypatch.setattr(validation.subprocess, "run", timeout)
     result = validation.run_held_out_suite()
     assert result["passed"] is False and result["timed_out"] is True
+
+def test_git_history_timeout_is_bounded_and_reported(tmp_path, monkeypatch):
+    from forge.detector import stack
+
+    (tmp_path / "main.py").write_text("print('ok')\n")
+
+    monkeypatch.setattr(stack.subprocess, "check_call", lambda *args, **kwargs: None)
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], stack.GIT_HISTORY_TIMEOUT_SECONDS)
+
+    monkeypatch.setattr(stack.subprocess, "check_output", timeout)
+    manifest = stack.triage(tmp_path)
+
+    assert manifest.limitations == (
+        f"Git history query timed out after {stack.GIT_HISTORY_TIMEOUT_SECONDS} seconds; temporal classification is conservative.",
+    )

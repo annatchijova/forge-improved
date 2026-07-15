@@ -23,6 +23,7 @@ from forge.severity import severity_for
 from forge.models import CoverageReport, Evidence, Finding, ModelRouting, TriageManifest, VerificationManifest
 from forge.metrics import collect_metrics
 from forge.report import render_report
+from forge.reporting import render_dashboard
 from forge.sealing import read_and_verify, write_sealed_manifest
 from forge.tracing import RuntimeTrace
 from forge.verification import verify_hypotheses, write_verification_manifest
@@ -49,11 +50,11 @@ def _agent_finding(agent: str, item) -> Finding:
     return Finding("OBSERVED", "CODE FACT", item.path, detail, (Evidence("source", f"{item.path}:{item.line}", detail),), f"AST detector emitted this observation: {item.family}.", agent, outcome)
 
 
-def _with_severity(finding: Finding) -> Finding:
+def _with_severity(finding: Finding, family: str | None = None) -> Finding:
     return Finding(finding.category, finding.epistemic_level, finding.module_path,
                    finding.description, finding.evidence, finding.reasoning,
                    finding.agent, finding.outcome,
-                   severity_for(finding.module_path, finding.epistemic_level, finding.description, finding.agent))
+                   severity_for(finding.module_path, finding.epistemic_level, finding.description, finding.agent, family=family))
 
 @dataclass(frozen=True)
 class AuditResult:
@@ -174,8 +175,8 @@ class Runtime:
         self._event(trace, cronos, "agent_completed", agent="security_auditor", findings=len(security_result.findings), examinations=security_result.examinations)
         self._event(trace, cronos, "agent_completed", agent="integrity_inspector", findings=len(integrity_result.findings), examinations=integrity_result.examinations)
         findings = [_with_severity(Finding(f.category, f.epistemic_level, f.module_path, f.description, f.evidence, f.reasoning, "bug_investigator", f.outcome)) for f in bug.verification.findings]
-        findings += [_with_severity(_agent_finding("security_auditor", item)) for item in security_result.findings]
-        findings += [_with_severity(_agent_finding("integrity_inspector", item)) for item in integrity_result.findings]
+        findings += [_with_severity(_agent_finding("security_auditor", item), family=item.family) for item in security_result.findings]
+        findings += [_with_severity(_agent_finding("integrity_inspector", item), family=item.family) for item in integrity_result.findings]
         findings += [_with_severity(item) for item in governance.findings]
         for finding in findings:
             self._event(trace, cronos, "finding_emitted", agent=finding.agent, module_path=finding.module_path, category=finding.category, outcome=finding.outcome, description=finding.description, evidence=[asdict(item) for item in finding.evidence])
@@ -217,9 +218,9 @@ class Runtime:
         trace_path = out / "audit-trace.json"
         trace_path.write_text(json.dumps(trace.to_dict(), indent=2, sort_keys=True) + "\n")
         write_sealed_manifest(verification, sealed_path, trace.to_dict())
-        report_composer.compose(triage_path, hypotheses_path, sealed_path, report_path, coverage_path, metrics)
+        rendered_reports = render_dashboard(out)
         write_markdown_report(sealed=load_json(sealed_path, f"sealed manifest {sealed_path}"), metrics=metrics, profile=profile, destination=markdown_path)
-        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path)}
+        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path), **{key: value for key, value in rendered_reports.items() if key != "report"}}
         if self.cronos_db is not None:
             artifacts["cronos_db"] = str(self.cronos_db)
         return AuditResult(str(root), connected, len(findings), len(verification.discarded), tuple(findings), coverage.to_dict(), artifacts)

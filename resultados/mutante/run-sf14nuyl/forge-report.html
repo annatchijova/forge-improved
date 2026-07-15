@@ -1,0 +1,2095 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>FORGE report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+:root{
+  --bg:#E3B8B8;
+  --bg-elevated:#FFFFFF;
+  --bg-sunken:#E8E9E3;
+  --ink:#1C2222;
+  --ink-muted:#5B6460;
+  --ink-faint:#8B9490;
+  --rule:#D5D6CE;
+  --rule-strong:#B9BBB0;
+  --accent:#2B5D63;
+  --accent-soft:#DCE7E6;
+  --ok:#3C7A52; --ok-bg:#DFEDE2; --ok-ink:#2A5A3C;
+  --fail:#A8501C; --fail-bg:#F6E3D5; --fail-ink:#7A3A14;
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono: "SF Mono","IBM Plex Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --shadow: 0 1px 2px rgba(28,34,34,.08), 0 4px 14px rgba(28,34,34,.06);
+}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+::selection{ background:var(--accent-soft); }
+a{ color:var(--accent); }
+code{ font-family:var(--mono); }
+.wrap{ max-width:1100px; margin:0 auto; padding:0 28px 96px; }
+header.masthead{ border-bottom:2px solid var(--ink); padding:40px 0 22px; margin-bottom:36px; }
+header.masthead h1{ font-family:var(--serif); font-weight:600; font-size:clamp(26px,4vw,38px); margin:0 0 14px; letter-spacing:.003em; }
+.seal-line{ display:inline-block; font-family:var(--mono); font-size:13px; letter-spacing:.03em; padding:6px 12px; border-radius:14px; }
+.seal-line.ok{ background:var(--ok-bg); color:var(--ok-ink); }
+.seal-line.fail{ background:var(--fail-bg); color:var(--fail-ink); }
+header.masthead p{ color:var(--ink-muted); font-size:14.5px; max-width:76ch; margin:14px 0 0; }
+header.masthead small{ display:block; margin-top:6px; color:var(--ink-faint); font-family:var(--mono); font-size:12px; }
+section{ background:var(--bg-elevated); border:1px solid var(--rule); border-radius:3px; margin:1.5rem 0; padding:22px 24px; box-shadow:var(--shadow); }
+section .section-lede{ color:var(--ink-muted); font-size:14px; max-width:72ch; margin:8px 0 18px; }
+header.masthead .summary-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:24px 0 18px; }
+.stat-tile{ border:1px solid var(--rule); border-radius:3px; padding:13px 15px; background:var(--bg-sunken); }
+.stat-number{ font:600 25px var(--serif); }
+.stat-label{ color:var(--ink-muted); font:11px var(--mono); letter-spacing:.04em; text-transform:uppercase; margin-top:3px; }
+.stat-tile.risk{ border-top:4px solid var(--fail); } .stat-tile.caution{ border-top:4px solid #CDBB78; }
+.stat-tile.safe{ border-top:4px solid var(--ok); } .stat-tile.neutral{ border-top:4px solid var(--accent); } .stat-tile.muted{ border-top:4px solid var(--ink-faint); }
+.coverage-hero{ display:flex; align-items:baseline; gap:14px; padding:16px; background:var(--bg-sunken); border-left:5px solid var(--accent); border-radius:3px; }
+.coverage-hero strong{ font:600 27px var(--serif); } .coverage-hero span{ color:var(--ink-muted); font-size:13px; }
+section h2{ font-family:var(--serif); font-size:20px; font-weight:600; margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--rule); }
+#findings h2{ color:var(--accent); }
+#discarded h2{ color:#8A6A2E; }
+#scope h2{ color:var(--fail-ink); }
+.finding,.discarded,.scope{ border:1px solid var(--rule); border-radius:3px; padding:14px 18px; margin:14px 0; background:var(--bg); }
+.finding-toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:end; padding:12px; margin:0 0 16px; background:var(--bg-sunken); border:1px solid var(--rule); border-radius:3px; }
+.finding-toolbar label{ display:flex; flex-direction:column; gap:4px; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-muted); }
+.finding-toolbar input,.finding-toolbar select{ min-width:150px; padding:7px 9px; border:1px solid var(--rule-strong); border-radius:3px; background:var(--bg-elevated); color:var(--ink); font:13px var(--sans); text-transform:none; letter-spacing:normal; }
+.finding-toolbar input:focus,.finding-toolbar select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.filter-count{ margin-left:auto; padding:8px 0; font-family:var(--mono); font-size:12px; color:var(--ink-muted); }
+.finding.is-hidden{ display:none; }
+.severity-card-critical{ border-left:6px solid #A8501C; }
+.severity-card-high{ border-left:6px solid #D89A70; }
+.severity-card-medium{ border-left:6px solid #CDBB78; }
+.severity-card-low,.severity-card-info{ border-left:6px solid #9BB8A2; }
+.finding p,.discarded p,.scope p{ margin:6px 0; font-size:14px; }
+.badge{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; background:var(--accent-soft); color:var(--accent); border:1px solid var(--rule-strong); padding:3px 9px; border-radius:11px; }
+.severity-critical{ background:#F6D7D5; color:#8E2420; border-color:#C76C67; }
+.severity-high{ background:#F6E3D5; color:#7A3A14; border-color:#D89A70; }
+.severity-medium{ background:#F4EED8; color:#765D1C; border-color:#CDBB78; }
+.severity-low,.severity-info{ background:#E5EDE7; color:#356045; border-color:#9BB8A2; }
+.ref{ font-family:var(--mono); font-size:12.5px; color:var(--ink-muted); }
+.finding code{ display:block; white-space:pre-wrap; background:var(--bg-sunken); padding:.6rem; border-radius:3px; font-size:13px; margin-top:4px; }
+small{ color:var(--ink-faint); }
+table.data-table{ border-collapse:collapse; width:100%; }
+table.data-table td,table.data-table th{ text-align:left; padding:8px 12px; border-bottom:1px solid var(--rule); font-size:13.5px; vertical-align:top; }
+table.data-table th{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); background:var(--bg-sunken); }
+table.data-table tr:last-child td{ border-bottom:none; }
+table.data-table td:first-child{ font-family:var(--mono); font-size:12.5px; white-space:nowrap; }
+.chain-block{ font-family:var(--mono); font-size:13px; background:var(--bg-sunken); padding:14px 18px; border-radius:3px; white-space:pre-wrap; }
+.dashboard{ background:linear-gradient(135deg,#fff 0%,#fff 62%,#F8E9E9 100%); overflow:hidden; }
+.dashboard-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.eyebrow{ color:var(--accent); font:11px var(--mono); letter-spacing:.14em; margin:0 0 4px; }
+.dashboard-heading h2{ margin-top:0; }
+.dashboard-status{ border:1px solid #A9C9B0; background:#EDF7EF; color:#2A5A3C; border-radius:999px; padding:7px 12px; font:11px var(--mono); white-space:nowrap; }
+.dashboard-grid{ display:grid; grid-template-columns:150px repeat(3,minmax(0,1fr)); gap:14px; align-items:stretch; }
+.coverage-dial{ width:128px; height:128px; margin:8px auto; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--accent) var(--coverage),#F1DADA 0); position:relative; }
+.coverage-dial::after{ content:""; position:absolute; inset:10px; border-radius:50%; background:var(--bg-elevated); }
+.coverage-dial div{ position:relative; z-index:1; text-align:center; }
+.coverage-dial strong{ display:block; font:600 25px var(--serif); } .coverage-dial span{ color:var(--ink-muted); font:10px var(--mono); text-transform:uppercase; }
+.dashboard-panel{ background:rgba(232,233,227,.48); border:1px solid var(--rule); border-radius:4px; padding:15px; }
+.dashboard-panel h3{ margin:0 0 13px; font-size:16px; }
+.bar-row{ display:grid; grid-template-columns:minmax(76px,1fr) 1.4fr 24px; gap:8px; align-items:center; margin:9px 0; }
+.bar-label,.bar-value{ font:11px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .bar-value{ text-align:right; }
+.bar-track{ height:7px; background:#F1DADA; border-radius:99px; overflow:hidden; } .bar-fill{ display:block; height:100%; background:linear-gradient(90deg,var(--accent),#87AEB0); border-radius:99px; }
+.mini-stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; } .mini-stat-grid div{ background:#fff; border:1px solid var(--rule); border-radius:3px; padding:10px 8px; } .mini-stat-grid strong,.mini-stat-grid span,.metric-strip strong,.metric-strip span{ display:block; } .mini-stat-grid strong{ font:600 22px var(--serif); } .mini-stat-grid span,.metric-strip span{ color:var(--ink-muted); font:10px var(--mono); text-transform:uppercase; }
+.metric-strip{ display:grid; grid-template-columns:repeat(5,1fr); gap:1px; margin-top:16px; border:1px solid var(--rule); background:var(--rule); } .metric-strip div{ background:#fff; padding:13px 15px; } .metric-strip strong{ font:600 22px var(--serif); }
+.metric-strip .cost-tile{ background:#FFF4E9; border-top:4px solid #D89A70; }
+.metrics-details{ margin-top:16px; border-top:1px solid var(--rule); padding-top:13px; } .metrics-details summary{ cursor:pointer; color:var(--accent); font:12px var(--mono); } .detail-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; } .detail-grid h3{ font-size:14px; } .detail-grid pre{ max-height:260px; overflow:auto; } .empty-state{ color:var(--ink-muted); font-size:13px; }
+@media(max-width:900px){ .dashboard-grid{ grid-template-columns:1fr 1fr; } .coverage-dial{ grid-column:span 2; } } @media(max-width:620px){ .dashboard-heading{ display:block; } .dashboard-status{ display:inline-block; margin:8px 0 16px; } .dashboard-grid,.detail-grid{ grid-template-columns:1fr; } .coverage-dial{ grid-column:auto; } .metric-strip{ grid-template-columns:repeat(2,1fr); } }
+</style></head><body>
+<div class="wrap">
+<header class="masthead">
+  <h1>FORGE verification report</h1>
+  <span class="seal-line ok">Chain integrity: VERIFIED (19 entries, 0 issues)</span>
+  <div class="summary-grid"><div class="stat-tile risk"><div class="stat-number">19</div><div class="stat-label">Surviving findings</div></div><div class="stat-tile safe"><div class="stat-number">0</div><div class="stat-label">Discarded hypotheses</div></div><div class="stat-tile neutral"><div class="stat-number">14</div><div class="stat-label">Audited modules</div></div><div class="stat-tile muted"><div class="stat-number">29</div><div class="stat-label">Out of scope</div></div></div>
+  <section id="agent-metrics"><h2>Agent metrics</h2><ul><li><strong>archaeologist</strong>: {&#x27;elapsed_seconds&#x27;: &#x27;1.755715&#x27;, &#x27;modules_classified&#x27;: 43}</li><li><strong>bug_investigator</strong>: {&#x27;discarded&#x27;: 0, &#x27;hypotheses_generated&#x27;: 1, &#x27;survived&#x27;: 1}<div class="examinations-summary">43 module(s) examined — examined_with_findings: 1, no_hypothesis_generated: 13, excluded_by_scope: 29</div><p><small>Per-module detail omitted above the 15-module inline threshold; the full per-module breakdown is in the coverage/verification JSON artifacts on disk.</small></p></li><li><strong>governance_skills</strong>: {&#x27;applicability_counts&#x27;: {&#x27;APPLICABLE&#x27;: 1, &#x27;NOT_APPLICABLE&#x27;: 29, &#x27;UNDETERMINED&#x27;: 13}, &#x27;findings&#x27;: 0, &#x27;loaded&#x27;: [&#x27;validate-at-the-boundary&#x27;]}</li><li><strong>integrity_inspector</strong>: {&#x27;findings_per_family&#x27;: {&#x27;decision-adjacent-float&#x27;: 14, &#x27;unversioned-serialization&#x27;: 2}}<div class="examinations-summary">308 module(s) examined — examined_with_findings: 6, examined_clean: 8, excluded_by_policy: 224, excluded_by_scope: 70</div><p><small>Per-module detail omitted above the 15-module inline threshold; the full per-module breakdown is in the coverage/verification JSON artifacts on disk.</small></p></li><li><strong>security_auditor</strong>: {&#x27;findings_per_family&#x27;: {&#x27;hardcoded-credential&#x27;: 0, &#x27;path-traversal&#x27;: 2, &#x27;unsafe-deserialization&#x27;: 0}}<div class="examinations-summary">308 module(s) examined — examined_with_findings: 1, examined_clean: 27, excluded_by_policy: 224, excluded_by_scope: 56</div><p><small>Per-module detail omitted above the 15-module inline threshold; the full per-module breakdown is in the coverage/verification JSON artifacts on disk.</small></p></li></ul></section>
+  <table class="data-table"><tr><td>Root</td><td>/home/labestiadevigia/mutante</td></tr><tr><td>Forge version</td><td>0.1.0</td></tr><tr><td>Schema version</td><td>2.0 (hypotheses 1.0)</td></tr><tr><td>Generated</td><td>2026-07-15T18:26:10Z</td></tr><tr><td>Chain entries</td><td>19</td></tr><tr><td>Chain integrity</td><td>OK</td></tr><tr><td>Seal version</td><td>1</td></tr><tr><td>Canonicalize version</td><td>1</td></tr></table>
+</header>
+
+<section id="objective"><h2>Objective</h2><p>Verify the hypotheses generated for <code>/home/labestiadevigia/mutante</code> against the implemented structural AST checks (<code>subprocess, parser, float comparison, eval/exec</code>), and seal the surviving findings into a tamper-evident chain. 14 module(s) audited; 19 finding(s) survived; 0 hypothesis/es discarded; 29 module(s) out of scope.</p></section>
+
+<section id="dashboard" class="dashboard">
+  <div class="dashboard-heading"><div><p class="eyebrow">AUDIT PULSE</p><h2>Repository intelligence</h2><p class="section-lede">A visual readout of the sealed run: scope, evidence, findings, governance and reproducibility.</p></div><span class="dashboard-status">SEALED · OK</span></div>
+  <div class="dashboard-grid">
+    <div class="coverage-dial" style="--coverage:13.96%"><div><strong>43/308</strong><span>coverage</span></div></div>
+    <div class="dashboard-panel"><h3>Findings by agent</h3><div class="bar-row"><span class="bar-label">integrity_inspector</span><span class="bar-track"><span class="bar-fill" style="width:100.00%"></span></span><strong class="bar-value">16</strong></div><div class="bar-row"><span class="bar-label">security_auditor</span><span class="bar-track"><span class="bar-fill" style="width:12.50%"></span></span><strong class="bar-value">2</strong></div><div class="bar-row"><span class="bar-label">bug_investigator</span><span class="bar-track"><span class="bar-fill" style="width:6.25%"></span></span><strong class="bar-value">1</strong></div></div>
+    <div class="dashboard-panel"><h3>Severity profile</h3><div class="bar-row"><span class="bar-label">MEDIUM</span><span class="bar-track"><span class="bar-fill" style="width:100.00%"></span></span><strong class="bar-value">19</strong></div></div>
+    <div class="dashboard-panel"><h3>Governance skills</h3><div class="mini-stat-grid"><div><strong>1</strong><span>activated</span></div><div><strong>29</strong><span>not applicable</span></div><div><strong>13</strong><span>undetermined</span></div></div></div>
+  </div>
+  <div class="metric-strip"><div><strong>155</strong><span>functions</span></div><div><strong>10306</strong><span>lines of code</span></div><div><strong>3</strong><span>tests</span></div><div><strong>1</strong><span>contracts executed</span></div><div><strong>19</strong><span>primary evidence</span></div><div class="cost-tile"><strong>6</strong><span>credits observed</span></div></div>
+  <details class="metrics-details"><summary>Full metrics and audit telemetry</summary><div class="detail-grid"><div><h3>Quality</h3><pre>{
+  &quot;contract_coverage&quot;: {
+    &quot;covered&quot;: 1,
+    &quot;total&quot;: 43
+  },
+  &quot;contract_coverage_note&quot;: &quot;1 executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.&quot;,
+  &quot;evidence_completeness&quot;: null,
+  &quot;evidence_completeness_note&quot;: &quot;Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.&quot;,
+  &quot;module_coverage&quot;: {
+    &quot;covered&quot;: 14,
+    &quot;total&quot;: 43
+  },
+  &quot;repository_coverage&quot;: {
+    &quot;covered&quot;: 43,
+    &quot;total&quot;: 308
+  },
+  &quot;verification_coverage&quot;: null,
+  &quot;verification_coverage_note&quot;: &quot;Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons.&quot;
+}</pre></div><div><h3>Reproducibility</h3><pre>{
+  &quot;artifact_hashes&quot;: null,
+  &quot;environment&quot;: {
+    &quot;os&quot;: &quot;Linux-6.14.0-37-generic-x86_64-with-glibc2.39&quot;,
+    &quot;python&quot;: &quot;3.12.3&quot;
+  },
+  &quot;forge_version&quot;: &quot;0.1.0&quot;,
+  &quot;runtime_deterministic&quot;: null,
+  &quot;schema_versions&quot;: {
+    &quot;triage&quot;: &quot;1.1&quot;
+  },
+  &quot;seal_verified&quot;: null,
+  &quot;seed_used&quot;: null,
+  &quot;skill_versions&quot;: {
+    &quot;validate-at-the-boundary&quot;: &quot;1.0&quot;
+  }
+}</pre></div><div><h3>Audit trail</h3><pre>{
+  &quot;artifacts_produced&quot;: null,
+  &quot;chain_verification&quot;: null,
+  &quot;events_hashed&quot;: 31,
+  &quot;events_verified&quot;: null,
+  &quot;hash_chain_length&quot;: null,
+  &quot;partial_trace&quot;: false,
+  &quot;runtime_events&quot;: 31,
+  &quot;tampering_detected&quot;: null
+}</pre></div><div><h3>Raw metrics</h3><pre>{
+  &quot;agent_metrics&quot;: {
+    &quot;archaeologist&quot;: {
+      &quot;elapsed_seconds&quot;: &quot;1.755715&quot;,
+      &quot;modules_classified&quot;: 43
+    },
+    &quot;bug_investigator&quot;: {
+      &quot;discarded&quot;: 0,
+      &quot;examinations&quot;: {
+        &quot;agent_mutante/agent.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/bayesian.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/bigquery_sink.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/elastic_semantic.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/mutante_client.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/mutante_hybrid_evaluator.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/mutante_semiotic_evaluator.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/mutator.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/platform_experimental/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/platform_experimental/windows_sandbox.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/quality_gate.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/sandbox.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;agent_mutante/engine/semiotic_llm_judge.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;apply_license.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components/css.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components_init.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/app.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/components/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/components/css.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;dashboard/components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;generate_demo_dataset.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;main.py&quot;: &quot;no_hypothesis_generated&quot;,
+        &quot;mcp_mutante.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reimport_semantic.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reseed_elastic.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;run_campaign.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_demo_pipeline.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_full_pipeline.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_vertex_gemini.py&quot;: &quot;excluded_by_scope&quot;
+      },
+      &quot;hypotheses_generated&quot;: 1,
+      &quot;survived&quot;: 1
+    },
+    &quot;governance_skills&quot;: {
+      &quot;applicability_counts&quot;: {
+        &quot;APPLICABLE&quot;: 1,
+        &quot;NOT_APPLICABLE&quot;: 29,
+        &quot;UNDETERMINED&quot;: 13
+      },
+      &quot;findings&quot;: 0,
+      &quot;loaded&quot;: [
+        &quot;validate-at-the-boundary&quot;
+      ]
+    },
+    &quot;integrity_inspector&quot;: {
+      &quot;examinations&quot;: {
+        &quot;.dockerignore&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.env&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.env.example&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.git/COMMIT_EDITMSG&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/FETCH_HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/ORIG_HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/config&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/description&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/applypatch-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/commit-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/fsmonitor-watchman.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/post-update.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-applypatch.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-commit.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-merge-commit.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-push.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-rebase.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-receive.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/prepare-commit-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/push-to-checkout.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/sendemail-validate.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/update.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/index&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/info/exclude&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/redesign-2026-06-10&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/rediseno-ui&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/gitlab/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/origin/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/00/adeb8d9bafef7d217feb4a3c7d9698aba35755&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/00/f1a7fc1ee6927b6baee3603f1064254aea27f1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/01/b92d6eaa646e3530eacd9ff4ae6c3efb1e0865&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/01/baae6cf164625512aeb3df79a4e68f457f5d8a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0a/11738c79f69871435c11e09a02c366717bcbb7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0e/3edc63adb5c9ee2e864c955180f93f1053ead2&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0e/be2b8b7ccb3e728504fb717eac1b2f835901ef&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0f/05224da08894495494cff708a1d47a214c4fe0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0f/7570d12bc31be6fd02afcf79e99060a8423d14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/01c3f49a1c794c9d74bc2b16457e8ba93e9ce5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/7c3077632c76d946d5f392fd7c3784e7877df7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/e0441bd93b9ee5d9b159b402044a863d72e6d4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/13/3bc95c1fe9dcec47c8c3c9ae72b072a6030eb0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/a446735d5fa9baa921ea63dd9fb970eba6f97b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/bf90923045086725a3a0aae79a2592a2fe07d0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/d5e02d47aef1e393db1ed6ebfb68ecf6e3104c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/17/bfc79d4583089bb42098ab32f83035b3864721&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/18/7e11ded5684e2332df00efc1903387e7327d5a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/19/45aa31ff5930bd76cf50f7c7953ff7561a29b6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1b/555e7cce0bd45135a8cc742a69584ced2bff06&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1b/64eba42a3c702a74b287dd0871b857c70d3437&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/4e43afb63ef90e6e8973d79b6982b1f0c57b08&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/9816e4ccb92a0f284f678f255bebfd33f10ccd&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/e27fc9413981cb948b493a5b8bc009384454f8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1e/7f192e83a20c2d28b87f55b2fd084733d3d29b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1e/7f260381b27f7b7596984a0af7c810e56a482d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/0b87ca8991f0800a83f284d0e161ca1c80d03e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/4ceda18a5bfda0f4cc944b4e4f198991389c12&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/cb25a3b4ad89b57f4bd8eb4b02f94e18ec14c5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/21/6b71e6993a0ad37a7ba1f3fc14cf3448bd46ef&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/24/cf258f6a995f39c6df2d75db36c4357d3b07c3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/27/4c4c8cf9bdfc6355064f000874266bf990459d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/28/174009aa7e9a36c8fa5ed8f51522eb44645587&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/28/579d40df248fc734f473fef627b9efe111d36a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/2a/bebb781912022ab291f69f333ac40d5a1f2f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/31/27d40c623531bde296f6347d954e305d8acb9b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/32/40bf450cd7dd5ce4ddd10c1e8e1e8fb377662f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/32/7e6fcea2b689511c5f6f45f68d161e73d57173&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/33/b198f076b446f2d8d3173ad7904dfa12d23c4a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/1264f2efbafa665a183b5cbfb679b813bda937&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/288143d57946152df6efedb7ad07cd0585f0b9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/e3783cc873b06c5ce2e90f1ea38e4b3d53a60e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/37/06d4894f070f169f87d178f823907b49315d2e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/38/231dab4d87a2093df78e3de763ee97acb5721d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3a/5763bbb2100853ef93970a7db752a81ff2f2fc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3d/9b1043ffcd6e924e66907a97b11b239d1d968f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3e/8516d4a67dda8d9a2dec297320daf44414933a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/43/0bff95b2bfdd9d6e78c5352421bb3d363e07f5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/44/0f5f31c75900c6acaec906f29a02746c3fe41a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/45/b7688bf78890d08a287bdb3146bd5d9c137428&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/46/13519c47e51ea07b0d45f751ab84d4a9a3229e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/47/203421e8a17531b295175d389b7d59bf2f7e14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/49/24493c765a318cb0686448fe58403e69ed2206&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/49/4b810f1c13f150b4906951af57d278622f255a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/4f/506281ec43a535bab3384ff5f29170cead8d7b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/50/b38c852d95dcf0d504354faa3f461b4ae5ae2c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/51/70339ea08783d41ca9b9d04a46fd016a5bc9ee&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/54/9218e66929188c2e35fe0dfe112aecefb86f96&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/57/1b3b6429fde012f62afaf6a5063cf79e9a788f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/57/a9ed0114be977be12ffab7b8835fbab55271ad&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/58/0da527f7d8c42b7dd3aea2ff2b034552b658ce&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/58/279bfa9c3f907806861b18377875d99e4e5c24&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/59/b6fa34939324a769002307063203e98e9a23cf&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5c/39e6b67021a263ba471677a0eea91a4efd534e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5e/3807cc984deabb6c77d979d394c1dce9917885&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5f/9a76efb28b4c80062b5e5844517135ac1702bb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/60/f44d1c65673f840d49a11126d76b111f635869&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/61/b8c3918cfc17dc5da399b1500d196bdb1264e9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/65/9c4f94a63645aa69dcc41706babe9bbb824a38&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/65/ed8f3f33156129323ae0fae6bf43bc4e0ca8c7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/66/bb45d79d1cfc072c2d28365d36a36b73e7ccbe&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6c/188f1d9ad3e855e433a972f12f510f3c98452f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6c/6ee0b87d392ff4dfa753d93e73905fd91ec11c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6d/213acfeb557474ad72e6df3e8ba54922c0a954&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6e/4dfad75f2b30e9bb15dfccf3ddd74fe6b04188&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/663d12138ec0c0b59f57464a020855d8e51d2e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/e40329a9ae56337ea4372a29506a90775af32c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/fd3dc572de28201c1879d16b12c905c9bfad28&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/71/cbd34f56a928ec5247cc0f5e2e91078f59b5d5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/72/722fe2bc929116f90439e21912da2e65fb2597&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/73/02dce54e9376528a60d6f5b460b65163975a66&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/75/6992ae82397576e846995f783dac81337da317&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/77/b9c0142d1ee7d80af8821860b28891075854ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/08b1ef7196960f1bd571d540edbbb4816868a4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/c7971248482e874612e5e0151668ec7766fea3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/d05589d560804caf81284c124d755d985ccf41&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/79/76c9779158fddef1c6efec51e510a49058ed38&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/79/94e130fdf8e43e97ac6c5de9addedd71ba2fdb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/2295758773511580337af34f770421d1e93f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/47cec2b1cf65bb94d1de53b4aad4d4a31f0446&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/8db9282b612abb76e1866a74a632b3a3e26799&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7d/7747090a01c70b6fe433e0ad468fb5aab383b3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7f/1406a94f9b1ad37410e04fcb8d83465a49ddd4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/80/3634dae4dbcda6ed0c0e361bf735b34801006c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/84/b3ce943be3ae4e2ab5a9007a4a4ff0d50c1c61&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/86/876a1a44b973d6a07de53733e6f77c002c81d1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/89/98da68e5efbd519c19812b296ae90f3ec7d7d7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8a/2e3950ef9576de3432613d6bdcc241f9c8ba12&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8c/de4839949741f1fd3fdd48b89f0a2d6a5fd5fb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8d/fa5ba90ab84c89091ee695d10d3dd5a17447e8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/91/f7cf0d2f8bd543ed288239ebf5ad6fc3d18f66&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/96/616290cdebb649201190eeac81d7361f8ec2ca&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/97/831b6f0efd4816b134e42547c5f138dd2522d7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/98/3f0000f795ede05a5248af3c951766fb35876f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/98/f3357b6bb903c3983bc7e3bcb774b4e37fd9ce&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/99/848dbb58b12d48568408b3b51664425d6cab65&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9c/91cc8b4dcb7348bab6ddffac8902880b2545fc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9d/21bf084447b769bcad7d280086325d5a989d54&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9d/2d50f2ba79ea34e190c552c692f4c114fc9373&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9e/d18fa697276baa18971a550d9f2a85278f2ba4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9f/4ddbb1ec9c05e4a554d9043dcf1c6f4538b3fa&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a3/7909b2b74b8867695c856627c8520d8b9a6b6f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a7/ecd256fa555c09ba30afeae488858ea136bc30&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a8/56eda83609547355a5109945bfcfbd68ff54cf&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a9/cf4be82efea15fedf3935da8a64e101456cd88&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ad/0e96e6d1b1205f5f24fdc7725e9622075170a6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ad/8b794602d14da895161858fd653a3013341a6b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b0/52e0536b7bd6789763622e7963175377e0eba4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b1/7ac0fd35240b8a5dbba18cb428f61ae2b90c67&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b1/eb3a5080032ad813ea38ab3f5d179618150373&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b2/2a47692946c16d5306e0a2d45168821183c9ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b3/f4aeada482e310d2ffcb0fbc356bef7b5a38e0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b6/2d1b583ad6b44204069017f975efdfc89b452a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b6/b7a4b0bab87c9595885607aca71594fad8b958&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/08e496f6c56d14121cd421cdc47093519fefa2&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/6c539b9293f0fd937a61ec73b778e453e262cc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/f9a6106d49c1f5ee165d7b9f8cf7b4a9fa4504&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b9/3f08e44f433b237ee3bac6dabdec868800e44d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b9/c76e843edc7584ad9dfbdd710fd66aed2acce1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ba/951ee76cc87442714e51f5ffc37e65d4338029&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/be/106671ebaf8c49db8f198db53267d08f164e69&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c0/7ffd421ed17f53ef0b88d801fd369a129bcbd5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c1/d0068c5ff3dde14cbaa3f18fb054969b8a9763&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c1/d81395f474037e97df3b0e180980c15d530536&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c4/aa9d246c9865ef771014295120377b5f30664a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c4/d05b42d0c3625138a1d99e5e966428f13fc183&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c8/43f0b0980840e333815c5981ca1a28eb79dc76&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c9/2580fdc438d958b72ea8706610b2ad7cadce14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cb/10d141752f64d655cb2e8737146b8dc695ce06&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cc/f0eb4a1cf67e91e0baf3f0bad07ffc305feafe&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cd/05b51063506bc2c2f2e1022c8c627a02607806&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cd/25eb40d36d2a3d9df5bf6381bf12919e59dbb5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ce/a8c29a2aa64f53dc931dff52be64f53f043d47&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cf/e12d574cddac0d9f1eb25e0dc465c8c76f19d3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d4/c43aea34ae4f5a4739737acd03a84fb08b2e3b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d5/84b6b1febd22f286d20e05a7de267ff23a9e89&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d6/04ee1de17cdec35bfd64897a62d4143df84839&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d6/cdb8019d4016165e5ef6e9e739dbf41ed0a932&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d7/f8071f716746df4752a150574c996410a6230b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/dc/0095217d30c2bdf062de54c17f89da0d6e8468&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/dd/9dd165ba4b3d554a6ddbf14e3ee910a7d95faa&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/de/0619e115481e059eac5774c90ef81742275371&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e1/f313111b1b3872a606d058db61a16d8e09a4d9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e2/90b409191f3d9c29e942d5edcee03f153df70c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e5/6418753242ca0372d27e46d1c1665602b48491&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e5/d2c1f22de2317ab6fe9e24c354c95bbad06109&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e7/42f3122ad9efa5c83a1ddaf39481162a2f2f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e9/3d41799a763a3637dce49b9d99b8d9539c17ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ea/1254fd6e6d78f1aab01c74eb5441ce5da65275&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ea/81ad0f54324ba36c31946ab9515182e733ff68&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ed/a1eff50533d83663f42682141b82f65ac29732&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f1/2b2f28366d38adf6ad7745d5dfc586260de638&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f3/01059d23544547ba04b2a1d293107081e60ae0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f6/d2de66800aa6eab13b79534ad795012136c0b8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f6/e3d12f26149bf5ca8896ecde81a09140678dd9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f7/710c4e39f1f6ad0a4dc24357ae0c6503875f6c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fa/a9b30afbca8add8aab8520d6913829a853b019&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fb/55036f41fce90897e9f4227d3aa2f6297727c3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fc/ed115432f665f48290ef019937611a8ff3178e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fd/42692e0f75b2c5d5990d0581a06161db2c3905&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fe/cce1a37b26e9b686dd910cbc83a5b780a515be&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ff/d6d5edacb52bade570e02fca9131e987a1efa6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/redesign-2026-06-10&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/rediseno-ui&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/gitlab/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/origin/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.gitignore&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.streamlit/config.toml&quot;: &quot;excluded_by_scope&quot;,
+        &quot;0&quot;: &quot;excluded_by_scope&quot;,
+        &quot;CODE_OF_CONDUCT.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;CONTRIBUTORS.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;Dockerfile&quot;: &quot;excluded_by_scope&quot;,
+        &quot;LICENSE&quot;: &quot;excluded_by_scope&quot;,
+        &quot;README.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/.adk/session.db&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/agent.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/elastic_semantic.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_hybrid_evaluator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_semiotic_evaluator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/semiotic_llm_judge.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/bayesian.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/bigquery_sink.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;agent_mutante/engine/elastic_semantic.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutante_client.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutante_hybrid_evaluator.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;agent_mutante/engine/mutante_semiotic_evaluator.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;agent_mutante/engine/mutator.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/platform_experimental/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/platform_experimental/windows_sandbox.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/engine/quality_gate.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;agent_mutante/engine/sandbox.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/semiotic_llm_judge.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;agent_mutante/requirements.txt&quot;: &quot;excluded_by_scope&quot;,
+        &quot;apply_license.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;assets/logo.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;batch_checkpoint.pkl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;batch_results.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components/css.py&quot;: &quot;examined_clean&quot;,
+        &quot;components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components_init.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/app.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/components/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/components/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/css.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/demo_data.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/sidebar.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/css.py&quot;: &quot;examined_clean&quot;,
+        &quot;dashboard/components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/agent_console.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/analytics.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/attack_families.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/command_center.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/forensic_feed.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_script.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_seed.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_seed_semantic.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;deploy.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;gemini-code-mutante-simulator.html&quot;: &quot;excluded_by_scope&quot;,
+        &quot;generate_demo_dataset.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;harmbench_behaviors.csv&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/1.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/111.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/2.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/222.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/3.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-02.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-03.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-04.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-05.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-06.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-07.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-08.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-09.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-10.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-11.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;install.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;main.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;mcp_mutante.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;preflight.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reimport_semantic.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;requirements.txt&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reseed_elastic.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;run_campaign.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;scripts/download_datasets.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_demo_pipeline.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_full_pipeline.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_vertex_gemini.py&quot;: &quot;excluded_by_scope&quot;
+      },
+      &quot;findings_per_family&quot;: {
+        &quot;decision-adjacent-float&quot;: 14,
+        &quot;unversioned-serialization&quot;: 2
+      }
+    },
+    &quot;security_auditor&quot;: {
+      &quot;examinations&quot;: {
+        &quot;.dockerignore&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.env&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.env.example&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.git/COMMIT_EDITMSG&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/FETCH_HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/ORIG_HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/config&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/description&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/applypatch-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/commit-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/fsmonitor-watchman.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/post-update.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-applypatch.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-commit.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-merge-commit.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-push.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-rebase.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/pre-receive.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/prepare-commit-msg.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/push-to-checkout.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/sendemail-validate.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/hooks/update.sample&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/index&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/info/exclude&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/HEAD&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/redesign-2026-06-10&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/heads/rediseno-ui&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/gitlab/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/logs/refs/remotes/origin/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/00/adeb8d9bafef7d217feb4a3c7d9698aba35755&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/00/f1a7fc1ee6927b6baee3603f1064254aea27f1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/01/b92d6eaa646e3530eacd9ff4ae6c3efb1e0865&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/01/baae6cf164625512aeb3df79a4e68f457f5d8a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0a/11738c79f69871435c11e09a02c366717bcbb7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0e/3edc63adb5c9ee2e864c955180f93f1053ead2&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0e/be2b8b7ccb3e728504fb717eac1b2f835901ef&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0f/05224da08894495494cff708a1d47a214c4fe0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/0f/7570d12bc31be6fd02afcf79e99060a8423d14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/01c3f49a1c794c9d74bc2b16457e8ba93e9ce5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/7c3077632c76d946d5f392fd7c3784e7877df7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/12/e0441bd93b9ee5d9b159b402044a863d72e6d4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/13/3bc95c1fe9dcec47c8c3c9ae72b072a6030eb0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/a446735d5fa9baa921ea63dd9fb970eba6f97b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/bf90923045086725a3a0aae79a2592a2fe07d0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/16/d5e02d47aef1e393db1ed6ebfb68ecf6e3104c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/17/bfc79d4583089bb42098ab32f83035b3864721&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/18/7e11ded5684e2332df00efc1903387e7327d5a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/19/45aa31ff5930bd76cf50f7c7953ff7561a29b6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1b/555e7cce0bd45135a8cc742a69584ced2bff06&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1b/64eba42a3c702a74b287dd0871b857c70d3437&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/4e43afb63ef90e6e8973d79b6982b1f0c57b08&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/9816e4ccb92a0f284f678f255bebfd33f10ccd&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1d/e27fc9413981cb948b493a5b8bc009384454f8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1e/7f192e83a20c2d28b87f55b2fd084733d3d29b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1e/7f260381b27f7b7596984a0af7c810e56a482d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/0b87ca8991f0800a83f284d0e161ca1c80d03e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/4ceda18a5bfda0f4cc944b4e4f198991389c12&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/1f/cb25a3b4ad89b57f4bd8eb4b02f94e18ec14c5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/21/6b71e6993a0ad37a7ba1f3fc14cf3448bd46ef&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/24/cf258f6a995f39c6df2d75db36c4357d3b07c3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/27/4c4c8cf9bdfc6355064f000874266bf990459d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/28/174009aa7e9a36c8fa5ed8f51522eb44645587&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/28/579d40df248fc734f473fef627b9efe111d36a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/2a/bebb781912022ab291f69f333ac40d5a1f2f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/31/27d40c623531bde296f6347d954e305d8acb9b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/32/40bf450cd7dd5ce4ddd10c1e8e1e8fb377662f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/32/7e6fcea2b689511c5f6f45f68d161e73d57173&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/33/b198f076b446f2d8d3173ad7904dfa12d23c4a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/1264f2efbafa665a183b5cbfb679b813bda937&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/288143d57946152df6efedb7ad07cd0585f0b9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/36/e3783cc873b06c5ce2e90f1ea38e4b3d53a60e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/37/06d4894f070f169f87d178f823907b49315d2e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/38/231dab4d87a2093df78e3de763ee97acb5721d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3a/5763bbb2100853ef93970a7db752a81ff2f2fc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3d/9b1043ffcd6e924e66907a97b11b239d1d968f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/3e/8516d4a67dda8d9a2dec297320daf44414933a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/43/0bff95b2bfdd9d6e78c5352421bb3d363e07f5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/44/0f5f31c75900c6acaec906f29a02746c3fe41a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/45/b7688bf78890d08a287bdb3146bd5d9c137428&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/46/13519c47e51ea07b0d45f751ab84d4a9a3229e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/47/203421e8a17531b295175d389b7d59bf2f7e14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/49/24493c765a318cb0686448fe58403e69ed2206&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/49/4b810f1c13f150b4906951af57d278622f255a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/4f/506281ec43a535bab3384ff5f29170cead8d7b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/50/b38c852d95dcf0d504354faa3f461b4ae5ae2c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/51/70339ea08783d41ca9b9d04a46fd016a5bc9ee&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/54/9218e66929188c2e35fe0dfe112aecefb86f96&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/57/1b3b6429fde012f62afaf6a5063cf79e9a788f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/57/a9ed0114be977be12ffab7b8835fbab55271ad&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/58/0da527f7d8c42b7dd3aea2ff2b034552b658ce&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/58/279bfa9c3f907806861b18377875d99e4e5c24&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/59/b6fa34939324a769002307063203e98e9a23cf&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5c/39e6b67021a263ba471677a0eea91a4efd534e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5e/3807cc984deabb6c77d979d394c1dce9917885&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/5f/9a76efb28b4c80062b5e5844517135ac1702bb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/60/f44d1c65673f840d49a11126d76b111f635869&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/61/b8c3918cfc17dc5da399b1500d196bdb1264e9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/65/9c4f94a63645aa69dcc41706babe9bbb824a38&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/65/ed8f3f33156129323ae0fae6bf43bc4e0ca8c7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/66/bb45d79d1cfc072c2d28365d36a36b73e7ccbe&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6c/188f1d9ad3e855e433a972f12f510f3c98452f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6c/6ee0b87d392ff4dfa753d93e73905fd91ec11c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6d/213acfeb557474ad72e6df3e8ba54922c0a954&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6e/4dfad75f2b30e9bb15dfccf3ddd74fe6b04188&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/663d12138ec0c0b59f57464a020855d8e51d2e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/e40329a9ae56337ea4372a29506a90775af32c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/6f/fd3dc572de28201c1879d16b12c905c9bfad28&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/71/cbd34f56a928ec5247cc0f5e2e91078f59b5d5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/72/722fe2bc929116f90439e21912da2e65fb2597&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/73/02dce54e9376528a60d6f5b460b65163975a66&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/75/6992ae82397576e846995f783dac81337da317&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/77/b9c0142d1ee7d80af8821860b28891075854ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/08b1ef7196960f1bd571d540edbbb4816868a4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/c7971248482e874612e5e0151668ec7766fea3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/78/d05589d560804caf81284c124d755d985ccf41&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/79/76c9779158fddef1c6efec51e510a49058ed38&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/79/94e130fdf8e43e97ac6c5de9addedd71ba2fdb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/2295758773511580337af34f770421d1e93f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/47cec2b1cf65bb94d1de53b4aad4d4a31f0446&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7a/8db9282b612abb76e1866a74a632b3a3e26799&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7d/7747090a01c70b6fe433e0ad468fb5aab383b3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/7f/1406a94f9b1ad37410e04fcb8d83465a49ddd4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/80/3634dae4dbcda6ed0c0e361bf735b34801006c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/84/b3ce943be3ae4e2ab5a9007a4a4ff0d50c1c61&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/86/876a1a44b973d6a07de53733e6f77c002c81d1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/89/98da68e5efbd519c19812b296ae90f3ec7d7d7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8a/2e3950ef9576de3432613d6bdcc241f9c8ba12&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8c/de4839949741f1fd3fdd48b89f0a2d6a5fd5fb&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/8d/fa5ba90ab84c89091ee695d10d3dd5a17447e8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/91/f7cf0d2f8bd543ed288239ebf5ad6fc3d18f66&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/96/616290cdebb649201190eeac81d7361f8ec2ca&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/97/831b6f0efd4816b134e42547c5f138dd2522d7&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/98/3f0000f795ede05a5248af3c951766fb35876f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/98/f3357b6bb903c3983bc7e3bcb774b4e37fd9ce&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/99/848dbb58b12d48568408b3b51664425d6cab65&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9c/91cc8b4dcb7348bab6ddffac8902880b2545fc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9d/21bf084447b769bcad7d280086325d5a989d54&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9d/2d50f2ba79ea34e190c552c692f4c114fc9373&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9e/d18fa697276baa18971a550d9f2a85278f2ba4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/9f/4ddbb1ec9c05e4a554d9043dcf1c6f4538b3fa&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a3/7909b2b74b8867695c856627c8520d8b9a6b6f&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a7/ecd256fa555c09ba30afeae488858ea136bc30&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a8/56eda83609547355a5109945bfcfbd68ff54cf&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/a9/cf4be82efea15fedf3935da8a64e101456cd88&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ad/0e96e6d1b1205f5f24fdc7725e9622075170a6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ad/8b794602d14da895161858fd653a3013341a6b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b0/52e0536b7bd6789763622e7963175377e0eba4&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b1/7ac0fd35240b8a5dbba18cb428f61ae2b90c67&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b1/eb3a5080032ad813ea38ab3f5d179618150373&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b2/2a47692946c16d5306e0a2d45168821183c9ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b3/f4aeada482e310d2ffcb0fbc356bef7b5a38e0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b6/2d1b583ad6b44204069017f975efdfc89b452a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b6/b7a4b0bab87c9595885607aca71594fad8b958&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/08e496f6c56d14121cd421cdc47093519fefa2&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/6c539b9293f0fd937a61ec73b778e453e262cc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b8/f9a6106d49c1f5ee165d7b9f8cf7b4a9fa4504&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b9/3f08e44f433b237ee3bac6dabdec868800e44d&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/b9/c76e843edc7584ad9dfbdd710fd66aed2acce1&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ba/951ee76cc87442714e51f5ffc37e65d4338029&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/be/106671ebaf8c49db8f198db53267d08f164e69&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c0/7ffd421ed17f53ef0b88d801fd369a129bcbd5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c1/d0068c5ff3dde14cbaa3f18fb054969b8a9763&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c1/d81395f474037e97df3b0e180980c15d530536&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c4/aa9d246c9865ef771014295120377b5f30664a&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c4/d05b42d0c3625138a1d99e5e966428f13fc183&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c8/43f0b0980840e333815c5981ca1a28eb79dc76&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/c9/2580fdc438d958b72ea8706610b2ad7cadce14&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cb/10d141752f64d655cb2e8737146b8dc695ce06&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cc/f0eb4a1cf67e91e0baf3f0bad07ffc305feafe&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cd/05b51063506bc2c2f2e1022c8c627a02607806&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cd/25eb40d36d2a3d9df5bf6381bf12919e59dbb5&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ce/a8c29a2aa64f53dc931dff52be64f53f043d47&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/cf/e12d574cddac0d9f1eb25e0dc465c8c76f19d3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d4/c43aea34ae4f5a4739737acd03a84fb08b2e3b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d5/84b6b1febd22f286d20e05a7de267ff23a9e89&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d6/04ee1de17cdec35bfd64897a62d4143df84839&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d6/cdb8019d4016165e5ef6e9e739dbf41ed0a932&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/d7/f8071f716746df4752a150574c996410a6230b&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/dc/0095217d30c2bdf062de54c17f89da0d6e8468&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/dd/9dd165ba4b3d554a6ddbf14e3ee910a7d95faa&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/de/0619e115481e059eac5774c90ef81742275371&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e1/f313111b1b3872a606d058db61a16d8e09a4d9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e2/90b409191f3d9c29e942d5edcee03f153df70c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e5/6418753242ca0372d27e46d1c1665602b48491&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e5/d2c1f22de2317ab6fe9e24c354c95bbad06109&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e7/42f3122ad9efa5c83a1ddaf39481162a2f2f50&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/e9/3d41799a763a3637dce49b9d99b8d9539c17ea&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ea/1254fd6e6d78f1aab01c74eb5441ce5da65275&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ea/81ad0f54324ba36c31946ab9515182e733ff68&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ed/a1eff50533d83663f42682141b82f65ac29732&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f1/2b2f28366d38adf6ad7745d5dfc586260de638&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f3/01059d23544547ba04b2a1d293107081e60ae0&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f6/d2de66800aa6eab13b79534ad795012136c0b8&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f6/e3d12f26149bf5ca8896ecde81a09140678dd9&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/f7/710c4e39f1f6ad0a4dc24357ae0c6503875f6c&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fa/a9b30afbca8add8aab8520d6913829a853b019&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fb/55036f41fce90897e9f4227d3aa2f6297727c3&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fc/ed115432f665f48290ef019937611a8ff3178e&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fd/42692e0f75b2c5d5990d0581a06161db2c3905&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/fe/cce1a37b26e9b686dd910cbc83a5b780a515be&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/objects/ff/d6d5edacb52bade570e02fca9131e987a1efa6&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/redesign-2026-06-10&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/heads/rediseno-ui&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/gitlab/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.git/refs/remotes/origin/main&quot;: &quot;excluded_by_policy&quot;,
+        &quot;.gitignore&quot;: &quot;excluded_by_scope&quot;,
+        &quot;.streamlit/config.toml&quot;: &quot;excluded_by_scope&quot;,
+        &quot;0&quot;: &quot;excluded_by_scope&quot;,
+        &quot;CODE_OF_CONDUCT.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;CONTRIBUTORS.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;Dockerfile&quot;: &quot;excluded_by_scope&quot;,
+        &quot;LICENSE&quot;: &quot;excluded_by_scope&quot;,
+        &quot;README.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/.adk/session.db&quot;: &quot;excluded_by_scope&quot;,
+        &quot;agent_mutante/agent.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/__init__.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/elastic_semantic.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_hybrid_evaluator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_semiotic_evaluator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutator.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/__pycache__/semiotic_llm_judge.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;agent_mutante/engine/bayesian.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/bigquery_sink.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/elastic_semantic.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutante_client.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutante_hybrid_evaluator.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutante_semiotic_evaluator.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/mutator.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/platform_experimental/__init__.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/platform_experimental/windows_sandbox.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/quality_gate.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/sandbox.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/engine/semiotic_llm_judge.py&quot;: &quot;examined_clean&quot;,
+        &quot;agent_mutante/requirements.txt&quot;: &quot;excluded_by_scope&quot;,
+        &quot;apply_license.py&quot;: &quot;examined_with_findings&quot;,
+        &quot;assets/logo.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;batch_checkpoint.pkl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;batch_results.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components/css.py&quot;: &quot;examined_clean&quot;,
+        &quot;components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;components_init.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/__init__.py&quot;: &quot;examined_clean&quot;,
+        &quot;dashboard/app.py&quot;: &quot;examined_clean&quot;,
+        &quot;dashboard/components/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/components/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/css.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/demo_data.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/__pycache__/sidebar.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/components/css.py&quot;: &quot;examined_clean&quot;,
+        &quot;dashboard/components/sidebar.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/__init__.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/__pycache__/__init__.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/agent_console.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/analytics.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/attack_families.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/command_center.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/__pycache__/forensic_feed.cpython-312.pyc&quot;: &quot;excluded_by_policy&quot;,
+        &quot;dashboard/pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;dashboard/pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_script.md&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_seed.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;demo_seed_semantic.jsonl&quot;: &quot;excluded_by_scope&quot;,
+        &quot;deploy.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;gemini-code-mutante-simulator.html&quot;: &quot;excluded_by_scope&quot;,
+        &quot;generate_demo_dataset.py&quot;: &quot;examined_clean&quot;,
+        &quot;harmbench_behaviors.csv&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/1.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/111.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/2.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/222.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/3.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-02.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-03.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-04.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-05.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-06.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-07.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-08.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-09.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-10.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;info_and_test/roadmap2-11.png&quot;: &quot;excluded_by_scope&quot;,
+        &quot;install.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;main.py&quot;: &quot;examined_clean&quot;,
+        &quot;mcp_mutante.py&quot;: &quot;examined_clean&quot;,
+        &quot;pages/agent_console.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/analytics.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/attack_families.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/command_center.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;pages/forensic_feed.py&quot;: &quot;excluded_by_scope&quot;,
+        &quot;preflight.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reimport_semantic.py&quot;: &quot;examined_clean&quot;,
+        &quot;requirements.txt&quot;: &quot;excluded_by_scope&quot;,
+        &quot;reseed_elastic.py&quot;: &quot;examined_clean&quot;,
+        &quot;run_campaign.py&quot;: &quot;examined_clean&quot;,
+        &quot;scripts/download_datasets.sh&quot;: &quot;excluded_by_scope&quot;,
+        &quot;test_demo_pipeline.py&quot;: &quot;examined_clean&quot;,
+        &quot;test_full_pipeline.py&quot;: &quot;examined_clean&quot;,
+        &quot;test_vertex_gemini.py&quot;: &quot;examined_clean&quot;
+      },
+      &quot;findings_per_family&quot;: {
+        &quot;hardcoded-credential&quot;: 0,
+        &quot;path-traversal&quot;: 2,
+        &quot;unsafe-deserialization&quot;: 0
+      }
+    }
+  },
+  &quot;agents&quot;: {
+    &quot;abduction&quot;: {
+      &quot;average_evidence_per_hypothesis&quot;: null,
+      &quot;hypotheses_discarded&quot;: 0,
+      &quot;hypotheses_generated&quot;: 1,
+      &quot;hypotheses_merged&quot;: null,
+      &quot;patterns_observed&quot;: 1
+    },
+    &quot;integrity_inspector&quot;: {
+      &quot;applicable&quot;: 1,
+      &quot;contracts_evaluated&quot;: 1,
+      &quot;design_inconsistencies&quot;: 0,
+      &quot;not_applicable&quot;: 29,
+      &quot;protocol_gaps&quot;: 0,
+      &quot;undetermined&quot;: 13
+    },
+    &quot;verification&quot;: {
+      &quot;benign_explanations_accepted&quot;: 0,
+      &quot;benign_explanations_rejected&quot;: 0,
+      &quot;checks_executed&quot;: 1,
+      &quot;checks_failed&quot;: 0,
+      &quot;checks_note&quot;: &quot;Surviving hypotheses are unresolved candidates, not failed tests; dynamic induction is required before calling them defects.&quot;,
+      &quot;checks_passed&quot;: 0,
+      &quot;checks_unresolved&quot;: 1,
+      &quot;structural_proofs_found&quot;: 0
+    }
+  },
+  &quot;audit_trail&quot;: {
+    &quot;artifacts_produced&quot;: null,
+    &quot;chain_verification&quot;: null,
+    &quot;events_hashed&quot;: 31,
+    &quot;events_verified&quot;: null,
+    &quot;hash_chain_length&quot;: null,
+    &quot;partial_trace&quot;: false,
+    &quot;runtime_events&quot;: 31,
+    &quot;tampering_detected&quot;: null
+  },
+  &quot;discovery&quot;: {
+    &quot;CONNECTED_ALIVE&quot;: 14,
+    &quot;DEAD_WEIGHT&quot;: 10,
+    &quot;DUPLICATE&quot;: 15,
+    &quot;FOSSIL_HIGH_RISK&quot;: 4,
+    &quot;FOSSIL_LOW_RISK&quot;: 0,
+    &quot;UNKNOWN&quot;: 0,
+    &quot;average_dependency_degree&quot;: null,
+    &quot;dependency_graph_size&quot;: null,
+    &quot;mixed_domain_modules&quot;: 3
+  },
+  &quot;domain_classification&quot;: {
+    &quot;hypothesis_confidence&quot;: [
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/agent.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/__init__.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/bayesian.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/bigquery_sink.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/elastic_semantic.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/mutante_client.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/mutante_hybrid_evaluator.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;cryptographic&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/mutante_semiotic_evaluator.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/mutator.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/platform_experimental/__init__.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/platform_experimental/windows_sandbox.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/quality_gate.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/sandbox.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;agent_mutante/engine/semiotic_llm_judge.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;apply_license.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;components/css.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;components/sidebar.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;components_init.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/__init__.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/app.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/components/__init__.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/components/css.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;dashboard/components/sidebar.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/pages/__init__.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/pages/agent_console.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;dashboard/pages/analytics.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;dashboard/pages/attack_families.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;dashboard/pages/command_center.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;dashboard/pages/forensic_feed.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;generate_demo_dataset.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;main.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 2
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;,
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 2,
+        &quot;module_path&quot;: &quot;mcp_mutante.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;pages/agent_console.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;pages/analytics.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;pages/attack_families.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;pages/command_center.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;pages/forensic_feed.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;reimport_semantic.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 2
+        },
+        &quot;domains&quot;: [
+          &quot;input_boundary&quot;,
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 2,
+        &quot;module_path&quot;: &quot;reseed_elastic.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;cryptographic&quot;,
+          &quot;input_boundary&quot;,
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 3,
+        &quot;module_path&quot;: &quot;run_campaign.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 3,
+          &quot;numerator&quot;: 1
+        },
+        &quot;domains&quot;: [
+          &quot;machine_learning&quot;
+        ],
+        &quot;evidence_count&quot;: 1,
+        &quot;module_path&quot;: &quot;test_demo_pipeline.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;test_full_pipeline.py&quot;
+      },
+      {
+        &quot;alternatives&quot;: [
+          &quot;mixed_or_unknown&quot;
+        ],
+        &quot;confidence&quot;: {
+          &quot;denominator&quot;: 1,
+          &quot;numerator&quot;: 0
+        },
+        &quot;domains&quot;: [],
+        &quot;evidence_count&quot;: 0,
+        &quot;module_path&quot;: &quot;test_vertex_gemini.py&quot;
+      }
+    ],
+    &quot;modules_by_domain&quot;: {
+      &quot;cryptographic&quot;: 2,
+      &quot;input_boundary&quot;: 8,
+      &quot;machine_learning&quot;: 14
+    }
+  },
+  &quot;evidence&quot;: {
+    &quot;by_kind&quot;: {
+      &quot;source&quot;: 19
+    },
+    &quot;evidence_conflicts&quot;: null,
+    &quot;evidence_items&quot;: 19,
+    &quot;evidence_reused&quot;: null,
+    &quot;primary_evidence&quot;: 19,
+    &quot;secondary_evidence&quot;: 0
+  },
+  &quot;findings&quot;: {
+    &quot;by_agent&quot;: {
+      &quot;bug_investigator&quot;: 1,
+      &quot;integrity_inspector&quot;: 16,
+      &quot;security_auditor&quot;: 2
+    },
+    &quot;by_epistemic_level&quot;: {
+      &quot;CODE FACT&quot;: 18,
+      &quot;PLAUSIBLE HYPOTHESIS&quot;: 1
+    },
+    &quot;by_family&quot;: {
+      &quot;other&quot;: 16,
+      &quot;parser-boundary&quot;: 1,
+      &quot;unversioned-serialization&quot;: 2
+    },
+    &quot;by_module&quot;: {
+      &quot;agent_mutante/engine/bigquery_sink.py&quot;: 2,
+      &quot;agent_mutante/engine/mutante_hybrid_evaluator.py&quot;: 2,
+      &quot;agent_mutante/engine/mutante_semiotic_evaluator.py&quot;: 7,
+      &quot;agent_mutante/engine/quality_gate.py&quot;: 2,
+      &quot;agent_mutante/engine/semiotic_llm_judge.py&quot;: 2,
+      &quot;apply_license.py&quot;: 2,
+      &quot;main.py&quot;: 2
+    },
+    &quot;by_outcome&quot;: {
+      &quot;DESIGN_INCONSISTENCY&quot;: 0,
+      &quot;NOT_APPLICABLE&quot;: 0,
+      &quot;OBSERVED&quot;: 19,
+      &quot;PROTOCOL_GAP&quot;: 0,
+      &quot;UNDETERMINED&quot;: 0
+    },
+    &quot;by_severity&quot;: {
+      &quot;MEDIUM&quot;: 19
+    },
+    &quot;discarded_hypotheses&quot;: 0,
+    &quot;finding_digest&quot;: &quot;4f0dfc0f088b105b89881acc8fea497ea038a7c39cf7a9d9360208426708f0fc&quot;,
+    &quot;induction&quot;: {
+      &quot;confirmed&quot;: 0,
+      &quot;falsified&quot;: 0,
+      &quot;undetermined&quot;: 1
+    }
+  },
+  &quot;honest_degradation&quot;: {
+    &quot;limitations&quot;: [
+      &quot;Hypotheses require module 3 verification; parser candidates may receive isolated induction, while unsupported families remain AST-only.&quot;,
+      &quot;265 discovered file(s) were skipped; see skipped_reasons for the exact paths and policy categories.&quot;,
+      &quot;29 triaged module(s) were outside CONNECTED_ALIVE audit scope.&quot;,
+      &quot;13 skill applicability result(s) were UNDETERMINED; no conclusion was inferred for them.&quot;,
+      &quot;1 hypothesis/hypotheses survived structural verification without dynamic induction; they remain plausible hypotheses, not confirmed defects.&quot;
+    ],
+    &quot;skipped_reasons&quot;: {
+      &quot;binary_or_unreadable&quot;: [
+        &quot;agent_mutante/.adk/session.db&quot;,
+        &quot;assets/logo.png&quot;,
+        &quot;batch_checkpoint.pkl&quot;,
+        &quot;info_and_test/1.png&quot;,
+        &quot;info_and_test/111.png&quot;,
+        &quot;info_and_test/2.png&quot;,
+        &quot;info_and_test/222.png&quot;,
+        &quot;info_and_test/3.png&quot;,
+        &quot;info_and_test/roadmap2-02.png&quot;,
+        &quot;info_and_test/roadmap2-03.png&quot;,
+        &quot;info_and_test/roadmap2-04.png&quot;,
+        &quot;info_and_test/roadmap2-05.png&quot;,
+        &quot;info_and_test/roadmap2-06.png&quot;,
+        &quot;info_and_test/roadmap2-07.png&quot;,
+        &quot;info_and_test/roadmap2-08.png&quot;,
+        &quot;info_and_test/roadmap2-09.png&quot;,
+        &quot;info_and_test/roadmap2-10.png&quot;,
+        &quot;info_and_test/roadmap2-11.png&quot;
+      ],
+      &quot;excluded_by_policy&quot;: [
+        &quot;.git/COMMIT_EDITMSG&quot;,
+        &quot;.git/FETCH_HEAD&quot;,
+        &quot;.git/HEAD&quot;,
+        &quot;.git/ORIG_HEAD&quot;,
+        &quot;.git/config&quot;,
+        &quot;.git/description&quot;,
+        &quot;.git/hooks/applypatch-msg.sample&quot;,
+        &quot;.git/hooks/commit-msg.sample&quot;,
+        &quot;.git/hooks/fsmonitor-watchman.sample&quot;,
+        &quot;.git/hooks/post-update.sample&quot;,
+        &quot;.git/hooks/pre-applypatch.sample&quot;,
+        &quot;.git/hooks/pre-commit.sample&quot;,
+        &quot;.git/hooks/pre-merge-commit.sample&quot;,
+        &quot;.git/hooks/pre-push.sample&quot;,
+        &quot;.git/hooks/pre-rebase.sample&quot;,
+        &quot;.git/hooks/pre-receive.sample&quot;,
+        &quot;.git/hooks/prepare-commit-msg.sample&quot;,
+        &quot;.git/hooks/push-to-checkout.sample&quot;,
+        &quot;.git/hooks/sendemail-validate.sample&quot;,
+        &quot;.git/hooks/update.sample&quot;,
+        &quot;.git/index&quot;,
+        &quot;.git/info/exclude&quot;,
+        &quot;.git/logs/HEAD&quot;,
+        &quot;.git/logs/refs/heads/main&quot;,
+        &quot;.git/logs/refs/heads/redesign-2026-06-10&quot;,
+        &quot;.git/logs/refs/heads/rediseno-ui&quot;,
+        &quot;.git/logs/refs/remotes/gitlab/main&quot;,
+        &quot;.git/logs/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;,
+        &quot;.git/logs/refs/remotes/origin/main&quot;,
+        &quot;.git/objects/00/adeb8d9bafef7d217feb4a3c7d9698aba35755&quot;,
+        &quot;.git/objects/00/f1a7fc1ee6927b6baee3603f1064254aea27f1&quot;,
+        &quot;.git/objects/01/b92d6eaa646e3530eacd9ff4ae6c3efb1e0865&quot;,
+        &quot;.git/objects/01/baae6cf164625512aeb3df79a4e68f457f5d8a&quot;,
+        &quot;.git/objects/0a/11738c79f69871435c11e09a02c366717bcbb7&quot;,
+        &quot;.git/objects/0e/3edc63adb5c9ee2e864c955180f93f1053ead2&quot;,
+        &quot;.git/objects/0e/be2b8b7ccb3e728504fb717eac1b2f835901ef&quot;,
+        &quot;.git/objects/0f/05224da08894495494cff708a1d47a214c4fe0&quot;,
+        &quot;.git/objects/0f/7570d12bc31be6fd02afcf79e99060a8423d14&quot;,
+        &quot;.git/objects/12/01c3f49a1c794c9d74bc2b16457e8ba93e9ce5&quot;,
+        &quot;.git/objects/12/7c3077632c76d946d5f392fd7c3784e7877df7&quot;,
+        &quot;.git/objects/12/e0441bd93b9ee5d9b159b402044a863d72e6d4&quot;,
+        &quot;.git/objects/13/3bc95c1fe9dcec47c8c3c9ae72b072a6030eb0&quot;,
+        &quot;.git/objects/16/a446735d5fa9baa921ea63dd9fb970eba6f97b&quot;,
+        &quot;.git/objects/16/bf90923045086725a3a0aae79a2592a2fe07d0&quot;,
+        &quot;.git/objects/16/d5e02d47aef1e393db1ed6ebfb68ecf6e3104c&quot;,
+        &quot;.git/objects/17/bfc79d4583089bb42098ab32f83035b3864721&quot;,
+        &quot;.git/objects/18/7e11ded5684e2332df00efc1903387e7327d5a&quot;,
+        &quot;.git/objects/19/45aa31ff5930bd76cf50f7c7953ff7561a29b6&quot;,
+        &quot;.git/objects/1b/555e7cce0bd45135a8cc742a69584ced2bff06&quot;,
+        &quot;.git/objects/1b/64eba42a3c702a74b287dd0871b857c70d3437&quot;,
+        &quot;.git/objects/1d/4e43afb63ef90e6e8973d79b6982b1f0c57b08&quot;,
+        &quot;.git/objects/1d/9816e4ccb92a0f284f678f255bebfd33f10ccd&quot;,
+        &quot;.git/objects/1d/e27fc9413981cb948b493a5b8bc009384454f8&quot;,
+        &quot;.git/objects/1e/7f192e83a20c2d28b87f55b2fd084733d3d29b&quot;,
+        &quot;.git/objects/1e/7f260381b27f7b7596984a0af7c810e56a482d&quot;,
+        &quot;.git/objects/1f/0b87ca8991f0800a83f284d0e161ca1c80d03e&quot;,
+        &quot;.git/objects/1f/4ceda18a5bfda0f4cc944b4e4f198991389c12&quot;,
+        &quot;.git/objects/1f/cb25a3b4ad89b57f4bd8eb4b02f94e18ec14c5&quot;,
+        &quot;.git/objects/21/6b71e6993a0ad37a7ba1f3fc14cf3448bd46ef&quot;,
+        &quot;.git/objects/24/cf258f6a995f39c6df2d75db36c4357d3b07c3&quot;,
+        &quot;.git/objects/27/4c4c8cf9bdfc6355064f000874266bf990459d&quot;,
+        &quot;.git/objects/28/174009aa7e9a36c8fa5ed8f51522eb44645587&quot;,
+        &quot;.git/objects/28/579d40df248fc734f473fef627b9efe111d36a&quot;,
+        &quot;.git/objects/2a/bebb781912022ab291f69f333ac40d5a1f2f50&quot;,
+        &quot;.git/objects/31/27d40c623531bde296f6347d954e305d8acb9b&quot;,
+        &quot;.git/objects/32/40bf450cd7dd5ce4ddd10c1e8e1e8fb377662f&quot;,
+        &quot;.git/objects/32/7e6fcea2b689511c5f6f45f68d161e73d57173&quot;,
+        &quot;.git/objects/33/b198f076b446f2d8d3173ad7904dfa12d23c4a&quot;,
+        &quot;.git/objects/36/1264f2efbafa665a183b5cbfb679b813bda937&quot;,
+        &quot;.git/objects/36/288143d57946152df6efedb7ad07cd0585f0b9&quot;,
+        &quot;.git/objects/36/e3783cc873b06c5ce2e90f1ea38e4b3d53a60e&quot;,
+        &quot;.git/objects/37/06d4894f070f169f87d178f823907b49315d2e&quot;,
+        &quot;.git/objects/38/231dab4d87a2093df78e3de763ee97acb5721d&quot;,
+        &quot;.git/objects/3a/5763bbb2100853ef93970a7db752a81ff2f2fc&quot;,
+        &quot;.git/objects/3d/9b1043ffcd6e924e66907a97b11b239d1d968f&quot;,
+        &quot;.git/objects/3e/8516d4a67dda8d9a2dec297320daf44414933a&quot;,
+        &quot;.git/objects/43/0bff95b2bfdd9d6e78c5352421bb3d363e07f5&quot;,
+        &quot;.git/objects/44/0f5f31c75900c6acaec906f29a02746c3fe41a&quot;,
+        &quot;.git/objects/45/b7688bf78890d08a287bdb3146bd5d9c137428&quot;,
+        &quot;.git/objects/46/13519c47e51ea07b0d45f751ab84d4a9a3229e&quot;,
+        &quot;.git/objects/47/203421e8a17531b295175d389b7d59bf2f7e14&quot;,
+        &quot;.git/objects/49/24493c765a318cb0686448fe58403e69ed2206&quot;,
+        &quot;.git/objects/49/4b810f1c13f150b4906951af57d278622f255a&quot;,
+        &quot;.git/objects/4f/506281ec43a535bab3384ff5f29170cead8d7b&quot;,
+        &quot;.git/objects/50/b38c852d95dcf0d504354faa3f461b4ae5ae2c&quot;,
+        &quot;.git/objects/51/70339ea08783d41ca9b9d04a46fd016a5bc9ee&quot;,
+        &quot;.git/objects/54/9218e66929188c2e35fe0dfe112aecefb86f96&quot;,
+        &quot;.git/objects/57/1b3b6429fde012f62afaf6a5063cf79e9a788f&quot;,
+        &quot;.git/objects/57/a9ed0114be977be12ffab7b8835fbab55271ad&quot;,
+        &quot;.git/objects/58/0da527f7d8c42b7dd3aea2ff2b034552b658ce&quot;,
+        &quot;.git/objects/58/279bfa9c3f907806861b18377875d99e4e5c24&quot;,
+        &quot;.git/objects/59/b6fa34939324a769002307063203e98e9a23cf&quot;,
+        &quot;.git/objects/5c/39e6b67021a263ba471677a0eea91a4efd534e&quot;,
+        &quot;.git/objects/5e/3807cc984deabb6c77d979d394c1dce9917885&quot;,
+        &quot;.git/objects/5f/9a76efb28b4c80062b5e5844517135ac1702bb&quot;,
+        &quot;.git/objects/60/f44d1c65673f840d49a11126d76b111f635869&quot;,
+        &quot;.git/objects/61/b8c3918cfc17dc5da399b1500d196bdb1264e9&quot;,
+        &quot;.git/objects/65/9c4f94a63645aa69dcc41706babe9bbb824a38&quot;,
+        &quot;.git/objects/65/ed8f3f33156129323ae0fae6bf43bc4e0ca8c7&quot;,
+        &quot;.git/objects/66/bb45d79d1cfc072c2d28365d36a36b73e7ccbe&quot;,
+        &quot;.git/objects/6c/188f1d9ad3e855e433a972f12f510f3c98452f&quot;,
+        &quot;.git/objects/6c/6ee0b87d392ff4dfa753d93e73905fd91ec11c&quot;,
+        &quot;.git/objects/6d/213acfeb557474ad72e6df3e8ba54922c0a954&quot;,
+        &quot;.git/objects/6e/4dfad75f2b30e9bb15dfccf3ddd74fe6b04188&quot;,
+        &quot;.git/objects/6f/663d12138ec0c0b59f57464a020855d8e51d2e&quot;,
+        &quot;.git/objects/6f/e40329a9ae56337ea4372a29506a90775af32c&quot;,
+        &quot;.git/objects/6f/fd3dc572de28201c1879d16b12c905c9bfad28&quot;,
+        &quot;.git/objects/71/cbd34f56a928ec5247cc0f5e2e91078f59b5d5&quot;,
+        &quot;.git/objects/72/722fe2bc929116f90439e21912da2e65fb2597&quot;,
+        &quot;.git/objects/73/02dce54e9376528a60d6f5b460b65163975a66&quot;,
+        &quot;.git/objects/75/6992ae82397576e846995f783dac81337da317&quot;,
+        &quot;.git/objects/77/b9c0142d1ee7d80af8821860b28891075854ea&quot;,
+        &quot;.git/objects/78/08b1ef7196960f1bd571d540edbbb4816868a4&quot;,
+        &quot;.git/objects/78/c7971248482e874612e5e0151668ec7766fea3&quot;,
+        &quot;.git/objects/78/d05589d560804caf81284c124d755d985ccf41&quot;,
+        &quot;.git/objects/79/76c9779158fddef1c6efec51e510a49058ed38&quot;,
+        &quot;.git/objects/79/94e130fdf8e43e97ac6c5de9addedd71ba2fdb&quot;,
+        &quot;.git/objects/7a/2295758773511580337af34f770421d1e93f50&quot;,
+        &quot;.git/objects/7a/47cec2b1cf65bb94d1de53b4aad4d4a31f0446&quot;,
+        &quot;.git/objects/7a/8db9282b612abb76e1866a74a632b3a3e26799&quot;,
+        &quot;.git/objects/7d/7747090a01c70b6fe433e0ad468fb5aab383b3&quot;,
+        &quot;.git/objects/7f/1406a94f9b1ad37410e04fcb8d83465a49ddd4&quot;,
+        &quot;.git/objects/80/3634dae4dbcda6ed0c0e361bf735b34801006c&quot;,
+        &quot;.git/objects/84/b3ce943be3ae4e2ab5a9007a4a4ff0d50c1c61&quot;,
+        &quot;.git/objects/86/876a1a44b973d6a07de53733e6f77c002c81d1&quot;,
+        &quot;.git/objects/89/98da68e5efbd519c19812b296ae90f3ec7d7d7&quot;,
+        &quot;.git/objects/8a/2e3950ef9576de3432613d6bdcc241f9c8ba12&quot;,
+        &quot;.git/objects/8c/de4839949741f1fd3fdd48b89f0a2d6a5fd5fb&quot;,
+        &quot;.git/objects/8d/fa5ba90ab84c89091ee695d10d3dd5a17447e8&quot;,
+        &quot;.git/objects/91/f7cf0d2f8bd543ed288239ebf5ad6fc3d18f66&quot;,
+        &quot;.git/objects/96/616290cdebb649201190eeac81d7361f8ec2ca&quot;,
+        &quot;.git/objects/97/831b6f0efd4816b134e42547c5f138dd2522d7&quot;,
+        &quot;.git/objects/98/3f0000f795ede05a5248af3c951766fb35876f&quot;,
+        &quot;.git/objects/98/f3357b6bb903c3983bc7e3bcb774b4e37fd9ce&quot;,
+        &quot;.git/objects/99/848dbb58b12d48568408b3b51664425d6cab65&quot;,
+        &quot;.git/objects/9c/91cc8b4dcb7348bab6ddffac8902880b2545fc&quot;,
+        &quot;.git/objects/9d/21bf084447b769bcad7d280086325d5a989d54&quot;,
+        &quot;.git/objects/9d/2d50f2ba79ea34e190c552c692f4c114fc9373&quot;,
+        &quot;.git/objects/9e/d18fa697276baa18971a550d9f2a85278f2ba4&quot;,
+        &quot;.git/objects/9f/4ddbb1ec9c05e4a554d9043dcf1c6f4538b3fa&quot;,
+        &quot;.git/objects/a3/7909b2b74b8867695c856627c8520d8b9a6b6f&quot;,
+        &quot;.git/objects/a7/ecd256fa555c09ba30afeae488858ea136bc30&quot;,
+        &quot;.git/objects/a8/56eda83609547355a5109945bfcfbd68ff54cf&quot;,
+        &quot;.git/objects/a9/cf4be82efea15fedf3935da8a64e101456cd88&quot;,
+        &quot;.git/objects/ad/0e96e6d1b1205f5f24fdc7725e9622075170a6&quot;,
+        &quot;.git/objects/ad/8b794602d14da895161858fd653a3013341a6b&quot;,
+        &quot;.git/objects/b0/52e0536b7bd6789763622e7963175377e0eba4&quot;,
+        &quot;.git/objects/b1/7ac0fd35240b8a5dbba18cb428f61ae2b90c67&quot;,
+        &quot;.git/objects/b1/eb3a5080032ad813ea38ab3f5d179618150373&quot;,
+        &quot;.git/objects/b2/2a47692946c16d5306e0a2d45168821183c9ea&quot;,
+        &quot;.git/objects/b3/f4aeada482e310d2ffcb0fbc356bef7b5a38e0&quot;,
+        &quot;.git/objects/b6/2d1b583ad6b44204069017f975efdfc89b452a&quot;,
+        &quot;.git/objects/b6/b7a4b0bab87c9595885607aca71594fad8b958&quot;,
+        &quot;.git/objects/b8/08e496f6c56d14121cd421cdc47093519fefa2&quot;,
+        &quot;.git/objects/b8/6c539b9293f0fd937a61ec73b778e453e262cc&quot;,
+        &quot;.git/objects/b8/f9a6106d49c1f5ee165d7b9f8cf7b4a9fa4504&quot;,
+        &quot;.git/objects/b9/3f08e44f433b237ee3bac6dabdec868800e44d&quot;,
+        &quot;.git/objects/b9/c76e843edc7584ad9dfbdd710fd66aed2acce1&quot;,
+        &quot;.git/objects/ba/951ee76cc87442714e51f5ffc37e65d4338029&quot;,
+        &quot;.git/objects/be/106671ebaf8c49db8f198db53267d08f164e69&quot;,
+        &quot;.git/objects/c0/7ffd421ed17f53ef0b88d801fd369a129bcbd5&quot;,
+        &quot;.git/objects/c1/d0068c5ff3dde14cbaa3f18fb054969b8a9763&quot;,
+        &quot;.git/objects/c1/d81395f474037e97df3b0e180980c15d530536&quot;,
+        &quot;.git/objects/c4/aa9d246c9865ef771014295120377b5f30664a&quot;,
+        &quot;.git/objects/c4/d05b42d0c3625138a1d99e5e966428f13fc183&quot;,
+        &quot;.git/objects/c8/43f0b0980840e333815c5981ca1a28eb79dc76&quot;,
+        &quot;.git/objects/c9/2580fdc438d958b72ea8706610b2ad7cadce14&quot;,
+        &quot;.git/objects/cb/10d141752f64d655cb2e8737146b8dc695ce06&quot;,
+        &quot;.git/objects/cc/f0eb4a1cf67e91e0baf3f0bad07ffc305feafe&quot;,
+        &quot;.git/objects/cd/05b51063506bc2c2f2e1022c8c627a02607806&quot;,
+        &quot;.git/objects/cd/25eb40d36d2a3d9df5bf6381bf12919e59dbb5&quot;,
+        &quot;.git/objects/ce/a8c29a2aa64f53dc931dff52be64f53f043d47&quot;,
+        &quot;.git/objects/cf/e12d574cddac0d9f1eb25e0dc465c8c76f19d3&quot;,
+        &quot;.git/objects/d4/c43aea34ae4f5a4739737acd03a84fb08b2e3b&quot;,
+        &quot;.git/objects/d5/84b6b1febd22f286d20e05a7de267ff23a9e89&quot;,
+        &quot;.git/objects/d6/04ee1de17cdec35bfd64897a62d4143df84839&quot;,
+        &quot;.git/objects/d6/cdb8019d4016165e5ef6e9e739dbf41ed0a932&quot;,
+        &quot;.git/objects/d7/f8071f716746df4752a150574c996410a6230b&quot;,
+        &quot;.git/objects/dc/0095217d30c2bdf062de54c17f89da0d6e8468&quot;,
+        &quot;.git/objects/dd/9dd165ba4b3d554a6ddbf14e3ee910a7d95faa&quot;,
+        &quot;.git/objects/de/0619e115481e059eac5774c90ef81742275371&quot;,
+        &quot;.git/objects/e1/f313111b1b3872a606d058db61a16d8e09a4d9&quot;,
+        &quot;.git/objects/e2/90b409191f3d9c29e942d5edcee03f153df70c&quot;,
+        &quot;.git/objects/e5/6418753242ca0372d27e46d1c1665602b48491&quot;,
+        &quot;.git/objects/e5/d2c1f22de2317ab6fe9e24c354c95bbad06109&quot;,
+        &quot;.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391&quot;,
+        &quot;.git/objects/e7/42f3122ad9efa5c83a1ddaf39481162a2f2f50&quot;,
+        &quot;.git/objects/e9/3d41799a763a3637dce49b9d99b8d9539c17ea&quot;,
+        &quot;.git/objects/ea/1254fd6e6d78f1aab01c74eb5441ce5da65275&quot;,
+        &quot;.git/objects/ea/81ad0f54324ba36c31946ab9515182e733ff68&quot;,
+        &quot;.git/objects/ed/a1eff50533d83663f42682141b82f65ac29732&quot;,
+        &quot;.git/objects/f1/2b2f28366d38adf6ad7745d5dfc586260de638&quot;,
+        &quot;.git/objects/f3/01059d23544547ba04b2a1d293107081e60ae0&quot;,
+        &quot;.git/objects/f6/d2de66800aa6eab13b79534ad795012136c0b8&quot;,
+        &quot;.git/objects/f6/e3d12f26149bf5ca8896ecde81a09140678dd9&quot;,
+        &quot;.git/objects/f7/710c4e39f1f6ad0a4dc24357ae0c6503875f6c&quot;,
+        &quot;.git/objects/fa/a9b30afbca8add8aab8520d6913829a853b019&quot;,
+        &quot;.git/objects/fb/55036f41fce90897e9f4227d3aa2f6297727c3&quot;,
+        &quot;.git/objects/fc/ed115432f665f48290ef019937611a8ff3178e&quot;,
+        &quot;.git/objects/fd/42692e0f75b2c5d5990d0581a06161db2c3905&quot;,
+        &quot;.git/objects/fe/cce1a37b26e9b686dd910cbc83a5b780a515be&quot;,
+        &quot;.git/objects/ff/d6d5edacb52bade570e02fca9131e987a1efa6&quot;,
+        &quot;.git/refs/heads/main&quot;,
+        &quot;.git/refs/heads/redesign-2026-06-10&quot;,
+        &quot;.git/refs/heads/rediseno-ui&quot;,
+        &quot;.git/refs/remotes/gitlab/main&quot;,
+        &quot;.git/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&quot;,
+        &quot;.git/refs/remotes/origin/main&quot;,
+        &quot;agent_mutante/engine/__pycache__/__init__.cpython-312.pyc&quot;,
+        &quot;agent_mutante/engine/__pycache__/elastic_semantic.cpython-312.pyc&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_hybrid_evaluator.cpython-312.pyc&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutante_semiotic_evaluator.cpython-312.pyc&quot;,
+        &quot;agent_mutante/engine/__pycache__/mutator.cpython-312.pyc&quot;,
+        &quot;agent_mutante/engine/__pycache__/semiotic_llm_judge.cpython-312.pyc&quot;,
+        &quot;dashboard/components/__pycache__/__init__.cpython-312.pyc&quot;,
+        &quot;dashboard/components/__pycache__/css.cpython-312.pyc&quot;,
+        &quot;dashboard/components/__pycache__/demo_data.cpython-312.pyc&quot;,
+        &quot;dashboard/components/__pycache__/sidebar.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/__init__.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/agent_console.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/analytics.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/attack_families.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/command_center.cpython-312.pyc&quot;,
+        &quot;dashboard/pages/__pycache__/forensic_feed.cpython-312.pyc&quot;
+      ],
+      &quot;non_python_not_analyzed&quot;: [
+        &quot;.dockerignore&quot;,
+        &quot;.env&quot;,
+        &quot;.env.example&quot;,
+        &quot;.gitignore&quot;,
+        &quot;.streamlit/config.toml&quot;,
+        &quot;0&quot;,
+        &quot;CODE_OF_CONDUCT.md&quot;,
+        &quot;CONTRIBUTORS.md&quot;,
+        &quot;Dockerfile&quot;,
+        &quot;LICENSE&quot;,
+        &quot;README.md&quot;,
+        &quot;agent_mutante/requirements.txt&quot;,
+        &quot;batch_results.jsonl&quot;,
+        &quot;demo_script.md&quot;,
+        &quot;demo_seed.jsonl&quot;,
+        &quot;demo_seed_semantic.jsonl&quot;,
+        &quot;deploy.sh&quot;,
+        &quot;gemini-code-mutante-simulator.html&quot;,
+        &quot;harmbench_behaviors.csv&quot;,
+        &quot;install.sh&quot;,
+        &quot;preflight.sh&quot;,
+        &quot;requirements.txt&quot;,
+        &quot;scripts/download_datasets.sh&quot;
+      ]
+    }
+  },
+  &quot;metrics_schema_version&quot;: &quot;1.0&quot;,
+  &quot;quality&quot;: {
+    &quot;contract_coverage&quot;: {
+      &quot;covered&quot;: 1,
+      &quot;total&quot;: 43
+    },
+    &quot;contract_coverage_note&quot;: &quot;1 executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.&quot;,
+    &quot;evidence_completeness&quot;: null,
+    &quot;evidence_completeness_note&quot;: &quot;Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.&quot;,
+    &quot;module_coverage&quot;: {
+      &quot;covered&quot;: 14,
+      &quot;total&quot;: 43
+    },
+    &quot;repository_coverage&quot;: {
+      &quot;covered&quot;: 43,
+      &quot;total&quot;: 308
+    },
+    &quot;verification_coverage&quot;: null,
+    &quot;verification_coverage_note&quot;: &quot;Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons.&quot;
+  },
+  &quot;repository&quot;: {
+    &quot;branches_inspected&quot;: null,
+    &quot;classes&quot;: 10,
+    &quot;configuration_files&quot;: 3,
+    &quot;directories&quot;: 157,
+    &quot;documentation_files&quot;: 6,
+    &quot;files_by_language&quot;: {
+      &quot;Other&quot;: 265,
+      &quot;Python&quot;: 43
+    },
+    &quot;files_discovered&quot;: 308,
+    &quot;functions&quot;: 155,
+    &quot;git_commits_analyzed&quot;: null,
+    &quot;loc&quot;: {
+      &quot;blank&quot;: 1678,
+      &quot;code&quot;: 10306,
+      &quot;comment&quot;: 1341,
+      &quot;total&quot;: 13325
+    },
+    &quot;methods&quot;: 24,
+    &quot;modules&quot;: 43,
+    &quot;tags_inspected&quot;: null,
+    &quot;tests&quot;: 3
+  },
+  &quot;reproducibility&quot;: {
+    &quot;artifact_hashes&quot;: null,
+    &quot;environment&quot;: {
+      &quot;os&quot;: &quot;Linux-6.14.0-37-generic-x86_64-with-glibc2.39&quot;,
+      &quot;python&quot;: &quot;3.12.3&quot;
+    },
+    &quot;forge_version&quot;: &quot;0.1.0&quot;,
+    &quot;runtime_deterministic&quot;: null,
+    &quot;schema_versions&quot;: {
+      &quot;triage&quot;: &quot;1.1&quot;
+    },
+    &quot;seal_verified&quot;: null,
+    &quot;seed_used&quot;: null,
+    &quot;skill_versions&quot;: {
+      &quot;validate-at-the-boundary&quot;: &quot;1.0&quot;
+    }
+  },
+  &quot;scope&quot;: {
+    &quot;asts_built&quot;: 43,
+    &quot;coverage&quot;: {
+      &quot;denominator&quot;: 308,
+      &quot;numerator&quot;: 43
+    },
+    &quot;files_analyzed&quot;: 43,
+    &quot;files_skipped&quot;: 265,
+    &quot;functions_analyzed&quot;: 155,
+    &quot;lines_analyzed&quot;: 7024,
+    &quot;modules_excluded&quot;: 29,
+    &quot;out_of_scope_modules&quot;: [
+      &quot;agent_mutante/engine/__init__.py&quot;,
+      &quot;agent_mutante/engine/platform_experimental/__init__.py&quot;,
+      &quot;agent_mutante/engine/platform_experimental/windows_sandbox.py&quot;,
+      &quot;apply_license.py&quot;,
+      &quot;components/sidebar.py&quot;,
+      &quot;components_init.py&quot;,
+      &quot;dashboard/__init__.py&quot;,
+      &quot;dashboard/app.py&quot;,
+      &quot;dashboard/components/__init__.py&quot;,
+      &quot;dashboard/components/sidebar.py&quot;,
+      &quot;dashboard/pages/__init__.py&quot;,
+      &quot;dashboard/pages/agent_console.py&quot;,
+      &quot;dashboard/pages/analytics.py&quot;,
+      &quot;dashboard/pages/attack_families.py&quot;,
+      &quot;dashboard/pages/command_center.py&quot;,
+      &quot;dashboard/pages/forensic_feed.py&quot;,
+      &quot;generate_demo_dataset.py&quot;,
+      &quot;mcp_mutante.py&quot;,
+      &quot;pages/agent_console.py&quot;,
+      &quot;pages/analytics.py&quot;,
+      &quot;pages/attack_families.py&quot;,
+      &quot;pages/command_center.py&quot;,
+      &quot;pages/forensic_feed.py&quot;,
+      &quot;reimport_semantic.py&quot;,
+      &quot;reseed_elastic.py&quot;,
+      &quot;run_campaign.py&quot;,
+      &quot;test_demo_pipeline.py&quot;,
+      &quot;test_full_pipeline.py&quot;,
+      &quot;test_vertex_gemini.py&quot;
+    ],
+    &quot;repositories_chained&quot;: 1
+  },
+  &quot;skill_runtime&quot;: {
+    &quot;contract_failures&quot;: 0,
+    &quot;contracts_executed&quot;: 1,
+    &quot;contracts_skipped&quot;: 29,
+    &quot;evidence_obligations_missing&quot;: null,
+    &quot;evidence_obligations_satisfied&quot;: null,
+    &quot;limitations_emitted&quot;: 0,
+    &quot;skills_activated&quot;: 1,
+    &quot;skills_loaded&quot;: 1,
+    &quot;skills_not_applicable&quot;: 29,
+    &quot;undetermined_skills&quot;: 13
+  }
+}</pre></div></div></details>
+</section>
+
+<section id="findings"><h2>FINDINGS</h2><div class="finding-toolbar" role="search" aria-label="Finding filters">
+  <label>Search <input id="finding-search" type="search" placeholder="module, description, reasoning…"></label>
+  <label>Agent <select id="finding-agent"><option value="">All agents</option><option value="bug_investigator">bug_investigator</option><option value="integrity_inspector">integrity_inspector</option><option value="security_auditor">security_auditor</option></select></label>
+  <label>Severity <select id="finding-severity"><option value="">All severities</option><option value="MEDIUM">MEDIUM</option></select></label>
+  <label>Status <select id="finding-epistemic"><option value="">All statuses</option><option value="CODE FACT">CODE FACT</option><option value="PLAUSIBLE HYPOTHESIS">PLAUSIBLE HYPOTHESIS</option></select></label>
+  <span id="finding-count" class="filter-count">Showing 19 of 19</span>
+</div><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/bigquery_sink.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/bigquery_sink.py:71</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/bigquery_sink.py unversioned serialization ast detector emitted this observation: unversioned-serialization. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/bigquery_sink.py:77</span></div>
+      <p><strong>Description (inference):</strong> unversioned serialization</p>
+      <p><strong>Source observation:</strong> <code>unversioned serialization</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: unversioned-serialization.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_hybrid_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_hybrid_evaluator.py:80</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_hybrid_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_hybrid_evaluator.py:82</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:194</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:195</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:196</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:160</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:161</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:162</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/mutante_semiotic_evaluator.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/mutante_semiotic_evaluator.py:211</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/quality_gate.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/quality_gate.py:46</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/quality_gate.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/quality_gate.py:47</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="bug_investigator" data-severity="MEDIUM" data-epistemic="PLAUSIBLE HYPOTHESIS" data-search="agent_mutante/engine/semiotic_llm_judge.py the parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure. observed construct matches; induction was undetermined: induction timed out after 1.0s; child process was terminated. bug_investigator plausible hypothesis medium">
+      <p><strong>Agent:</strong> bug_investigator</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">PLAUSIBLE HYPOTHESIS</span> <span class="ref">agent_mutante/engine/semiotic_llm_judge.py:113</span></div>
+      <p><strong>Description (inference):</strong> The parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure.</p>
+      <p><strong>Source observation:</strong> <code>result = json.loads(raw)</code></p>
+      <p><strong>Reasoning:</strong> Observed construct matches; induction was undetermined: Induction timed out after 1.0s; child process was terminated.</p>
+      <p><strong>Falsification test:</strong> Feed malformed input to the function containing line 113; a named boundary error or explicit rejection falsifies the hypothesis.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="agent_mutante/engine/semiotic_llm_judge.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">agent_mutante/engine/semiotic_llm_judge.py:140</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="security_auditor" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="apply_license.py parameter reaches open() without proven normalization ast detector emitted this observation: path-traversal. security_auditor code fact medium">
+      <p><strong>Agent:</strong> security_auditor</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">apply_license.py:26</span></div>
+      <p><strong>Description (inference):</strong> parameter reaches open() without proven normalization</p>
+      <p><strong>Source observation:</strong> <code>parameter reaches open() without proven normalization</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: path-traversal.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="security_auditor" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="apply_license.py parameter reaches open() without proven normalization ast detector emitted this observation: path-traversal. security_auditor code fact medium">
+      <p><strong>Agent:</strong> security_auditor</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">apply_license.py:56</span></div>
+      <p><strong>Description (inference):</strong> parameter reaches open() without proven normalization</p>
+      <p><strong>Source observation:</strong> <code>parameter reaches open() without proven normalization</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: path-traversal.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="main.py non-deterministic arithmetic in a decision-adjacent path ast detector emitted this observation: decision-adjacent-float. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">main.py:73</span></div>
+      <p><strong>Description (inference):</strong> non-deterministic arithmetic in a decision-adjacent path</p>
+      <p><strong>Source observation:</strong> <code>non-deterministic arithmetic in a decision-adjacent path</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: decision-adjacent-float.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article><article class="finding severity-card-medium" data-agent="integrity_inspector" data-severity="MEDIUM" data-epistemic="CODE FACT" data-search="main.py unversioned serialization ast detector emitted this observation: unversioned-serialization. integrity_inspector code fact medium">
+      <p><strong>Agent:</strong> integrity_inspector</p>
+      <div><span class="badge severity-medium">Severity: MEDIUM</span> <span class="badge">CODE FACT</span> <span class="ref">main.py:115</span></div>
+      <p><strong>Description (inference):</strong> unversioned serialization</p>
+      <p><strong>Source observation:</strong> <code>unversioned serialization</code></p>
+      <p><strong>Reasoning:</strong> AST detector emitted this observation: unversioned-serialization.</p>
+      <p><strong>Falsification test:</strong> No originating hypothesis test was found in the supplied manifest.</p>
+      <p><strong>Additional evidence — git blame:</strong> author=Anna Tchijova; date=1780598906; commit=58279bfa9c3f907806861b18377875d99e4e5c24</p>
+    </article></section>
+<section id="discarded"><h2>DISCARDED</h2><p>Generated hypotheses ruled out by the verification criteria are retained here with their reasons.</p><p>No discarded hypotheses recorded.</p></section>
+<section id="clean"><h2>No structural risk indicators found</h2><p>Audited modules with zero surviving findings:</p><ul><li>agent_mutante/agent.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>agent_mutante/engine/bayesian.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>agent_mutante/engine/elastic_semantic.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>agent_mutante/engine/mutante_client.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>agent_mutante/engine/mutator.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>agent_mutante/engine/sandbox.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>components/css.py — checked against: subprocess, parser, float comparison, eval/exec</li><li>dashboard/components/css.py — checked against: subprocess, parser, float comparison, eval/exec</li></ul></section>
+<section id="scope"><h2>NOT ANALYZED</h2><p>These triaged modules were not analyzed in this run because they were not classified as CONNECTED_ALIVE:</p><article class="scope"><strong>agent_mutante/engine/__init__.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>agent_mutante/engine/platform_experimental/__init__.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>agent_mutante/engine/platform_experimental/windows_sandbox.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>apply_license.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>components/sidebar.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>components_init.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/__init__.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/app.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/components/__init__.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/components/sidebar.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/__init__.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/agent_console.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/analytics.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/attack_families.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/command_center.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>dashboard/pages/forensic_feed.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>generate_demo_dataset.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>mcp_mutante.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>pages/agent_console.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>pages/analytics.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>pages/attack_families.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>pages/command_center.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>pages/forensic_feed.py</strong> — DUPLICATE. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>reimport_semantic.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>reseed_elastic.py</strong> — FOSSIL_HIGH_RISK. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>run_campaign.py</strong> — FOSSIL_HIGH_RISK. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>test_demo_pipeline.py</strong> — FOSSIL_HIGH_RISK. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>test_full_pipeline.py</strong> — FOSSIL_HIGH_RISK. This module was outside CONNECTED_ALIVE scope for this run.</article><article class="scope"><strong>test_vertex_gemini.py</strong> — DEAD_WEIGHT. This module was outside CONNECTED_ALIVE scope for this run.</article></section>
+
+<section id="hypotheses-summary"><h2>Hypotheses summary</h2><table class="data-table"><thead><tr><th>Label</th><th>Status</th><th>Outcome</th></tr></thead><tbody><tr><td><code>agent_mutante/engine/bigquery_sink.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/bigquery_sink.py</code></td><td>Finding — CODE FACT</td><td>unversioned serialization</td></tr><tr><td><code>agent_mutante/engine/mutante_hybrid_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_hybrid_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/mutante_semiotic_evaluator.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/quality_gate.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/quality_gate.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>agent_mutante/engine/semiotic_llm_judge.py</code></td><td>Finding — PLAUSIBLE HYPOTHESIS</td><td>The parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure.</td></tr><tr><td><code>agent_mutante/engine/semiotic_llm_judge.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>apply_license.py</code></td><td>Finding — CODE FACT</td><td>parameter reaches open() without proven normalization</td></tr><tr><td><code>apply_license.py</code></td><td>Finding — CODE FACT</td><td>parameter reaches open() without proven normalization</td></tr><tr><td><code>main.py</code></td><td>Finding — CODE FACT</td><td>non-deterministic arithmetic in a decision-adjacent path</td></tr><tr><td><code>main.py</code></td><td>Finding — CODE FACT</td><td>unversioned serialization</td></tr></tbody></table></section>
+
+<section id="decision"><h2>Decision</h2><p><strong>Chain integrity: VERIFIED (19 entries, 0 issues)</strong></p><p>The seal shows that sealed findings were not altered after sealing; it does not show that findings are correct. It does not protect against a full cascade forgery or truncation with an edited reported_chain_length. <a href="DECISIONS.md">DECISIONS.md</a> records the bounds.</p><p><small>Git blame is attempted per finding and is shown when available; unavailable blame is labeled rather than inferred.</small></p></section>
+
+<section id="quality"><h2>Quality metrics</h2><table class="data-table"><tr><td>Audited modules</td><td>14</td></tr><tr><td>Findings (surviving)</td><td>19</td></tr><tr><td>Discarded hypotheses</td><td>0</td></tr><tr><td>Clean modules</td><td>8</td></tr><tr><td>Out of scope</td><td>29</td></tr><tr><td>AST-verified families</td><td>subprocess, parser, float comparison, eval/exec</td></tr><tr><td>AST-unverified families</td><td>none recorded</td></tr><tr><td>Induction</td><td>Counter({&#x27;UNDETERMINED&#x27;: 1})</td></tr><tr><td>Contract coverage</td><td>1/43 — 1 executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.</td></tr><tr><td>Findings by agent</td><td>{&#x27;bug_investigator&#x27;: 1, &#x27;integrity_inspector&#x27;: 16, &#x27;security_auditor&#x27;: 2}</td></tr><tr><td>Findings by severity</td><td>{&#x27;MEDIUM&#x27;: 19}</td></tr><tr><td>Structural verification</td><td>{&#x27;checks_passed&#x27;: 0, &#x27;checks_failed&#x27;: 0, &#x27;checks_unresolved&#x27;: 1}</td></tr></table></section>
+<section id="coverage"><h2>Coverage</h2><p class="section-lede">Coverage is shown after the findings and decision context so the opening view stays focused.</p><div class="coverage-hero"><strong>43/308 (14.0%)</strong><span>43 analyzed · 265 skipped · 308 discovered</span></div><p>Skipped reasons: {&#x27;binary_or_unreadable&#x27;: [&#x27;agent_mutante/.adk/session.db&#x27;, &#x27;assets/logo.png&#x27;, &#x27;batch_checkpoint.pkl&#x27;, &#x27;info_and_test/1.png&#x27;, &#x27;info_and_test/111.png&#x27;, &#x27;info_and_test/2.png&#x27;, &#x27;info_and_test/222.png&#x27;, &#x27;info_and_test/3.png&#x27;, &#x27;info_and_test/roadmap2-02.png&#x27;, &#x27;info_and_test/roadmap2-03.png&#x27;, &#x27;info_and_test/roadmap2-04.png&#x27;, &#x27;info_and_test/roadmap2-05.png&#x27;, &#x27;info_and_test/roadmap2-06.png&#x27;, &#x27;info_and_test/roadmap2-07.png&#x27;, &#x27;info_and_test/roadmap2-08.png&#x27;, &#x27;info_and_test/roadmap2-09.png&#x27;, &#x27;info_and_test/roadmap2-10.png&#x27;, &#x27;info_and_test/roadmap2-11.png&#x27;], &#x27;excluded_by_policy&#x27;: [&#x27;.git/COMMIT_EDITMSG&#x27;, &#x27;.git/FETCH_HEAD&#x27;, &#x27;.git/HEAD&#x27;, &#x27;.git/ORIG_HEAD&#x27;, &#x27;.git/config&#x27;, &#x27;.git/description&#x27;, &#x27;.git/hooks/applypatch-msg.sample&#x27;, &#x27;.git/hooks/commit-msg.sample&#x27;, &#x27;.git/hooks/fsmonitor-watchman.sample&#x27;, &#x27;.git/hooks/post-update.sample&#x27;, &#x27;.git/hooks/pre-applypatch.sample&#x27;, &#x27;.git/hooks/pre-commit.sample&#x27;, &#x27;.git/hooks/pre-merge-commit.sample&#x27;, &#x27;.git/hooks/pre-push.sample&#x27;, &#x27;.git/hooks/pre-rebase.sample&#x27;, &#x27;.git/hooks/pre-receive.sample&#x27;, &#x27;.git/hooks/prepare-commit-msg.sample&#x27;, &#x27;.git/hooks/push-to-checkout.sample&#x27;, &#x27;.git/hooks/sendemail-validate.sample&#x27;, &#x27;.git/hooks/update.sample&#x27;, &#x27;.git/index&#x27;, &#x27;.git/info/exclude&#x27;, &#x27;.git/logs/HEAD&#x27;, &#x27;.git/logs/refs/heads/main&#x27;, &#x27;.git/logs/refs/heads/redesign-2026-06-10&#x27;, &#x27;.git/logs/refs/heads/rediseno-ui&#x27;, &#x27;.git/logs/refs/remotes/gitlab/main&#x27;, &#x27;.git/logs/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&#x27;, &#x27;.git/logs/refs/remotes/origin/main&#x27;, &#x27;.git/objects/00/adeb8d9bafef7d217feb4a3c7d9698aba35755&#x27;, &#x27;.git/objects/00/f1a7fc1ee6927b6baee3603f1064254aea27f1&#x27;, &#x27;.git/objects/01/b92d6eaa646e3530eacd9ff4ae6c3efb1e0865&#x27;, &#x27;.git/objects/01/baae6cf164625512aeb3df79a4e68f457f5d8a&#x27;, &#x27;.git/objects/0a/11738c79f69871435c11e09a02c366717bcbb7&#x27;, &#x27;.git/objects/0e/3edc63adb5c9ee2e864c955180f93f1053ead2&#x27;, &#x27;.git/objects/0e/be2b8b7ccb3e728504fb717eac1b2f835901ef&#x27;, &#x27;.git/objects/0f/05224da08894495494cff708a1d47a214c4fe0&#x27;, &#x27;.git/objects/0f/7570d12bc31be6fd02afcf79e99060a8423d14&#x27;, &#x27;.git/objects/12/01c3f49a1c794c9d74bc2b16457e8ba93e9ce5&#x27;, &#x27;.git/objects/12/7c3077632c76d946d5f392fd7c3784e7877df7&#x27;, &#x27;.git/objects/12/e0441bd93b9ee5d9b159b402044a863d72e6d4&#x27;, &#x27;.git/objects/13/3bc95c1fe9dcec47c8c3c9ae72b072a6030eb0&#x27;, &#x27;.git/objects/16/a446735d5fa9baa921ea63dd9fb970eba6f97b&#x27;, &#x27;.git/objects/16/bf90923045086725a3a0aae79a2592a2fe07d0&#x27;, &#x27;.git/objects/16/d5e02d47aef1e393db1ed6ebfb68ecf6e3104c&#x27;, &#x27;.git/objects/17/bfc79d4583089bb42098ab32f83035b3864721&#x27;, &#x27;.git/objects/18/7e11ded5684e2332df00efc1903387e7327d5a&#x27;, &#x27;.git/objects/19/45aa31ff5930bd76cf50f7c7953ff7561a29b6&#x27;, &#x27;.git/objects/1b/555e7cce0bd45135a8cc742a69584ced2bff06&#x27;, &#x27;.git/objects/1b/64eba42a3c702a74b287dd0871b857c70d3437&#x27;, &#x27;.git/objects/1d/4e43afb63ef90e6e8973d79b6982b1f0c57b08&#x27;, &#x27;.git/objects/1d/9816e4ccb92a0f284f678f255bebfd33f10ccd&#x27;, &#x27;.git/objects/1d/e27fc9413981cb948b493a5b8bc009384454f8&#x27;, &#x27;.git/objects/1e/7f192e83a20c2d28b87f55b2fd084733d3d29b&#x27;, &#x27;.git/objects/1e/7f260381b27f7b7596984a0af7c810e56a482d&#x27;, &#x27;.git/objects/1f/0b87ca8991f0800a83f284d0e161ca1c80d03e&#x27;, &#x27;.git/objects/1f/4ceda18a5bfda0f4cc944b4e4f198991389c12&#x27;, &#x27;.git/objects/1f/cb25a3b4ad89b57f4bd8eb4b02f94e18ec14c5&#x27;, &#x27;.git/objects/21/6b71e6993a0ad37a7ba1f3fc14cf3448bd46ef&#x27;, &#x27;.git/objects/24/cf258f6a995f39c6df2d75db36c4357d3b07c3&#x27;, &#x27;.git/objects/27/4c4c8cf9bdfc6355064f000874266bf990459d&#x27;, &#x27;.git/objects/28/174009aa7e9a36c8fa5ed8f51522eb44645587&#x27;, &#x27;.git/objects/28/579d40df248fc734f473fef627b9efe111d36a&#x27;, &#x27;.git/objects/2a/bebb781912022ab291f69f333ac40d5a1f2f50&#x27;, &#x27;.git/objects/31/27d40c623531bde296f6347d954e305d8acb9b&#x27;, &#x27;.git/objects/32/40bf450cd7dd5ce4ddd10c1e8e1e8fb377662f&#x27;, &#x27;.git/objects/32/7e6fcea2b689511c5f6f45f68d161e73d57173&#x27;, &#x27;.git/objects/33/b198f076b446f2d8d3173ad7904dfa12d23c4a&#x27;, &#x27;.git/objects/36/1264f2efbafa665a183b5cbfb679b813bda937&#x27;, &#x27;.git/objects/36/288143d57946152df6efedb7ad07cd0585f0b9&#x27;, &#x27;.git/objects/36/e3783cc873b06c5ce2e90f1ea38e4b3d53a60e&#x27;, &#x27;.git/objects/37/06d4894f070f169f87d178f823907b49315d2e&#x27;, &#x27;.git/objects/38/231dab4d87a2093df78e3de763ee97acb5721d&#x27;, &#x27;.git/objects/3a/5763bbb2100853ef93970a7db752a81ff2f2fc&#x27;, &#x27;.git/objects/3d/9b1043ffcd6e924e66907a97b11b239d1d968f&#x27;, &#x27;.git/objects/3e/8516d4a67dda8d9a2dec297320daf44414933a&#x27;, &#x27;.git/objects/43/0bff95b2bfdd9d6e78c5352421bb3d363e07f5&#x27;, &#x27;.git/objects/44/0f5f31c75900c6acaec906f29a02746c3fe41a&#x27;, &#x27;.git/objects/45/b7688bf78890d08a287bdb3146bd5d9c137428&#x27;, &#x27;.git/objects/46/13519c47e51ea07b0d45f751ab84d4a9a3229e&#x27;, &#x27;.git/objects/47/203421e8a17531b295175d389b7d59bf2f7e14&#x27;, &#x27;.git/objects/49/24493c765a318cb0686448fe58403e69ed2206&#x27;, &#x27;.git/objects/49/4b810f1c13f150b4906951af57d278622f255a&#x27;, &#x27;.git/objects/4f/506281ec43a535bab3384ff5f29170cead8d7b&#x27;, &#x27;.git/objects/50/b38c852d95dcf0d504354faa3f461b4ae5ae2c&#x27;, &#x27;.git/objects/51/70339ea08783d41ca9b9d04a46fd016a5bc9ee&#x27;, &#x27;.git/objects/54/9218e66929188c2e35fe0dfe112aecefb86f96&#x27;, &#x27;.git/objects/57/1b3b6429fde012f62afaf6a5063cf79e9a788f&#x27;, &#x27;.git/objects/57/a9ed0114be977be12ffab7b8835fbab55271ad&#x27;, &#x27;.git/objects/58/0da527f7d8c42b7dd3aea2ff2b034552b658ce&#x27;, &#x27;.git/objects/58/279bfa9c3f907806861b18377875d99e4e5c24&#x27;, &#x27;.git/objects/59/b6fa34939324a769002307063203e98e9a23cf&#x27;, &#x27;.git/objects/5c/39e6b67021a263ba471677a0eea91a4efd534e&#x27;, &#x27;.git/objects/5e/3807cc984deabb6c77d979d394c1dce9917885&#x27;, &#x27;.git/objects/5f/9a76efb28b4c80062b5e5844517135ac1702bb&#x27;, &#x27;.git/objects/60/f44d1c65673f840d49a11126d76b111f635869&#x27;, &#x27;.git/objects/61/b8c3918cfc17dc5da399b1500d196bdb1264e9&#x27;, &#x27;.git/objects/65/9c4f94a63645aa69dcc41706babe9bbb824a38&#x27;, &#x27;.git/objects/65/ed8f3f33156129323ae0fae6bf43bc4e0ca8c7&#x27;, &#x27;.git/objects/66/bb45d79d1cfc072c2d28365d36a36b73e7ccbe&#x27;, &#x27;.git/objects/6c/188f1d9ad3e855e433a972f12f510f3c98452f&#x27;, &#x27;.git/objects/6c/6ee0b87d392ff4dfa753d93e73905fd91ec11c&#x27;, &#x27;.git/objects/6d/213acfeb557474ad72e6df3e8ba54922c0a954&#x27;, &#x27;.git/objects/6e/4dfad75f2b30e9bb15dfccf3ddd74fe6b04188&#x27;, &#x27;.git/objects/6f/663d12138ec0c0b59f57464a020855d8e51d2e&#x27;, &#x27;.git/objects/6f/e40329a9ae56337ea4372a29506a90775af32c&#x27;, &#x27;.git/objects/6f/fd3dc572de28201c1879d16b12c905c9bfad28&#x27;, &#x27;.git/objects/71/cbd34f56a928ec5247cc0f5e2e91078f59b5d5&#x27;, &#x27;.git/objects/72/722fe2bc929116f90439e21912da2e65fb2597&#x27;, &#x27;.git/objects/73/02dce54e9376528a60d6f5b460b65163975a66&#x27;, &#x27;.git/objects/75/6992ae82397576e846995f783dac81337da317&#x27;, &#x27;.git/objects/77/b9c0142d1ee7d80af8821860b28891075854ea&#x27;, &#x27;.git/objects/78/08b1ef7196960f1bd571d540edbbb4816868a4&#x27;, &#x27;.git/objects/78/c7971248482e874612e5e0151668ec7766fea3&#x27;, &#x27;.git/objects/78/d05589d560804caf81284c124d755d985ccf41&#x27;, &#x27;.git/objects/79/76c9779158fddef1c6efec51e510a49058ed38&#x27;, &#x27;.git/objects/79/94e130fdf8e43e97ac6c5de9addedd71ba2fdb&#x27;, &#x27;.git/objects/7a/2295758773511580337af34f770421d1e93f50&#x27;, &#x27;.git/objects/7a/47cec2b1cf65bb94d1de53b4aad4d4a31f0446&#x27;, &#x27;.git/objects/7a/8db9282b612abb76e1866a74a632b3a3e26799&#x27;, &#x27;.git/objects/7d/7747090a01c70b6fe433e0ad468fb5aab383b3&#x27;, &#x27;.git/objects/7f/1406a94f9b1ad37410e04fcb8d83465a49ddd4&#x27;, &#x27;.git/objects/80/3634dae4dbcda6ed0c0e361bf735b34801006c&#x27;, &#x27;.git/objects/84/b3ce943be3ae4e2ab5a9007a4a4ff0d50c1c61&#x27;, &#x27;.git/objects/86/876a1a44b973d6a07de53733e6f77c002c81d1&#x27;, &#x27;.git/objects/89/98da68e5efbd519c19812b296ae90f3ec7d7d7&#x27;, &#x27;.git/objects/8a/2e3950ef9576de3432613d6bdcc241f9c8ba12&#x27;, &#x27;.git/objects/8c/de4839949741f1fd3fdd48b89f0a2d6a5fd5fb&#x27;, &#x27;.git/objects/8d/fa5ba90ab84c89091ee695d10d3dd5a17447e8&#x27;, &#x27;.git/objects/91/f7cf0d2f8bd543ed288239ebf5ad6fc3d18f66&#x27;, &#x27;.git/objects/96/616290cdebb649201190eeac81d7361f8ec2ca&#x27;, &#x27;.git/objects/97/831b6f0efd4816b134e42547c5f138dd2522d7&#x27;, &#x27;.git/objects/98/3f0000f795ede05a5248af3c951766fb35876f&#x27;, &#x27;.git/objects/98/f3357b6bb903c3983bc7e3bcb774b4e37fd9ce&#x27;, &#x27;.git/objects/99/848dbb58b12d48568408b3b51664425d6cab65&#x27;, &#x27;.git/objects/9c/91cc8b4dcb7348bab6ddffac8902880b2545fc&#x27;, &#x27;.git/objects/9d/21bf084447b769bcad7d280086325d5a989d54&#x27;, &#x27;.git/objects/9d/2d50f2ba79ea34e190c552c692f4c114fc9373&#x27;, &#x27;.git/objects/9e/d18fa697276baa18971a550d9f2a85278f2ba4&#x27;, &#x27;.git/objects/9f/4ddbb1ec9c05e4a554d9043dcf1c6f4538b3fa&#x27;, &#x27;.git/objects/a3/7909b2b74b8867695c856627c8520d8b9a6b6f&#x27;, &#x27;.git/objects/a7/ecd256fa555c09ba30afeae488858ea136bc30&#x27;, &#x27;.git/objects/a8/56eda83609547355a5109945bfcfbd68ff54cf&#x27;, &#x27;.git/objects/a9/cf4be82efea15fedf3935da8a64e101456cd88&#x27;, &#x27;.git/objects/ad/0e96e6d1b1205f5f24fdc7725e9622075170a6&#x27;, &#x27;.git/objects/ad/8b794602d14da895161858fd653a3013341a6b&#x27;, &#x27;.git/objects/b0/52e0536b7bd6789763622e7963175377e0eba4&#x27;, &#x27;.git/objects/b1/7ac0fd35240b8a5dbba18cb428f61ae2b90c67&#x27;, &#x27;.git/objects/b1/eb3a5080032ad813ea38ab3f5d179618150373&#x27;, &#x27;.git/objects/b2/2a47692946c16d5306e0a2d45168821183c9ea&#x27;, &#x27;.git/objects/b3/f4aeada482e310d2ffcb0fbc356bef7b5a38e0&#x27;, &#x27;.git/objects/b6/2d1b583ad6b44204069017f975efdfc89b452a&#x27;, &#x27;.git/objects/b6/b7a4b0bab87c9595885607aca71594fad8b958&#x27;, &#x27;.git/objects/b8/08e496f6c56d14121cd421cdc47093519fefa2&#x27;, &#x27;.git/objects/b8/6c539b9293f0fd937a61ec73b778e453e262cc&#x27;, &#x27;.git/objects/b8/f9a6106d49c1f5ee165d7b9f8cf7b4a9fa4504&#x27;, &#x27;.git/objects/b9/3f08e44f433b237ee3bac6dabdec868800e44d&#x27;, &#x27;.git/objects/b9/c76e843edc7584ad9dfbdd710fd66aed2acce1&#x27;, &#x27;.git/objects/ba/951ee76cc87442714e51f5ffc37e65d4338029&#x27;, &#x27;.git/objects/be/106671ebaf8c49db8f198db53267d08f164e69&#x27;, &#x27;.git/objects/c0/7ffd421ed17f53ef0b88d801fd369a129bcbd5&#x27;, &#x27;.git/objects/c1/d0068c5ff3dde14cbaa3f18fb054969b8a9763&#x27;, &#x27;.git/objects/c1/d81395f474037e97df3b0e180980c15d530536&#x27;, &#x27;.git/objects/c4/aa9d246c9865ef771014295120377b5f30664a&#x27;, &#x27;.git/objects/c4/d05b42d0c3625138a1d99e5e966428f13fc183&#x27;, &#x27;.git/objects/c8/43f0b0980840e333815c5981ca1a28eb79dc76&#x27;, &#x27;.git/objects/c9/2580fdc438d958b72ea8706610b2ad7cadce14&#x27;, &#x27;.git/objects/cb/10d141752f64d655cb2e8737146b8dc695ce06&#x27;, &#x27;.git/objects/cc/f0eb4a1cf67e91e0baf3f0bad07ffc305feafe&#x27;, &#x27;.git/objects/cd/05b51063506bc2c2f2e1022c8c627a02607806&#x27;, &#x27;.git/objects/cd/25eb40d36d2a3d9df5bf6381bf12919e59dbb5&#x27;, &#x27;.git/objects/ce/a8c29a2aa64f53dc931dff52be64f53f043d47&#x27;, &#x27;.git/objects/cf/e12d574cddac0d9f1eb25e0dc465c8c76f19d3&#x27;, &#x27;.git/objects/d4/c43aea34ae4f5a4739737acd03a84fb08b2e3b&#x27;, &#x27;.git/objects/d5/84b6b1febd22f286d20e05a7de267ff23a9e89&#x27;, &#x27;.git/objects/d6/04ee1de17cdec35bfd64897a62d4143df84839&#x27;, &#x27;.git/objects/d6/cdb8019d4016165e5ef6e9e739dbf41ed0a932&#x27;, &#x27;.git/objects/d7/f8071f716746df4752a150574c996410a6230b&#x27;, &#x27;.git/objects/dc/0095217d30c2bdf062de54c17f89da0d6e8468&#x27;, &#x27;.git/objects/dd/9dd165ba4b3d554a6ddbf14e3ee910a7d95faa&#x27;, &#x27;.git/objects/de/0619e115481e059eac5774c90ef81742275371&#x27;, &#x27;.git/objects/e1/f313111b1b3872a606d058db61a16d8e09a4d9&#x27;, &#x27;.git/objects/e2/90b409191f3d9c29e942d5edcee03f153df70c&#x27;, &#x27;.git/objects/e5/6418753242ca0372d27e46d1c1665602b48491&#x27;, &#x27;.git/objects/e5/d2c1f22de2317ab6fe9e24c354c95bbad06109&#x27;, &#x27;.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391&#x27;, &#x27;.git/objects/e7/42f3122ad9efa5c83a1ddaf39481162a2f2f50&#x27;, &#x27;.git/objects/e9/3d41799a763a3637dce49b9d99b8d9539c17ea&#x27;, &#x27;.git/objects/ea/1254fd6e6d78f1aab01c74eb5441ce5da65275&#x27;, &#x27;.git/objects/ea/81ad0f54324ba36c31946ab9515182e733ff68&#x27;, &#x27;.git/objects/ed/a1eff50533d83663f42682141b82f65ac29732&#x27;, &#x27;.git/objects/f1/2b2f28366d38adf6ad7745d5dfc586260de638&#x27;, &#x27;.git/objects/f3/01059d23544547ba04b2a1d293107081e60ae0&#x27;, &#x27;.git/objects/f6/d2de66800aa6eab13b79534ad795012136c0b8&#x27;, &#x27;.git/objects/f6/e3d12f26149bf5ca8896ecde81a09140678dd9&#x27;, &#x27;.git/objects/f7/710c4e39f1f6ad0a4dc24357ae0c6503875f6c&#x27;, &#x27;.git/objects/fa/a9b30afbca8add8aab8520d6913829a853b019&#x27;, &#x27;.git/objects/fb/55036f41fce90897e9f4227d3aa2f6297727c3&#x27;, &#x27;.git/objects/fc/ed115432f665f48290ef019937611a8ff3178e&#x27;, &#x27;.git/objects/fd/42692e0f75b2c5d5990d0581a06161db2c3905&#x27;, &#x27;.git/objects/fe/cce1a37b26e9b686dd910cbc83a5b780a515be&#x27;, &#x27;.git/objects/ff/d6d5edacb52bade570e02fca9131e987a1efa6&#x27;, &#x27;.git/refs/heads/main&#x27;, &#x27;.git/refs/heads/redesign-2026-06-10&#x27;, &#x27;.git/refs/heads/rediseno-ui&#x27;, &#x27;.git/refs/remotes/gitlab/main&#x27;, &#x27;.git/refs/remotes/origin/claude/mutante-multi-model-6vsrtw&#x27;, &#x27;.git/refs/remotes/origin/main&#x27;, &#x27;agent_mutante/engine/__pycache__/__init__.cpython-312.pyc&#x27;, &#x27;agent_mutante/engine/__pycache__/elastic_semantic.cpython-312.pyc&#x27;, &#x27;agent_mutante/engine/__pycache__/mutante_hybrid_evaluator.cpython-312.pyc&#x27;, &#x27;agent_mutante/engine/__pycache__/mutante_semiotic_evaluator.cpython-312.pyc&#x27;, &#x27;agent_mutante/engine/__pycache__/mutator.cpython-312.pyc&#x27;, &#x27;agent_mutante/engine/__pycache__/semiotic_llm_judge.cpython-312.pyc&#x27;, &#x27;dashboard/components/__pycache__/__init__.cpython-312.pyc&#x27;, &#x27;dashboard/components/__pycache__/css.cpython-312.pyc&#x27;, &#x27;dashboard/components/__pycache__/demo_data.cpython-312.pyc&#x27;, &#x27;dashboard/components/__pycache__/sidebar.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/__init__.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/agent_console.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/analytics.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/attack_families.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/command_center.cpython-312.pyc&#x27;, &#x27;dashboard/pages/__pycache__/forensic_feed.cpython-312.pyc&#x27;], &#x27;non_python_not_analyzed&#x27;: [&#x27;.dockerignore&#x27;, &#x27;.env&#x27;, &#x27;.env.example&#x27;, &#x27;.gitignore&#x27;, &#x27;.streamlit/config.toml&#x27;, &#x27;0&#x27;, &#x27;CODE_OF_CONDUCT.md&#x27;, &#x27;CONTRIBUTORS.md&#x27;, &#x27;Dockerfile&#x27;, &#x27;LICENSE&#x27;, &#x27;README.md&#x27;, &#x27;agent_mutante/requirements.txt&#x27;, &#x27;batch_results.jsonl&#x27;, &#x27;demo_script.md&#x27;, &#x27;demo_seed.jsonl&#x27;, &#x27;demo_seed_semantic.jsonl&#x27;, &#x27;deploy.sh&#x27;, &#x27;gemini-code-mutante-simulator.html&#x27;, &#x27;harmbench_behaviors.csv&#x27;, &#x27;install.sh&#x27;, &#x27;preflight.sh&#x27;, &#x27;requirements.txt&#x27;, &#x27;scripts/download_datasets.sh&#x27;]}</p></section>
+<section id="limitations"><h2>Honest degradation and limitations</h2><ul><li>Hypotheses require module 3 verification; parser candidates may receive isolated induction, while unsupported families remain AST-only.</li><li>265 discovered file(s) were skipped; see skipped_reasons for the exact paths and policy categories.</li><li>29 triaged module(s) were outside CONNECTED_ALIVE audit scope.</li><li>13 skill applicability result(s) were UNDETERMINED; no conclusion was inferred for them.</li><li>1 hypothesis/hypotheses survived structural verification without dynamic induction; they remain plausible hypotheses, not confirmed defects.</li></ul></section>
+
+<section id="chain-of-custody"><h2>Chain of custody</h2><div class="chain-block">entry_hash : 4a7292838573ea7dfe877c8258dc3a93a6afe98e198af7a8340e8b06e87badb1
+chain_ok   : True</div></section>
+</div>
+<script>
+(() => {
+  const cards = [...document.querySelectorAll('.finding')];
+  const search = document.getElementById('finding-search');
+  const agent = document.getElementById('finding-agent');
+  const severity = document.getElementById('finding-severity');
+  const epistemic = document.getElementById('finding-epistemic');
+  const count = document.getElementById('finding-count');
+  const apply = () => {
+    const query = (search.value || '').trim().toLowerCase();
+    let visible = 0;
+    cards.forEach(card => {
+      const matches = (!agent.value || card.dataset.agent === agent.value)
+        && (!severity.value || card.dataset.severity === severity.value)
+        && (!epistemic.value || card.dataset.epistemic === epistemic.value)
+        && (!query || card.dataset.search.includes(query));
+      card.classList.toggle('is-hidden', !matches);
+      if (matches) visible += 1;
+    });
+    count.textContent = `Showing ${visible} of ${cards.length}`;
+  };
+  [search, agent, severity, epistemic].forEach(control => control.addEventListener('input', apply));
+})();
+</script>
+</body></html>

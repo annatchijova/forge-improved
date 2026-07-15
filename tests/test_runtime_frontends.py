@@ -119,3 +119,19 @@ def test_cli_rejects_inert_legacy_pipeline_flags(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cli_main()
     assert exc.value.code == 2
+
+def test_cli_summary_omits_finding_records(tmp_path, monkeypatch, capsys):
+    put(tmp_path, "main.py", "x = eval('1 + 1')\n")
+    monkeypatch.setattr("sys.argv", ["forge", "audit", str(tmp_path), "--output-dir", str(tmp_path / "out"), "--summary"])
+    assert cli_main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "finding_records" not in payload
+    assert payload["artifacts"]["metrics"].endswith("metrics.json")
+
+def test_cli_preflight_reports_scope_without_running_audit(tmp_path, monkeypatch, capsys):
+    put(tmp_path, "main.py", "x = 1\n")
+    monkeypatch.setattr("sys.argv", ["forge", "preflight", str(tmp_path)])
+    assert cli_main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["scope_guard"]["ok"] is True
+    assert payload["next_step"] == "audit"

@@ -21,6 +21,8 @@ MANIFESTS = {
 }
 BUILD_FILES = {"Makefile": "Make", "CMakeLists.txt": "CMake", "Dockerfile": "Docker", "tox.ini": "tox", "pytest.ini": "pytest", "jest.config.js": "Jest"}
 CI_MARKERS = (".github/workflows", ".gitlab-ci.yml", "Jenkinsfile", ".circleci")
+GIT_PROBE_TIMEOUT_SECONDS = 5
+GIT_HISTORY_TIMEOUT_SECONDS = 30
 
 
 def discover_files(root: str | os.PathLike[str], include_excluded: bool = False) -> list[Path]:
@@ -59,14 +61,16 @@ def detect_stack(root: Path) -> tuple[StackFingerprint, ...]:
     return tuple(out)
 
 
-def _git_epochs(root: Path) -> dict[str, int]:
+def _git_epochs(root: Path) -> tuple[dict[str, int], str | None]:
     try:
         out = subprocess.check_output(
             ["git", "-C", str(root), "log", "--name-only", "--format=COMMIT:%H %ct", "--"],
-            stderr=subprocess.DEVNULL, text=True,
+            stderr=subprocess.DEVNULL, text=True, timeout=GIT_HISTORY_TIMEOUT_SECONDS,
         )
+    except subprocess.TimeoutExpired:
+        return {}, f"Git history query timed out after {GIT_HISTORY_TIMEOUT_SECONDS} seconds; temporal classification is conservative."
     except (OSError, subprocess.SubprocessError):
-        return {}
+        return {}, "Git history unavailable; temporal classification is conservative."
     latest: dict[str, int] = {}
     epoch = None
     for line in out.splitlines():
@@ -77,12 +81,12 @@ def _git_epochs(root: Path) -> dict[str, int]:
                 epoch = None
         elif line and epoch is not None and line not in latest:
             latest[line] = epoch
-    return latest
+    return latest, None
 
 
 def _git_available(root: Path) -> bool:
     try:
-        subprocess.check_call(["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.check_call(["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=GIT_PROBE_TIMEOUT_SECONDS)
         return True
     except (OSError, subprocess.SubprocessError):
         return False
@@ -129,7 +133,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
     files = [p for p in _files(base) if p.suffix.lower() in LANG_EXT]
     callers = _caller_counts(base, files)
     git_ok = _git_available(base)
-    git_epochs = _git_epochs(base) if git_ok else {}
+    git_epochs, git_limitation = _git_epochs(base) if git_ok else ({}, "Git history unavailable; temporal classification is conservative.")
     now = int(time.time())
     records: list[ModuleRecord] = []
     seen_hashes: dict[str, str] = {}
@@ -162,7 +166,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
         if epoch is not None: ev.append(_evidence("git_log", rel, f"last logic-touch epoch {epoch}"))
         records.append(ModuleRecord(rel, LANG_EXT[p.suffix.lower()], cls, epoch, caller_count, import_count, keywords, tuple(ev)))
     summary = Counter(r.module_class.value for r in records)
-    limitations = [] if git_ok else ["Git history unavailable; temporal classification is conservative."]
+    limitations = [git_limitation] if git_limitation else []
     return TriageManifest("1.1", "0.1.0", str(base), now, detect_stack(base), tuple(sorted(records, key=lambda r: r.path)), dict(summary), tuple(limitations))
 
 

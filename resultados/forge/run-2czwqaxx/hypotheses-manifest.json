@@ -1,0 +1,71 @@
+{
+  "audited_modules": [
+    "forge/__main__.py",
+    "forge/agents/_scan.py",
+    "forge/agents/archaeologist.py",
+    "forge/agents/bug_investigator.py",
+    "forge/agents/integrity_inspector.py",
+    "forge/agents/patch_reviewer.py",
+    "forge/agents/recommendation_agent.py",
+    "forge/agents/report_composer.py",
+    "forge/agents/security_auditor.py",
+    "forge/benchmark.py",
+    "forge/canonical.py",
+    "forge/cli.py",
+    "forge/cronos/chain.py",
+    "forge/cronos/models.py",
+    "forge/cronos/quality.py",
+    "forge/cronos/store.py",
+    "forge/cronos/tracer.py",
+    "forge/detector/stack.py",
+    "forge/evidence_package.py",
+    "forge/governance/runtime.py",
+    "forge/harness/mining.py",
+    "forge/harness/proposal.py",
+    "forge/harness/validation.py",
+    "forge/hypotheses.py",
+    "forge/induction.py",
+    "forge/io.py",
+    "forge/mcp_server.py",
+    "forge/metrics.py",
+    "forge/models.py",
+    "forge/orchestrator.py",
+    "forge/report.py",
+    "forge/reporting.py",
+    "forge/runtime.py",
+    "forge/sealing.py",
+    "forge/severity.py",
+    "forge/skills/validate_at_the_boundary/contract.py",
+    "forge/tiered_report.py",
+    "forge/tracing.py",
+    "forge/verification.py"
+  ],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784154807,
+  "hypotheses": [
+    {
+      "description": "The parser call `manifest=json.loads(manifest_path.read_text(encoding=\"utf-8\"))` at forge/governance/runtime.py:54 has no nearby exception handling, so malformed input may escape as an opaque failure.",
+      "falsification_test": "Feed malformed input to the function containing line 54; a named boundary error or explicit rejection falsifies the hypothesis.",
+      "file_lines": [
+        54
+      ],
+      "module_path": "forge/governance/runtime.py",
+      "rank": 1
+    },
+    {
+      "description": "The parser call `render_report(required[\"triage\"], required[\"hypotheses\"], required[\"sealed\"], main, required[\"coverage\"], json.loads(required[\"metrics\"].read_text()))` at forge/reporting.py:43 has no nearby exception handling, so malformed input may escape as an opaque failure.",
+      "falsification_test": "Feed malformed input to the function containing line 43; a named boundary error or explicit rejection falsifies the hypothesis.",
+      "file_lines": [
+        43
+      ],
+      "module_path": "forge/reporting.py",
+      "rank": 1
+    }
+  ],
+  "limitations": [
+    "Hypotheses require module 3 verification; parser candidates may receive isolated induction, while unsupported families remain AST-only."
+  ],
+  "root": "/home/labestiadevigia/forge",
+  "schema_version": "1.0",
+  "triage_schema_version": "1.1"
+}

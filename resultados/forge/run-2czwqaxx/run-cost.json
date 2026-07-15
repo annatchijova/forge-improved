@@ -1,0 +1,7 @@
+{
+  "credits_before": null,
+  "credits_after": null,
+  "credits_consumed": null,
+  "model_backed_detector_calls": 0,
+  "source": "FORGE MCP audit output and metrics; credits were not exposed by the active runtime, and model routing was empty/null."
+}

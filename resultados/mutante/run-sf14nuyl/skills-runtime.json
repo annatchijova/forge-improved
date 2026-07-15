@@ -1,0 +1,803 @@
+{
+  "applicability": {
+    "agent_mutante/agent.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "agent_mutante/engine/bayesian.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/bigquery_sink.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/elastic_semantic.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/mutante_client.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/mutante_hybrid_evaluator.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/mutante_semiotic_evaluator.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/mutator.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/platform_experimental/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "agent_mutante/engine/platform_experimental/windows_sandbox.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "agent_mutante/engine/quality_gate.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/sandbox.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "agent_mutante/engine/semiotic_llm_judge.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "apply_license.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "components/css.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "components/sidebar.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "components_init.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/app.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/components/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/components/css.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "dashboard/components/sidebar.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/agent_console.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/analytics.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/attack_families.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/command_center.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "dashboard/pages/forensic_feed.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "generate_demo_dataset.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "main.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "mcp_mutante.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "pages/agent_console.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "pages/analytics.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "pages/attack_families.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "pages/command_center.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "pages/forensic_feed.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "reimport_semantic.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "reseed_elastic.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "run_campaign.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "test_demo_pipeline.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "test_full_pipeline.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "test_vertex_gemini.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    }
+  },
+  "domain_hypotheses": [
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/agent.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/__init__.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "agent_mutante/engine/bayesian.py"
+        }
+      ],
+      "module_path": "agent_mutante/engine/bayesian.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/bigquery_sink.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "agent_mutante/engine/elastic_semantic.py"
+        }
+      ],
+      "module_path": "agent_mutante/engine/elastic_semantic.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/mutante_client.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/mutante_hybrid_evaluator.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic"
+      ],
+      "evidence": [
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/mutator.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/platform_experimental/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/platform_experimental/windows_sandbox.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/quality_gate.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "agent_mutante/engine/sandbox.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py"
+        }
+      ],
+      "module_path": "agent_mutante/engine/semiotic_llm_judge.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "apply_license.py"
+        }
+      ],
+      "module_path": "apply_license.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "components/css.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "components/sidebar.py"
+        }
+      ],
+      "module_path": "components/sidebar.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "components_init.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/app.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/components/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/components/css.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "dashboard/components/sidebar.py"
+        }
+      ],
+      "module_path": "dashboard/components/sidebar.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/pages/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/pages/agent_console.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "dashboard/pages/analytics.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "dashboard/pages/attack_families.py"
+        }
+      ],
+      "module_path": "dashboard/pages/attack_families.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "dashboard/pages/command_center.py"
+        }
+      ],
+      "module_path": "dashboard/pages/command_center.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "dashboard/pages/forensic_feed.py"
+        }
+      ],
+      "module_path": "dashboard/pages/forensic_feed.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "generate_demo_dataset.py"
+        }
+      ],
+      "module_path": "generate_demo_dataset.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "main.py"
+        }
+      ],
+      "module_path": "main.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 2
+      },
+      "domains": [
+        "input_boundary",
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "mcp_mutante.py"
+        },
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "mcp_mutante.py"
+        }
+      ],
+      "module_path": "mcp_mutante.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "pages/agent_console.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "pages/analytics.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "pages/attack_families.py"
+        }
+      ],
+      "module_path": "pages/attack_families.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "pages/command_center.py"
+        }
+      ],
+      "module_path": "pages/command_center.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "pages/forensic_feed.py"
+        }
+      ],
+      "module_path": "pages/forensic_feed.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "reimport_semantic.py"
+        }
+      ],
+      "module_path": "reimport_semantic.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 2
+      },
+      "domains": [
+        "input_boundary",
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "reseed_elastic.py"
+        },
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "reseed_elastic.py"
+        }
+      ],
+      "module_path": "reseed_elastic.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic",
+        "input_boundary",
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "run_campaign.py"
+        },
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "run_campaign.py"
+        },
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "run_campaign.py"
+        }
+      ],
+      "module_path": "run_campaign.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "test_demo_pipeline.py"
+        }
+      ],
+      "module_path": "test_demo_pipeline.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "test_full_pipeline.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "test_vertex_gemini.py"
+    }
+  ],
+  "findings": [],
+  "limitations": []
+}

@@ -2,6 +2,7 @@ import json
 from fractions import Fraction
 
 from forge.orchestrator import run_specialized_pipeline
+from forge.disposition import determine_disposition
 
 def put(root, name, text):
     path = root / name
@@ -39,6 +40,26 @@ def test_coverage_counts_syntax_errors(tmp_path):
     assert "broken.py" in coverage["skipped_reasons"]["syntax_error"]
     assert coverage["files_analyzed"] == 1
     assert Fraction(coverage["coverage_ratio"]["numerator"], coverage["coverage_ratio"]["denominator"]) == Fraction(1, 2)
+
+def test_audit_disposition_abstains_on_unverified_source_boundary(tmp_path):
+    put(tmp_path, "main.py", "x = 1\n")
+    put(tmp_path, "broken.py", "def broken(:\n")
+    result = run_specialized_pipeline(tmp_path, tmp_path / "out")
+    metrics = json.loads((tmp_path / "out/metrics.json").read_text())
+    assert metrics["audit_disposition"]["status"] == "ABSTAIN_INSUFFICIENT_SCOPE"
+    assert "UNVERIFIED_SOURCE_BOUNDARY" == metrics["audit_disposition"]["reason_code"]
+    assert "ABSTAIN_INSUFFICIENT_SCOPE" in (tmp_path / "out/forge-report.html").read_text()
+
+def test_disposition_can_complete_with_findings_without_abstaining():
+    class Coverage:
+        skipped_reasons = {}
+    class Triage:
+        modules = []
+    class Governance:
+        applicability = {}
+    finding = object()
+    result = determine_disposition(coverage=Coverage(), triage=Triage(), governance=Governance(), findings=[finding])
+    assert result.status == "COMPLETE_WITH_FINDINGS"
 
 def test_ast_structural_agents_use_red_team_auditing_epistemic_vocabulary(tmp_path):
     put(tmp_path, "main.py", "import security\nimport integrity\n")

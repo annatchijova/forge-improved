@@ -1,0 +1,12 @@
+{
+  "run": "run-sf14nuyl",
+  "repository": "mutante",
+  "files_discovered": 308,
+  "files_analyzed": 43,
+  "credits_before": 2348,
+  "credits_after": 2342,
+  "credits_consumed": 6,
+  "model_backed_detector_calls": 0,
+  "source": "Codex session balance supplied during the audit review",
+  "note": "Observed orchestration/session cost; not a universal provider price."
+}

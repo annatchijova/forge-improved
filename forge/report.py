@@ -89,6 +89,24 @@ def _metric_block(agent: str, values: Any) -> str:
     return f"<li><strong>{_e(agent)}</strong>{other_text}{_examinations_html(examinations)}</li>"
 
 
+def _bar_rows(values: Any) -> str:
+    if not isinstance(values, dict) or not values:
+        return '<p class="empty-state">No data recorded.</p>'
+    numeric = [(str(key), value) for key, value in values.items() if isinstance(value, (int, float))]
+    if not numeric:
+        return '<p class="empty-state">No numeric data recorded.</p>'
+    maximum = max(value for _, value in numeric) or 1
+    rows = []
+    for label, value in sorted(numeric, key=lambda item: (-item[1], item[0])):
+        width = max(4, min(100, (value / maximum) * 100))
+        rows.append(
+            f'<div class="bar-row"><span class="bar-label">{_e(label)}</span>'
+            f'<span class="bar-track"><span class="bar-fill" style="width:{width:.2f}%"></span></span>'
+            f'<strong class="bar-value">{_e(value)}</strong></div>'
+        )
+    return "".join(rows)
+
+
 def _finding_card(finding: dict[str, Any], hypotheses: list[dict[str, Any]], root: str) -> str:
     evidence = finding.get("evidence", [])
     source = next((item for item in evidence if item.get("kind") == "source"), evidence[0] if evidence else {})
@@ -122,6 +140,13 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
     hypotheses_doc = _load(hypotheses_path)
     sealed = _load(sealed_path)
     coverage = _load(coverage_path) if coverage_path else None
+    cost = None
+    cost_path = Path(sealed_path).parent / "run-cost.json"
+    if cost_path.exists():
+        try:
+            cost = _load(cost_path)
+        except (OSError, ValueError, json.JSONDecodeError):
+            cost = None
     metrics = metrics or {}
     seal = verify_sealed(sealed)
     manifest = sealed.get("manifest", {})
@@ -250,11 +275,29 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
     degradation = metrics.get("honest_degradation", {})
     degradation_items = degradation.get("limitations", [])
     degradation_html = "".join(f"<li>{_e(item)}</li>" for item in degradation_items) or "<li>No additional degradation was recorded.</li>"
+    repository_metrics = metrics.get("repository", {})
+    skill_runtime = metrics.get("skill_runtime", {})
+    findings_metrics = metrics.get("findings", {})
+    disposition = metrics.get("audit_disposition", {})
+    disposition_status = disposition.get("status", "UNSPECIFIED")
+    dashboard_html = f"""
+<section id="dashboard" class="dashboard">
+  <div class="dashboard-heading"><div><p class="eyebrow">AUDIT PULSE</p><h2>Repository intelligence</h2><p class="section-lede">A visual readout of the sealed run: scope, evidence, findings, governance and reproducibility.</p></div><span class="dashboard-status">{_e('SEALED · ' + disposition_status + ' · ' + integrity_text)}</span></div>
+  <div class="dashboard-grid">
+    <div class="coverage-dial" style="--coverage:{(100 * (coverage_summary[0].get('coverage_ratio', {}).get('numerator', 0) / (coverage_summary[0].get('coverage_ratio', {}).get('denominator', 1) or 1))) if coverage_summary else 0:.2f}%"><div><strong>{_e(coverage_summary[1].split(' ')[0] if coverage_summary else '—')}</strong><span>coverage</span></div></div>
+    <div class="dashboard-panel"><h3>Findings by agent</h3>{_bar_rows(findings_metrics.get('by_agent', {}))}</div>
+    <div class="dashboard-panel"><h3>Severity profile</h3>{_bar_rows(findings_metrics.get('by_severity', {}))}</div>
+    <div class="dashboard-panel"><h3>Governance skills</h3><div class="mini-stat-grid"><div><strong>{_e(skill_runtime.get('skills_activated', 0))}</strong><span>activated</span></div><div><strong>{_e(skill_runtime.get('skills_not_applicable', 0))}</strong><span>not applicable</span></div><div><strong>{_e(skill_runtime.get('undetermined_skills', 0))}</strong><span>undetermined</span></div></div></div>
+  </div>
+  <div class="dashboard-panel"><h3>Audit disposition</h3><p><strong>{_e(disposition_status)}</strong> — {_e(disposition.get('reason', 'No disposition recorded.'))}</p><p class="section-lede">Action: {_e(disposition.get('action_required', 'Review the run contract.'))}</p></div>
+  <div class="metric-strip"><div><strong>{_e(repository_metrics.get('functions', 0))}</strong><span>functions</span></div><div><strong>{_e(repository_metrics.get('loc', {}).get('code', 0))}</strong><span>lines of code</span></div><div><strong>{_e(repository_metrics.get('tests', 0))}</strong><span>tests</span></div><div><strong>{_e(skill_runtime.get('contracts_executed', 0))}</strong><span>contracts executed</span></div><div><strong>{_e(metrics.get('evidence', {}).get('primary_evidence', 0))}</strong><span>primary evidence</span></div>{f'<div class="cost-tile"><strong>{_e(cost.get("credits_consumed"))}</strong><span>credits observed</span></div>' if cost else ''}</div>
+  <details class="metrics-details"><summary>Full metrics and audit telemetry</summary><div class="detail-grid"><div><h3>Quality</h3><pre>{_e(json.dumps(metrics.get('quality', {}), indent=2, sort_keys=True))}</pre></div><div><h3>Reproducibility</h3><pre>{_e(json.dumps(metrics.get('reproducibility', {}), indent=2, sort_keys=True))}</pre></div><div><h3>Audit trail</h3><pre>{_e(json.dumps(metrics.get('audit_trail', {}), indent=2, sort_keys=True))}</pre></div><div><h3>Raw metrics</h3><pre>{_e(json.dumps(metrics, indent=2, sort_keys=True))}</pre></div></div></details>
+</section>"""
     document = f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>FORGE report</title>
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
 <style>
 :root{{
-  --bg:#F1F2EE;
+  --bg:#E3B8B8;
   --bg-elevated:#FFFFFF;
   --bg-sunken:#E8E9E3;
   --ink:#1C2222;
@@ -324,6 +367,26 @@ table.data-table th{{ font-family:var(--mono); font-size:11px; text-transform:up
 table.data-table tr:last-child td{{ border-bottom:none; }}
 table.data-table td:first-child{{ font-family:var(--mono); font-size:12.5px; white-space:nowrap; }}
 .chain-block{{ font-family:var(--mono); font-size:13px; background:var(--bg-sunken); padding:14px 18px; border-radius:3px; white-space:pre-wrap; }}
+.dashboard{{ background:linear-gradient(135deg,#fff 0%,#fff 62%,#F8E9E9 100%); overflow:hidden; }}
+.dashboard-heading{{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }}
+.eyebrow{{ color:var(--accent); font:11px var(--mono); letter-spacing:.14em; margin:0 0 4px; }}
+.dashboard-heading h2{{ margin-top:0; }}
+.dashboard-status{{ border:1px solid #A9C9B0; background:#EDF7EF; color:#2A5A3C; border-radius:999px; padding:7px 12px; font:11px var(--mono); white-space:nowrap; }}
+.dashboard-grid{{ display:grid; grid-template-columns:150px repeat(3,minmax(0,1fr)); gap:14px; align-items:stretch; }}
+.coverage-dial{{ width:128px; height:128px; margin:8px auto; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--accent) var(--coverage),#F1DADA 0); position:relative; }}
+.coverage-dial::after{{ content:""; position:absolute; inset:10px; border-radius:50%; background:var(--bg-elevated); }}
+.coverage-dial div{{ position:relative; z-index:1; text-align:center; }}
+.coverage-dial strong{{ display:block; font:600 25px var(--serif); }} .coverage-dial span{{ color:var(--ink-muted); font:10px var(--mono); text-transform:uppercase; }}
+.dashboard-panel{{ background:rgba(232,233,227,.48); border:1px solid var(--rule); border-radius:4px; padding:15px; }}
+.dashboard-panel h3{{ margin:0 0 13px; font-size:16px; }}
+.bar-row{{ display:grid; grid-template-columns:minmax(76px,1fr) 1.4fr 24px; gap:8px; align-items:center; margin:9px 0; }}
+.bar-label,.bar-value{{ font:11px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }} .bar-value{{ text-align:right; }}
+.bar-track{{ height:7px; background:#F1DADA; border-radius:99px; overflow:hidden; }} .bar-fill{{ display:block; height:100%; background:linear-gradient(90deg,var(--accent),#87AEB0); border-radius:99px; }}
+.mini-stat-grid{{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }} .mini-stat-grid div{{ background:#fff; border:1px solid var(--rule); border-radius:3px; padding:10px 8px; }} .mini-stat-grid strong,.mini-stat-grid span,.metric-strip strong,.metric-strip span{{ display:block; }} .mini-stat-grid strong{{ font:600 22px var(--serif); }} .mini-stat-grid span,.metric-strip span{{ color:var(--ink-muted); font:10px var(--mono); text-transform:uppercase; }}
+.metric-strip{{ display:grid; grid-template-columns:repeat(5,1fr); gap:1px; margin-top:16px; border:1px solid var(--rule); background:var(--rule); }} .metric-strip div{{ background:#fff; padding:13px 15px; }} .metric-strip strong{{ font:600 22px var(--serif); }}
+.metric-strip .cost-tile{{ background:#FFF4E9; border-top:4px solid #D89A70; }}
+.metrics-details{{ margin-top:16px; border-top:1px solid var(--rule); padding-top:13px; }} .metrics-details summary{{ cursor:pointer; color:var(--accent); font:12px var(--mono); }} .detail-grid{{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }} .detail-grid h3{{ font-size:14px; }} .detail-grid pre{{ max-height:260px; overflow:auto; }} .empty-state{{ color:var(--ink-muted); font-size:13px; }}
+@media(max-width:900px){{ .dashboard-grid{{ grid-template-columns:1fr 1fr; }} .coverage-dial{{ grid-column:span 2; }} }} @media(max-width:620px){{ .dashboard-heading{{ display:block; }} .dashboard-status{{ display:inline-block; margin:8px 0 16px; }} .dashboard-grid,.detail-grid{{ grid-template-columns:1fr; }} .coverage-dial{{ grid-column:auto; }} .metric-strip{{ grid-template-columns:repeat(2,1fr); }} }}
 </style></head><body>
 <div class=\"wrap\">
 <header class=\"masthead\">
@@ -335,6 +398,7 @@ table.data-table td:first-child{{ font-family:var(--mono); font-size:12.5px; whi
 </header>
 
 <section id=\"objective\"><h2>Objective</h2>{objective_html}</section>
+{dashboard_html}
 
 <section id=\"findings\"><h2>FINDINGS</h2>{filter_html}{findings_html}</section>
 <section id=\"discarded\"><h2>DISCARDED</h2><p>Generated hypotheses ruled out by the verification criteria are retained here with their reasons.</p>{discarded_html}</section>

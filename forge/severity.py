@@ -26,8 +26,11 @@ def finding_family(description: str) -> str:
     return "other"
 
 
-def severity_for(module_path: str, epistemic_level: str, description: str, agent: str = "") -> str:
-    family = finding_family(description)
+def severity_for(module_path: str, epistemic_level: str, description: str, agent: str = "", family: str | None = None) -> str:
+    # Agent detectors know the family; use it when supplied instead of
+    # guessing from prose.  The fallback preserves compatibility for callers
+    # that only have a serialized Finding.
+    family = family or finding_family(description)
     score = 2
     if epistemic_level == "CODE FACT":
         score += 1

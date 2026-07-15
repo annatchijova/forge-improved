@@ -74,7 +74,16 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
         skills = _sidecar(source, "skills-runtime.json")
         sections += ["<section id='contracts'><h2>Contract evaluations and governance applicability</h2><pre>" + (json.dumps(skills, indent=2, sort_keys=True) if skills else "Skill runtime sidecar unavailable") + "</pre></section>",
                      "<section id='trace'><h2>Metrics and audit trace</h2><pre>" + json.dumps({"manifest": manifest, "chain": sealed.get("chain", []), "audit_trace": sealed.get("audit_trace", "Audit trace unavailable")}, indent=2, sort_keys=True) + "</pre></section>"]
-    document = "<!doctype html><html><body><h1>FORGE " + mode + " report</h1>" + "".join(sections) + f"<meta id='forge-findings' data-canonical-base64='{payload}'></body></html>"
+    # Keep the tiered renderer on the same visual identity as the primary
+    # FORGE renderer.  In particular, never fall back to the browser's white
+    # canvas: reports are often presented directly to reviewers or judges.
+    style = """
+<style>
+:root{--bg:#E3B8B8;--bg-elevated:#FFFFFF;--bg-sunken:#E8E9E3;--ink:#1C2222;--ink-muted:#5B6460;--rule:#D5D6CE;--accent:#2B5D63;--ok:#3C7A52;--fail:#A8501C;--serif:Georgia,"Times New Roman",serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:0 auto;padding:0 24px 56px}header{border-bottom:2px solid var(--ink);padding:40px 0 22px;margin-bottom:36px}h1{font:600 clamp(28px,4vw,40px) var(--serif);margin:0 0 18px}h2{font:600 21px var(--serif);color:var(--accent);border-bottom:1px solid var(--rule);padding-bottom:10px}h3{font:600 17px var(--serif);margin-bottom:6px}section{background:var(--bg-elevated);border:1px solid var(--rule);border-radius:3px;margin:24px 0;padding:22px 24px;box-shadow:0 4px 14px rgba(28,34,34,.06)}#seal p{display:inline-block;background:#DFEDE2;color:#2A5A3C;border-radius:14px;padding:6px 12px;font:12px var(--mono);letter-spacing:.04em}.finding{background:var(--bg);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:3px;padding:14px 18px;margin:14px 0}.finding p:first-of-type{color:var(--ink-muted);font:12px var(--mono)}pre{background:var(--bg-sunken);border-radius:3px;padding:12px 14px;overflow:auto;white-space:pre-wrap;font:13px/1.5 var(--mono)}#limitations h2,#discarded h2{color:var(--fail)}
+</style>
+"""
+    document = "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>FORGE " + mode + " report</title>" + style + "</head><body><div class='wrap'><header><h1>FORGE " + mode + " report</h1></header>" + "".join(sections) + f"<meta id='forge-findings' data-canonical-base64='{payload}'></div></body></html>"
     destination.write_text(document, encoding="utf-8")
     return destination
 

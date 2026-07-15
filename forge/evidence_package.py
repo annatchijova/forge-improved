@@ -2,8 +2,34 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
+
+
+def _source_commit(repository: str, finding: dict[str, Any]) -> str | None:
+    """Return the exact source commit when the repository supports git blame."""
+    source = next((item for item in finding.get("evidence", []) if item.get("kind") == "source"), None)
+    if not source:
+        return None
+    module, separator, line_text = "", "", ""
+    try:
+        module, line_text = str(source.get("source", "")).rsplit(":", 1)
+        separator = ":"
+    except ValueError:
+        pass
+    if not separator or not module:
+        return None
+    try:
+        line = int(line_text)
+        raw = subprocess.check_output(
+            ["git", "-C", repository, "blame", "--line-porcelain", "-L", f"{line},{line}", "--", module],
+            stderr=subprocess.DEVNULL, text=True, timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+    first = raw.splitlines()[0].split() if raw.splitlines() else []
+    return first[0] if first else None
 
 
 def build_repository_profile(*, root: str, triage: Any, governance: Any, coverage: Any,
@@ -69,12 +95,14 @@ def write_markdown_report(*, sealed: dict[str, Any], metrics: dict[str, Any], pr
     ]
     if findings:
         for finding in findings:
+            commit = _source_commit(profile.get("repository", ""), finding)
             lines.extend([
                 f"### {finding.get('severity', 'MEDIUM')} · {finding.get('module_path', 'unknown')}",
                 f"- Agent: `{finding.get('agent', 'unknown')}`",
                 f"- Status: `{finding.get('epistemic_level', 'unknown')}`",
                 f"- Description: {finding.get('description', '')}",
                 f"- Reasoning: {finding.get('reasoning', '')}",
+                f"- Source commit: `{commit}`" if commit else "- Source commit: unavailable (source evidence retained)",
                 "",
             ])
     else:

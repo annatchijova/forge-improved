@@ -67,6 +67,52 @@ The objective is not simply finding more bugs.
 The objective is producing findings that another engineer can independently
 reproduce, challenge, or verify.
 
+## The cost advantage: measured, not marketed
+
+FORGE's normal audit path keeps the decision mechanism out of the LLM loop.
+Repository discovery, AST parsing, structural detectors, hypothesis handling,
+sealing, and report generation run as local deterministic code. The configured
+model names are routing metadata until a model-backed implementation actually
+calls a model; they are never evidence that a model was used.
+
+That makes the operational cost scale with repository work and local CPU time,
+not with the number of source tokens sent to a model. It also makes repeated
+runs reproducible: the same sealed inputs and detector version produce the same
+decision path. Dynamic induction is real process execution with a timeout, not
+an LLM request.
+
+### Mutante: first measured run
+
+The Mutante audit analyzed 43 modules and consumed **6 Codex session credits**
+as observed from the session balance (2348 → 2342). This is a measured
+orchestration/session cost, not a claim that every environment will display the
+same price. The built-in FORGE detectors did not call an LLM during that audit;
+the credits include the surrounding Codex orchestration and interpretation.
+
+| Run | Repository work | Observed session cost | Model-backed detector calls | Evidence |
+|---|---:|---:|---:|---|
+| Mutante | 43 analyzed modules / 308 discovered files | **6 credits** | 0 in the built-in audit path | session balance + `metrics.json` + sealed trace |
+
+After every benchmark or repository audit, record the same fields next to the
+run artifacts:
+
+```text
+run: <run id>
+repository: <name>
+files/modules: <analyzed>/<discovered>
+credits_before: <balance>
+credits_after: <balance>
+credits_consumed: <difference>
+model_backed_detector_calls: <measured count or unknown>
+source: <session UI / provider meter / runtime instrumentation>
+```
+
+This distinction is important for the hackathon pitch: **FORGE's audit
+decisions are deterministic and token-light by architecture; building new
+detectors, orchestrating the session, optional natural-language narration, and
+future model-backed stages can still consume credits.** We report those costs
+instead of hiding them behind an attractive headline.
+
 ---
 
 ## Architecture at a glance
@@ -214,6 +260,48 @@ Every audit produces an evidence package in the output directory:
 verification manifest. JSON artifacts are the machine-readable source; HTML
 and Markdown are presentation layers over those artifacts.
 
+The visual package is generated automatically by the public reporting module:
+
+```python
+from forge import render_dashboard
+
+paths = render_dashboard("forge-run")
+```
+
+This writes the main WOW-effect dashboard plus `summary`, `standard`, and
+`extended` HTML tiers and the structured `json` mode. The four projections are
+derived from the same sealed manifest, so presentation cannot silently change
+the findings. A normal `Runtime().audit(...)` run invokes this renderer
+automatically; no second reporting command is required.
+
+### Large-repository demo mode
+
+For a large repository, do one discovery-only preflight before the expensive
+audit. It reports the connected-module count and checks the scope guard without
+producing findings or changing the target repository:
+
+```bash
+python3 -m forge preflight /path/to/large-repository --max-connected 100 \
+  > /tmp/forge-preflight.json
+```
+
+Then run the audit once, with artifacts outside the target repository and
+compact stdout. `--summary` avoids printing every finding into a terminal,
+chat transcript, or CI log; the complete evidence remains on disk:
+
+```bash
+python3 -m forge audit /path/to/large-repository \
+  -o /tmp/forge-large-demo \
+  --max-connected 100 \
+  --summary > /tmp/forge-large-demo-summary.json
+```
+
+If preflight reports more connected modules than the selected limit, choose an
+explicitly bounded higher limit before the one full run. Do not silently treat
+the scope guard as full-repository coverage. For Git repositories, each
+finding's HTML/Markdown evidence includes the source commit when `git blame`
+is available; unavailable blame is labeled rather than inferred.
+
 ### Reproducible benchmark corpus
 
 Place local repositories under a corpus directory and run:
@@ -282,6 +370,7 @@ Known Codex sessions used during the build:
 
 * `019f65d2-230f-71d2-ab70-e8195fb8fae0`
 * `019f6693-c5fa-75e1-bc61-3c7af5ab6cc0`
+* `019f6706-b195-7981-b21a-a01f98a6f785`
 * _Three additional session IDs pending retrieval from screenshots._
 
 ### Running the MCP server

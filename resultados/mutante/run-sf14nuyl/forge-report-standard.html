@@ -1,0 +1,931 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>FORGE standard report</title>
+<style>
+:root{--bg:#E3B8B8;--bg-elevated:#FFFFFF;--bg-sunken:#E8E9E3;--ink:#1C2222;--ink-muted:#5B6460;--rule:#D5D6CE;--accent:#2B5D63;--ok:#3C7A52;--fail:#A8501C;--serif:Georgia,"Times New Roman",serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:0 auto;padding:0 24px 56px}header{border-bottom:2px solid var(--ink);padding:40px 0 22px;margin-bottom:36px}h1{font:600 clamp(28px,4vw,40px) var(--serif);margin:0 0 18px}h2{font:600 21px var(--serif);color:var(--accent);border-bottom:1px solid var(--rule);padding-bottom:10px}h3{font:600 17px var(--serif);margin-bottom:6px}section{background:var(--bg-elevated);border:1px solid var(--rule);border-radius:3px;margin:24px 0;padding:22px 24px;box-shadow:0 4px 14px rgba(28,34,34,.06)}#seal p{display:inline-block;background:#DFEDE2;color:#2A5A3C;border-radius:14px;padding:6px 12px;font:12px var(--mono);letter-spacing:.04em}.finding{background:var(--bg);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:3px;padding:14px 18px;margin:14px 0}.finding p:first-of-type{color:var(--ink-muted);font:12px var(--mono)}pre{background:var(--bg-sunken);border-radius:3px;padding:12px 14px;overflow:auto;white-space:pre-wrap;font:13px/1.5 var(--mono)}#limitations h2,#discarded h2{color:var(--fail)}
+</style>
+</head><body><div class='wrap'><header><h1>FORGE standard report</h1></header><section id='seal'><h2>Seal status</h2><p>VERIFIED</p></section><section id='findings'><h2>Findings</h2><article class='finding'><h3>agent_mutante/engine/semiotic_llm_judge.py</h3><p>Agent: bug_investigator · Severity: MEDIUM · Category: INFERRED · Outcome: OBSERVED</p><p>The parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure.</p><pre>agent_mutante/engine/semiotic_llm_judge.py:113: result = json.loads(raw)</pre></article><article class='finding'><h3>apply_license.py</h3><p>Agent: security_auditor · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>parameter reaches open() without proven normalization</p><pre>apply_license.py:26: parameter reaches open() without proven normalization</pre></article><article class='finding'><h3>apply_license.py</h3><p>Agent: security_auditor · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>parameter reaches open() without proven normalization</p><pre>apply_license.py:56: parameter reaches open() without proven normalization</pre></article><article class='finding'><h3>main.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>main.py:73: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>main.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>unversioned serialization</p><pre>main.py:115: unversioned serialization</pre></article><article class='finding'><h3>agent_mutante/engine/bigquery_sink.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/bigquery_sink.py:71: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/bigquery_sink.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>unversioned serialization</p><pre>agent_mutante/engine/bigquery_sink.py:77: unversioned serialization</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:194: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:195: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:196: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:160: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:161: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:162: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_semiotic_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_semiotic_evaluator.py:211: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_hybrid_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_hybrid_evaluator.py:80: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/mutante_hybrid_evaluator.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/mutante_hybrid_evaluator.py:82: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/semiotic_llm_judge.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/semiotic_llm_judge.py:140: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/quality_gate.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/quality_gate.py:46: non-deterministic arithmetic in a decision-adjacent path</pre></article><article class='finding'><h3>agent_mutante/engine/quality_gate.py</h3><p>Agent: integrity_inspector · Severity: MEDIUM · Category: OBSERVED · Outcome: OBSERVED</p><p>non-deterministic arithmetic in a decision-adjacent path</p><pre>agent_mutante/engine/quality_gate.py:47: non-deterministic arithmetic in a decision-adjacent path</pre></article></section><section id='limitations'><h2>Limitations</h2><ul><li>The seal proves findings were not altered after sealing.</li><li>The seal does not prove findings are correct.</li><li>A full-access attacker can forge a consistent replacement chain from scratch.</li></ul></section><section id='discarded'><h2>Discarded hypotheses</h2><pre>[]</pre></section><section id='coverage'><h2>Per-module coverage</h2><pre>{
+  ".dockerignore": {
+    "coverage": "non_python_not_analyzed"
+  },
+  ".env": {
+    "coverage": "non_python_not_analyzed"
+  },
+  ".env.example": {
+    "coverage": "non_python_not_analyzed"
+  },
+  ".git/COMMIT_EDITMSG": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/FETCH_HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/ORIG_HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/config": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/description": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/applypatch-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/commit-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/fsmonitor-watchman.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/post-update.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-applypatch.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-commit.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-merge-commit.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-push.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-rebase.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-receive.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/prepare-commit-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/push-to-checkout.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/sendemail-validate.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/update.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/index": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/info/exclude": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/heads/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/heads/redesign-2026-06-10": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/heads/rediseno-ui": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/remotes/gitlab/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/remotes/origin/claude/mutante-multi-model-6vsrtw": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/remotes/origin/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/00/adeb8d9bafef7d217feb4a3c7d9698aba35755": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/00/f1a7fc1ee6927b6baee3603f1064254aea27f1": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/01/b92d6eaa646e3530eacd9ff4ae6c3efb1e0865": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/01/baae6cf164625512aeb3df79a4e68f457f5d8a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/0a/11738c79f69871435c11e09a02c366717bcbb7": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/0e/3edc63adb5c9ee2e864c955180f93f1053ead2": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/0e/be2b8b7ccb3e728504fb717eac1b2f835901ef": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/0f/05224da08894495494cff708a1d47a214c4fe0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/0f/7570d12bc31be6fd02afcf79e99060a8423d14": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/12/01c3f49a1c794c9d74bc2b16457e8ba93e9ce5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/12/7c3077632c76d946d5f392fd7c3784e7877df7": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/12/e0441bd93b9ee5d9b159b402044a863d72e6d4": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/13/3bc95c1fe9dcec47c8c3c9ae72b072a6030eb0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/16/a446735d5fa9baa921ea63dd9fb970eba6f97b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/16/bf90923045086725a3a0aae79a2592a2fe07d0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/16/d5e02d47aef1e393db1ed6ebfb68ecf6e3104c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/17/bfc79d4583089bb42098ab32f83035b3864721": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/18/7e11ded5684e2332df00efc1903387e7327d5a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/19/45aa31ff5930bd76cf50f7c7953ff7561a29b6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1b/555e7cce0bd45135a8cc742a69584ced2bff06": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1b/64eba42a3c702a74b287dd0871b857c70d3437": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1d/4e43afb63ef90e6e8973d79b6982b1f0c57b08": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1d/9816e4ccb92a0f284f678f255bebfd33f10ccd": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1d/e27fc9413981cb948b493a5b8bc009384454f8": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1e/7f192e83a20c2d28b87f55b2fd084733d3d29b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1e/7f260381b27f7b7596984a0af7c810e56a482d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1f/0b87ca8991f0800a83f284d0e161ca1c80d03e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1f/4ceda18a5bfda0f4cc944b4e4f198991389c12": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1f/cb25a3b4ad89b57f4bd8eb4b02f94e18ec14c5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/21/6b71e6993a0ad37a7ba1f3fc14cf3448bd46ef": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/24/cf258f6a995f39c6df2d75db36c4357d3b07c3": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/27/4c4c8cf9bdfc6355064f000874266bf990459d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/28/174009aa7e9a36c8fa5ed8f51522eb44645587": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/28/579d40df248fc734f473fef627b9efe111d36a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/2a/bebb781912022ab291f69f333ac40d5a1f2f50": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/31/27d40c623531bde296f6347d954e305d8acb9b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/32/40bf450cd7dd5ce4ddd10c1e8e1e8fb377662f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/32/7e6fcea2b689511c5f6f45f68d161e73d57173": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/33/b198f076b446f2d8d3173ad7904dfa12d23c4a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/36/1264f2efbafa665a183b5cbfb679b813bda937": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/36/288143d57946152df6efedb7ad07cd0585f0b9": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/36/e3783cc873b06c5ce2e90f1ea38e4b3d53a60e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/37/06d4894f070f169f87d178f823907b49315d2e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/38/231dab4d87a2093df78e3de763ee97acb5721d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/3a/5763bbb2100853ef93970a7db752a81ff2f2fc": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/3d/9b1043ffcd6e924e66907a97b11b239d1d968f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/3e/8516d4a67dda8d9a2dec297320daf44414933a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/43/0bff95b2bfdd9d6e78c5352421bb3d363e07f5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/44/0f5f31c75900c6acaec906f29a02746c3fe41a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/45/b7688bf78890d08a287bdb3146bd5d9c137428": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/46/13519c47e51ea07b0d45f751ab84d4a9a3229e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/47/203421e8a17531b295175d389b7d59bf2f7e14": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/49/24493c765a318cb0686448fe58403e69ed2206": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/49/4b810f1c13f150b4906951af57d278622f255a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/4f/506281ec43a535bab3384ff5f29170cead8d7b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/50/b38c852d95dcf0d504354faa3f461b4ae5ae2c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/51/70339ea08783d41ca9b9d04a46fd016a5bc9ee": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/54/9218e66929188c2e35fe0dfe112aecefb86f96": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/57/1b3b6429fde012f62afaf6a5063cf79e9a788f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/57/a9ed0114be977be12ffab7b8835fbab55271ad": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/58/0da527f7d8c42b7dd3aea2ff2b034552b658ce": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/58/279bfa9c3f907806861b18377875d99e4e5c24": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/59/b6fa34939324a769002307063203e98e9a23cf": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/5c/39e6b67021a263ba471677a0eea91a4efd534e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/5e/3807cc984deabb6c77d979d394c1dce9917885": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/5f/9a76efb28b4c80062b5e5844517135ac1702bb": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/60/f44d1c65673f840d49a11126d76b111f635869": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/61/b8c3918cfc17dc5da399b1500d196bdb1264e9": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/65/9c4f94a63645aa69dcc41706babe9bbb824a38": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/65/ed8f3f33156129323ae0fae6bf43bc4e0ca8c7": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/66/bb45d79d1cfc072c2d28365d36a36b73e7ccbe": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6c/188f1d9ad3e855e433a972f12f510f3c98452f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6c/6ee0b87d392ff4dfa753d93e73905fd91ec11c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6d/213acfeb557474ad72e6df3e8ba54922c0a954": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6e/4dfad75f2b30e9bb15dfccf3ddd74fe6b04188": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6f/663d12138ec0c0b59f57464a020855d8e51d2e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6f/e40329a9ae56337ea4372a29506a90775af32c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6f/fd3dc572de28201c1879d16b12c905c9bfad28": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/71/cbd34f56a928ec5247cc0f5e2e91078f59b5d5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/72/722fe2bc929116f90439e21912da2e65fb2597": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/73/02dce54e9376528a60d6f5b460b65163975a66": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/75/6992ae82397576e846995f783dac81337da317": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/77/b9c0142d1ee7d80af8821860b28891075854ea": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/78/08b1ef7196960f1bd571d540edbbb4816868a4": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/78/c7971248482e874612e5e0151668ec7766fea3": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/78/d05589d560804caf81284c124d755d985ccf41": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/79/76c9779158fddef1c6efec51e510a49058ed38": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/79/94e130fdf8e43e97ac6c5de9addedd71ba2fdb": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/7a/2295758773511580337af34f770421d1e93f50": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/7a/47cec2b1cf65bb94d1de53b4aad4d4a31f0446": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/7a/8db9282b612abb76e1866a74a632b3a3e26799": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/7d/7747090a01c70b6fe433e0ad468fb5aab383b3": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/7f/1406a94f9b1ad37410e04fcb8d83465a49ddd4": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/80/3634dae4dbcda6ed0c0e361bf735b34801006c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/84/b3ce943be3ae4e2ab5a9007a4a4ff0d50c1c61": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/86/876a1a44b973d6a07de53733e6f77c002c81d1": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/89/98da68e5efbd519c19812b296ae90f3ec7d7d7": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/8a/2e3950ef9576de3432613d6bdcc241f9c8ba12": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/8c/de4839949741f1fd3fdd48b89f0a2d6a5fd5fb": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/8d/fa5ba90ab84c89091ee695d10d3dd5a17447e8": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/91/f7cf0d2f8bd543ed288239ebf5ad6fc3d18f66": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/96/616290cdebb649201190eeac81d7361f8ec2ca": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/97/831b6f0efd4816b134e42547c5f138dd2522d7": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/98/3f0000f795ede05a5248af3c951766fb35876f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/98/f3357b6bb903c3983bc7e3bcb774b4e37fd9ce": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/99/848dbb58b12d48568408b3b51664425d6cab65": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/9c/91cc8b4dcb7348bab6ddffac8902880b2545fc": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/9d/21bf084447b769bcad7d280086325d5a989d54": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/9d/2d50f2ba79ea34e190c552c692f4c114fc9373": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/9e/d18fa697276baa18971a550d9f2a85278f2ba4": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/9f/4ddbb1ec9c05e4a554d9043dcf1c6f4538b3fa": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/a3/7909b2b74b8867695c856627c8520d8b9a6b6f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/a7/ecd256fa555c09ba30afeae488858ea136bc30": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/a8/56eda83609547355a5109945bfcfbd68ff54cf": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/a9/cf4be82efea15fedf3935da8a64e101456cd88": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ad/0e96e6d1b1205f5f24fdc7725e9622075170a6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ad/8b794602d14da895161858fd653a3013341a6b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b0/52e0536b7bd6789763622e7963175377e0eba4": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b1/7ac0fd35240b8a5dbba18cb428f61ae2b90c67": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b1/eb3a5080032ad813ea38ab3f5d179618150373": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b2/2a47692946c16d5306e0a2d45168821183c9ea": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b3/f4aeada482e310d2ffcb0fbc356bef7b5a38e0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b6/2d1b583ad6b44204069017f975efdfc89b452a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b6/b7a4b0bab87c9595885607aca71594fad8b958": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b8/08e496f6c56d14121cd421cdc47093519fefa2": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b8/6c539b9293f0fd937a61ec73b778e453e262cc": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b8/f9a6106d49c1f5ee165d7b9f8cf7b4a9fa4504": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b9/3f08e44f433b237ee3bac6dabdec868800e44d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b9/c76e843edc7584ad9dfbdd710fd66aed2acce1": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ba/951ee76cc87442714e51f5ffc37e65d4338029": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/be/106671ebaf8c49db8f198db53267d08f164e69": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c0/7ffd421ed17f53ef0b88d801fd369a129bcbd5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c1/d0068c5ff3dde14cbaa3f18fb054969b8a9763": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c1/d81395f474037e97df3b0e180980c15d530536": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c4/aa9d246c9865ef771014295120377b5f30664a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c4/d05b42d0c3625138a1d99e5e966428f13fc183": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c8/43f0b0980840e333815c5981ca1a28eb79dc76": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/c9/2580fdc438d958b72ea8706610b2ad7cadce14": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/cb/10d141752f64d655cb2e8737146b8dc695ce06": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/cc/f0eb4a1cf67e91e0baf3f0bad07ffc305feafe": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/cd/05b51063506bc2c2f2e1022c8c627a02607806": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/cd/25eb40d36d2a3d9df5bf6381bf12919e59dbb5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ce/a8c29a2aa64f53dc931dff52be64f53f043d47": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/cf/e12d574cddac0d9f1eb25e0dc465c8c76f19d3": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d4/c43aea34ae4f5a4739737acd03a84fb08b2e3b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d5/84b6b1febd22f286d20e05a7de267ff23a9e89": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d6/04ee1de17cdec35bfd64897a62d4143df84839": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d6/cdb8019d4016165e5ef6e9e739dbf41ed0a932": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d7/f8071f716746df4752a150574c996410a6230b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/dc/0095217d30c2bdf062de54c17f89da0d6e8468": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/dd/9dd165ba4b3d554a6ddbf14e3ee910a7d95faa": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/de/0619e115481e059eac5774c90ef81742275371": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e1/f313111b1b3872a606d058db61a16d8e09a4d9": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e2/90b409191f3d9c29e942d5edcee03f153df70c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e5/6418753242ca0372d27e46d1c1665602b48491": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e5/d2c1f22de2317ab6fe9e24c354c95bbad06109": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e7/42f3122ad9efa5c83a1ddaf39481162a2f2f50": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e9/3d41799a763a3637dce49b9d99b8d9539c17ea": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ea/1254fd6e6d78f1aab01c74eb5441ce5da65275": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ea/81ad0f54324ba36c31946ab9515182e733ff68": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ed/a1eff50533d83663f42682141b82f65ac29732": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f1/2b2f28366d38adf6ad7745d5dfc586260de638": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f3/01059d23544547ba04b2a1d293107081e60ae0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f6/d2de66800aa6eab13b79534ad795012136c0b8": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f6/e3d12f26149bf5ca8896ecde81a09140678dd9": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f7/710c4e39f1f6ad0a4dc24357ae0c6503875f6c": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/fa/a9b30afbca8add8aab8520d6913829a853b019": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/fb/55036f41fce90897e9f4227d3aa2f6297727c3": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/fc/ed115432f665f48290ef019937611a8ff3178e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/fd/42692e0f75b2c5d5990d0581a06161db2c3905": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/fe/cce1a37b26e9b686dd910cbc83a5b780a515be": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ff/d6d5edacb52bade570e02fca9131e987a1efa6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/heads/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/heads/redesign-2026-06-10": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/heads/rediseno-ui": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/remotes/gitlab/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/remotes/origin/claude/mutante-multi-model-6vsrtw": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/remotes/origin/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".gitignore": {
+    "coverage": "non_python_not_analyzed"
+  },
+  ".streamlit/config.toml": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "0": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "CODE_OF_CONDUCT.md": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "CONTRIBUTORS.md": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "Dockerfile": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "LICENSE": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "README.md": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "agent_mutante/.adk/session.db": {
+    "coverage": "binary_or_unreadable"
+  },
+  "agent_mutante/agent.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/__init__.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "agent_mutante/engine/__pycache__/__init__.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/__pycache__/elastic_semantic.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/__pycache__/mutante_hybrid_evaluator.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/__pycache__/mutante_semiotic_evaluator.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/__pycache__/mutator.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/__pycache__/semiotic_llm_judge.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "agent_mutante/engine/bayesian.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/bigquery_sink.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/elastic_semantic.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/mutante_client.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/mutante_hybrid_evaluator.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/mutante_semiotic_evaluator.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/mutator.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/platform_experimental/__init__.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "agent_mutante/engine/platform_experimental/windows_sandbox.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "agent_mutante/engine/quality_gate.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/sandbox.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/engine/semiotic_llm_judge.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "agent_mutante/requirements.txt": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "apply_license.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "assets/logo.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "batch_checkpoint.pkl": {
+    "coverage": "binary_or_unreadable"
+  },
+  "batch_results.jsonl": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "components/css.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "components/sidebar.py": {
+    "triage": "DUPLICATE"
+  },
+  "components_init.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/__init__.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "dashboard/app.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "dashboard/components/__init__.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/components/__pycache__/__init__.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/components/__pycache__/css.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/components/__pycache__/demo_data.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/components/__pycache__/sidebar.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/components/css.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "dashboard/components/sidebar.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/__init__.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/__pycache__/__init__.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/__pycache__/agent_console.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/__pycache__/analytics.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/__pycache__/attack_families.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/__pycache__/command_center.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/__pycache__/forensic_feed.cpython-312.pyc": {
+    "coverage": "excluded_by_policy"
+  },
+  "dashboard/pages/agent_console.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/analytics.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/attack_families.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/command_center.py": {
+    "triage": "DUPLICATE"
+  },
+  "dashboard/pages/forensic_feed.py": {
+    "triage": "DUPLICATE"
+  },
+  "demo_script.md": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "demo_seed.jsonl": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "demo_seed_semantic.jsonl": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "deploy.sh": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "gemini-code-mutante-simulator.html": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "generate_demo_dataset.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "harmbench_behaviors.csv": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "info_and_test/1.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/111.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/2.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/222.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/3.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-02.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-03.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-04.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-05.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-06.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-07.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-08.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-09.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-10.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "info_and_test/roadmap2-11.png": {
+    "coverage": "binary_or_unreadable"
+  },
+  "install.sh": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "main.py": {
+    "triage": "CONNECTED_ALIVE"
+  },
+  "mcp_mutante.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "pages/agent_console.py": {
+    "triage": "DUPLICATE"
+  },
+  "pages/analytics.py": {
+    "triage": "DUPLICATE"
+  },
+  "pages/attack_families.py": {
+    "triage": "DUPLICATE"
+  },
+  "pages/command_center.py": {
+    "triage": "DUPLICATE"
+  },
+  "pages/forensic_feed.py": {
+    "triage": "DUPLICATE"
+  },
+  "preflight.sh": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "reimport_semantic.py": {
+    "triage": "DEAD_WEIGHT"
+  },
+  "requirements.txt": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "reseed_elastic.py": {
+    "triage": "FOSSIL_HIGH_RISK"
+  },
+  "run_campaign.py": {
+    "triage": "FOSSIL_HIGH_RISK"
+  },
+  "scripts/download_datasets.sh": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "test_demo_pipeline.py": {
+    "triage": "FOSSIL_HIGH_RISK"
+  },
+  "test_full_pipeline.py": {
+    "triage": "FOSSIL_HIGH_RISK"
+  },
+  "test_vertex_gemini.py": {
+    "triage": "DEAD_WEIGHT"
+  }
+}</pre></section><meta id='forge-findings' data-canonical-base64='W3siYWdlbnQiOiJidWdfaW52ZXN0aWdhdG9yIiwiY2F0ZWdvcnkiOiJJTkZFUlJFRCIsImRlc2NyaXB0aW9uIjoiVGhlIHBhcnNlciBjYWxsIGByZXN1bHQgPSBqc29uLmxvYWRzKHJhdylgIGF0IGFnZW50X211dGFudGUvZW5naW5lL3NlbWlvdGljX2xsbV9qdWRnZS5weToxMTMgaGFzIG5vIG5lYXJieSBleGNlcHRpb24gaGFuZGxpbmcsIHNvIG1hbGZvcm1lZCBpbnB1dCBtYXkgZXNjYXBlIGFzIGFuIG9wYXF1ZSBmYWlsdXJlLiIsImVwaXN0ZW1pY19sZXZlbCI6IlBMQVVTSUJMRSBIWVBPVEhFU0lTIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6InJlc3VsdCA9IGpzb24ubG9hZHMocmF3KSIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9zZW1pb3RpY19sbG1fanVkZ2UucHk6MTEzIn1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL3NlbWlvdGljX2xsbV9qdWRnZS5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6Ik9ic2VydmVkIGNvbnN0cnVjdCBtYXRjaGVzOyBpbmR1Y3Rpb24gd2FzIHVuZGV0ZXJtaW5lZDogSW5kdWN0aW9uIHRpbWVkIG91dCBhZnRlciAxLjBzOyBjaGlsZCBwcm9jZXNzIHdhcyB0ZXJtaW5hdGVkLiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6InNlY3VyaXR5X2F1ZGl0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJwYXJhbWV0ZXIgcmVhY2hlcyBvcGVuKCkgd2l0aG91dCBwcm92ZW4gbm9ybWFsaXphdGlvbiIsImVwaXN0ZW1pY19sZXZlbCI6IkNPREUgRkFDVCIsImV2aWRlbmNlIjpbeyJkZXRhaWwiOiJwYXJhbWV0ZXIgcmVhY2hlcyBvcGVuKCkgd2l0aG91dCBwcm92ZW4gbm9ybWFsaXphdGlvbiIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhcHBseV9saWNlbnNlLnB5OjI2In1dLCJtb2R1bGVfcGF0aCI6ImFwcGx5X2xpY2Vuc2UucHkiLCJvdXRjb21lIjoiT0JTRVJWRUQiLCJyZWFzb25pbmciOiJBU1QgZGV0ZWN0b3IgZW1pdHRlZCB0aGlzIG9ic2VydmF0aW9uOiBwYXRoLXRyYXZlcnNhbC4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9LHsiYWdlbnQiOiJzZWN1cml0eV9hdWRpdG9yIiwiY2F0ZWdvcnkiOiJPQlNFUlZFRCIsImRlc2NyaXB0aW9uIjoicGFyYW1ldGVyIHJlYWNoZXMgb3BlbigpIHdpdGhvdXQgcHJvdmVuIG5vcm1hbGl6YXRpb24iLCJlcGlzdGVtaWNfbGV2ZWwiOiJDT0RFIEZBQ1QiLCJldmlkZW5jZSI6W3siZGV0YWlsIjoicGFyYW1ldGVyIHJlYWNoZXMgb3BlbigpIHdpdGhvdXQgcHJvdmVuIG5vcm1hbGl6YXRpb24iLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYXBwbHlfbGljZW5zZS5weTo1NiJ9XSwibW9kdWxlX3BhdGgiOiJhcHBseV9saWNlbnNlLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogcGF0aC10cmF2ZXJzYWwuIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6Im1haW4ucHk6NzMifV0sIm1vZHVsZV9wYXRoIjoibWFpbi5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJ1bnZlcnNpb25lZCBzZXJpYWxpemF0aW9uIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6InVudmVyc2lvbmVkIHNlcmlhbGl6YXRpb24iLCJraW5kIjoic291cmNlIiwic291cmNlIjoibWFpbi5weToxMTUifV0sIm1vZHVsZV9wYXRoIjoibWFpbi5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IHVudmVyc2lvbmVkLXNlcmlhbGl6YXRpb24uIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6ImFnZW50X211dGFudGUvZW5naW5lL2JpZ3F1ZXJ5X3NpbmsucHk6NzEifV0sIm1vZHVsZV9wYXRoIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvYmlncXVlcnlfc2luay5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJ1bnZlcnNpb25lZCBzZXJpYWxpemF0aW9uIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6InVudmVyc2lvbmVkIHNlcmlhbGl6YXRpb24iLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvYmlncXVlcnlfc2luay5weTo3NyJ9XSwibW9kdWxlX3BhdGgiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9iaWdxdWVyeV9zaW5rLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogdW52ZXJzaW9uZWQtc2VyaWFsaXphdGlvbi4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9LHsiYWdlbnQiOiJpbnRlZ3JpdHlfaW5zcGVjdG9yIiwiY2F0ZWdvcnkiOiJPQlNFUlZFRCIsImRlc2NyaXB0aW9uIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJlcGlzdGVtaWNfbGV2ZWwiOiJDT0RFIEZBQ1QiLCJldmlkZW5jZSI6W3siZGV0YWlsIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9zZW1pb3RpY19ldmFsdWF0b3IucHk6MTk0In1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfc2VtaW90aWNfZXZhbHVhdG9yLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogZGVjaXNpb24tYWRqYWNlbnQtZmxvYXQuIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfc2VtaW90aWNfZXZhbHVhdG9yLnB5OjE5NSJ9XSwibW9kdWxlX3BhdGgiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9tdXRhbnRlX3NlbWlvdGljX2V2YWx1YXRvci5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImVwaXN0ZW1pY19sZXZlbCI6IkNPREUgRkFDVCIsImV2aWRlbmNlIjpbeyJkZXRhaWwiOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9tdXRhbnRlX3NlbWlvdGljX2V2YWx1YXRvci5weToxOTYifV0sIm1vZHVsZV9wYXRoIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9zZW1pb3RpY19ldmFsdWF0b3IucHkiLCJvdXRjb21lIjoiT0JTRVJWRUQiLCJyZWFzb25pbmciOiJBU1QgZGV0ZWN0b3IgZW1pdHRlZCB0aGlzIG9ic2VydmF0aW9uOiBkZWNpc2lvbi1hZGphY2VudC1mbG9hdC4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9LHsiYWdlbnQiOiJpbnRlZ3JpdHlfaW5zcGVjdG9yIiwiY2F0ZWdvcnkiOiJPQlNFUlZFRCIsImRlc2NyaXB0aW9uIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJlcGlzdGVtaWNfbGV2ZWwiOiJDT0RFIEZBQ1QiLCJldmlkZW5jZSI6W3siZGV0YWlsIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9zZW1pb3RpY19ldmFsdWF0b3IucHk6MTYwIn1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfc2VtaW90aWNfZXZhbHVhdG9yLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogZGVjaXNpb24tYWRqYWNlbnQtZmxvYXQuIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfc2VtaW90aWNfZXZhbHVhdG9yLnB5OjE2MSJ9XSwibW9kdWxlX3BhdGgiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9tdXRhbnRlX3NlbWlvdGljX2V2YWx1YXRvci5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImVwaXN0ZW1pY19sZXZlbCI6IkNPREUgRkFDVCIsImV2aWRlbmNlIjpbeyJkZXRhaWwiOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9tdXRhbnRlX3NlbWlvdGljX2V2YWx1YXRvci5weToxNjIifV0sIm1vZHVsZV9wYXRoIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9zZW1pb3RpY19ldmFsdWF0b3IucHkiLCJvdXRjb21lIjoiT0JTRVJWRUQiLCJyZWFzb25pbmciOiJBU1QgZGV0ZWN0b3IgZW1pdHRlZCB0aGlzIG9ic2VydmF0aW9uOiBkZWNpc2lvbi1hZGphY2VudC1mbG9hdC4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9LHsiYWdlbnQiOiJpbnRlZ3JpdHlfaW5zcGVjdG9yIiwiY2F0ZWdvcnkiOiJPQlNFUlZFRCIsImRlc2NyaXB0aW9uIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJlcGlzdGVtaWNfbGV2ZWwiOiJDT0RFIEZBQ1QiLCJldmlkZW5jZSI6W3siZGV0YWlsIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9zZW1pb3RpY19ldmFsdWF0b3IucHk6MjExIn1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfc2VtaW90aWNfZXZhbHVhdG9yLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogZGVjaXNpb24tYWRqYWNlbnQtZmxvYXQuIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfaHlicmlkX2V2YWx1YXRvci5weTo4MCJ9XSwibW9kdWxlX3BhdGgiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9tdXRhbnRlX2h5YnJpZF9ldmFsdWF0b3IucHkiLCJvdXRjb21lIjoiT0JTRVJWRUQiLCJyZWFzb25pbmciOiJBU1QgZGV0ZWN0b3IgZW1pdHRlZCB0aGlzIG9ic2VydmF0aW9uOiBkZWNpc2lvbi1hZGphY2VudC1mbG9hdC4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9LHsiYWdlbnQiOiJpbnRlZ3JpdHlfaW5zcGVjdG9yIiwiY2F0ZWdvcnkiOiJPQlNFUlZFRCIsImRlc2NyaXB0aW9uIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJlcGlzdGVtaWNfbGV2ZWwiOiJDT0RFIEZBQ1QiLCJldmlkZW5jZSI6W3siZGV0YWlsIjoibm9uLWRldGVybWluaXN0aWMgYXJpdGhtZXRpYyBpbiBhIGRlY2lzaW9uLWFkamFjZW50IHBhdGgiLCJraW5kIjoic291cmNlIiwic291cmNlIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvbXV0YW50ZV9oeWJyaWRfZXZhbHVhdG9yLnB5OjgyIn1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL211dGFudGVfaHlicmlkX2V2YWx1YXRvci5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImVwaXN0ZW1pY19sZXZlbCI6IkNPREUgRkFDVCIsImV2aWRlbmNlIjpbeyJkZXRhaWwiOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9zZW1pb3RpY19sbG1fanVkZ2UucHk6MTQwIn1dLCJtb2R1bGVfcGF0aCI6ImFnZW50X211dGFudGUvZW5naW5lL3NlbWlvdGljX2xsbV9qdWRnZS5weSIsIm91dGNvbWUiOiJPQlNFUlZFRCIsInJlYXNvbmluZyI6IkFTVCBkZXRlY3RvciBlbWl0dGVkIHRoaXMgb2JzZXJ2YXRpb246IGRlY2lzaW9uLWFkamFjZW50LWZsb2F0LiIsInNldmVyaXR5IjoiTUVESVVNIn0seyJhZ2VudCI6ImludGVncml0eV9pbnNwZWN0b3IiLCJjYXRlZ29yeSI6Ik9CU0VSVkVEIiwiZGVzY3JpcHRpb24iOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImVwaXN0ZW1pY19sZXZlbCI6IkNPREUgRkFDVCIsImV2aWRlbmNlIjpbeyJkZXRhaWwiOiJub24tZGV0ZXJtaW5pc3RpYyBhcml0aG1ldGljIGluIGEgZGVjaXNpb24tYWRqYWNlbnQgcGF0aCIsImtpbmQiOiJzb3VyY2UiLCJzb3VyY2UiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9xdWFsaXR5X2dhdGUucHk6NDYifV0sIm1vZHVsZV9wYXRoIjoiYWdlbnRfbXV0YW50ZS9lbmdpbmUvcXVhbGl0eV9nYXRlLnB5Iiwib3V0Y29tZSI6Ik9CU0VSVkVEIiwicmVhc29uaW5nIjoiQVNUIGRldGVjdG9yIGVtaXR0ZWQgdGhpcyBvYnNlcnZhdGlvbjogZGVjaXNpb24tYWRqYWNlbnQtZmxvYXQuIiwic2V2ZXJpdHkiOiJNRURJVU0ifSx7ImFnZW50IjoiaW50ZWdyaXR5X2luc3BlY3RvciIsImNhdGVnb3J5IjoiT0JTRVJWRUQiLCJkZXNjcmlwdGlvbiI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwiZXBpc3RlbWljX2xldmVsIjoiQ09ERSBGQUNUIiwiZXZpZGVuY2UiOlt7ImRldGFpbCI6Im5vbi1kZXRlcm1pbmlzdGljIGFyaXRobWV0aWMgaW4gYSBkZWNpc2lvbi1hZGphY2VudCBwYXRoIiwia2luZCI6InNvdXJjZSIsInNvdXJjZSI6ImFnZW50X211dGFudGUvZW5naW5lL3F1YWxpdHlfZ2F0ZS5weTo0NyJ9XSwibW9kdWxlX3BhdGgiOiJhZ2VudF9tdXRhbnRlL2VuZ2luZS9xdWFsaXR5X2dhdGUucHkiLCJvdXRjb21lIjoiT0JTRVJWRUQiLCJyZWFzb25pbmciOiJBU1QgZGV0ZWN0b3IgZW1pdHRlZCB0aGlzIG9ic2VydmF0aW9uOiBkZWNpc2lvbi1hZGphY2VudC1mbG9hdC4iLCJzZXZlcml0eSI6Ik1FRElVTSJ9XQ=='></div></body></html>

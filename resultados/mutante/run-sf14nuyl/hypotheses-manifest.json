@@ -1,0 +1,37 @@
+{
+  "audited_modules": [
+    "agent_mutante/agent.py",
+    "agent_mutante/engine/bayesian.py",
+    "agent_mutante/engine/bigquery_sink.py",
+    "agent_mutante/engine/elastic_semantic.py",
+    "agent_mutante/engine/mutante_client.py",
+    "agent_mutante/engine/mutante_hybrid_evaluator.py",
+    "agent_mutante/engine/mutante_semiotic_evaluator.py",
+    "agent_mutante/engine/mutator.py",
+    "agent_mutante/engine/quality_gate.py",
+    "agent_mutante/engine/sandbox.py",
+    "agent_mutante/engine/semiotic_llm_judge.py",
+    "components/css.py",
+    "dashboard/components/css.py",
+    "main.py"
+  ],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784139969,
+  "hypotheses": [
+    {
+      "description": "The parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure.",
+      "falsification_test": "Feed malformed input to the function containing line 113; a named boundary error or explicit rejection falsifies the hypothesis.",
+      "file_lines": [
+        113
+      ],
+      "module_path": "agent_mutante/engine/semiotic_llm_judge.py",
+      "rank": 1
+    }
+  ],
+  "limitations": [
+    "Hypotheses require module 3 verification; parser candidates may receive isolated induction, while unsupported families remain AST-only."
+  ],
+  "root": "/home/labestiadevigia/mutante",
+  "schema_version": "1.0",
+  "triage_schema_version": "1.1"
+}

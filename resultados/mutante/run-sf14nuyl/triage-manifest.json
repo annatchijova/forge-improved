@@ -1,0 +1,1230 @@
+{
+  "deletion_judgments": {
+    "agent_mutante/engine/__init__.py": "deleting would remove unreachable code",
+    "agent_mutante/engine/platform_experimental/__init__.py": "deleting would remove unreachable code",
+    "agent_mutante/engine/platform_experimental/windows_sandbox.py": "deleting would remove unreachable code",
+    "apply_license.py": "deleting would remove unreachable code",
+    "dashboard/__init__.py": "deleting would remove unreachable code",
+    "dashboard/app.py": "deleting would remove unreachable code",
+    "generate_demo_dataset.py": "deleting would remove unreachable code",
+    "mcp_mutante.py": "deleting would remove unreachable code",
+    "reimport_semantic.py": "deleting would remove unreachable code",
+    "reseed_elastic.py": "deleting would remove unreachable code",
+    "run_campaign.py": "deleting would remove unreachable code",
+    "test_demo_pipeline.py": "deleting would remove unreachable code",
+    "test_full_pipeline.py": "deleting would remove unreachable code",
+    "test_vertex_gemini.py": "deleting would remove unreachable code"
+  },
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784139968,
+  "limitations": [],
+  "modules": [
+    {
+      "caller_count": 1,
+      "decision_keywords": [
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "1 caller(s), 2 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/agent.py"
+        },
+        {
+          "detail": "decision keywords: ['verdict']",
+          "kind": "content",
+          "source": "agent_mutante/agent.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/agent.py"
+        }
+      ],
+      "import_count": 2,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/agent.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/__init__.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/__init__.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/__init__.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "agent_mutante/engine/__init__.py"
+    },
+    {
+      "caller_count": 3,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "3 caller(s), 4 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/bayesian.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/bayesian.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/bayesian.py"
+        }
+      ],
+      "import_count": 4,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/bayesian.py"
+    },
+    {
+      "caller_count": 1,
+      "decision_keywords": [
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "1 caller(s), 2 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/bigquery_sink.py"
+        },
+        {
+          "detail": "decision keywords: ['verdict']",
+          "kind": "content",
+          "source": "agent_mutante/engine/bigquery_sink.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/bigquery_sink.py"
+        }
+      ],
+      "import_count": 2,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/bigquery_sink.py"
+    },
+    {
+      "caller_count": 5,
+      "decision_keywords": [
+        "score"
+      ],
+      "evidence": [
+        {
+          "detail": "5 caller(s), 6 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/elastic_semantic.py"
+        },
+        {
+          "detail": "decision keywords: ['score']",
+          "kind": "content",
+          "source": "agent_mutante/engine/elastic_semantic.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/elastic_semantic.py"
+        }
+      ],
+      "import_count": 6,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/elastic_semantic.py"
+    },
+    {
+      "caller_count": 2,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "2 caller(s), 3 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/mutante_client.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/mutante_client.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/mutante_client.py"
+        }
+      ],
+      "import_count": 3,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/mutante_client.py"
+    },
+    {
+      "caller_count": 5,
+      "decision_keywords": [
+        "score",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "5 caller(s), 6 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/mutante_hybrid_evaluator.py"
+        },
+        {
+          "detail": "decision keywords: ['score', 'verdict']",
+          "kind": "content",
+          "source": "agent_mutante/engine/mutante_hybrid_evaluator.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/mutante_hybrid_evaluator.py"
+        }
+      ],
+      "import_count": 6,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/mutante_hybrid_evaluator.py"
+    },
+    {
+      "caller_count": 10,
+      "decision_keywords": [
+        "score",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "10 caller(s), 11 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+        },
+        {
+          "detail": "decision keywords: ['score', 'verdict']",
+          "kind": "content",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+        }
+      ],
+      "import_count": 11,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/mutante_semiotic_evaluator.py"
+    },
+    {
+      "caller_count": 8,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "8 caller(s), 9 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/mutator.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/mutator.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/mutator.py"
+        }
+      ],
+      "import_count": 9,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/mutator.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/platform_experimental/__init__.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/platform_experimental/__init__.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/platform_experimental/__init__.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "agent_mutante/engine/platform_experimental/__init__.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/platform_experimental/windows_sandbox.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/platform_experimental/windows_sandbox.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/platform_experimental/windows_sandbox.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "agent_mutante/engine/platform_experimental/windows_sandbox.py"
+    },
+    {
+      "caller_count": 4,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "4 caller(s), 5 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/quality_gate.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/quality_gate.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/quality_gate.py"
+        }
+      ],
+      "import_count": 5,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/quality_gate.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/sandbox.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/sandbox.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/sandbox.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/sandbox.py"
+    },
+    {
+      "caller_count": 1,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "1 caller(s), 2 import reference(s)",
+          "kind": "caller_graph",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py"
+        }
+      ],
+      "import_count": 2,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "agent_mutante/engine/semiotic_llm_judge.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "apply_license.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "apply_license.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "apply_license.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "apply_license.py"
+    },
+    {
+      "caller_count": 10,
+      "decision_keywords": [
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "10 caller(s), 11 import reference(s)",
+          "kind": "caller_graph",
+          "source": "components/css.py"
+        },
+        {
+          "detail": "decision keywords: ['verdict']",
+          "kind": "content",
+          "source": "components/css.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "components/css.py"
+        }
+      ],
+      "import_count": 11,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "components/css.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "components/sidebar.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "components/sidebar.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "components/sidebar.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "components/sidebar.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "components_init.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "components_init.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "components_init.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DUPLICATE",
+      "path": "components_init.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/__init__.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/__init__.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "dashboard/__init__.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "dashboard/__init__.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/app.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/app.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "dashboard/app.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "dashboard/app.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/components/__init__.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/components/__init__.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "dashboard/components/__init__.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/components/__init__.py"
+    },
+    {
+      "caller_count": 10,
+      "decision_keywords": [
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "10 caller(s), 11 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/components/css.py"
+        },
+        {
+          "detail": "decision keywords: ['verdict']",
+          "kind": "content",
+          "source": "dashboard/components/css.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/components/css.py"
+        }
+      ],
+      "import_count": 11,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "dashboard/components/css.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/components/sidebar.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/components/sidebar.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/components/sidebar.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/components/sidebar.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/__init__.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/pages/__init__.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "dashboard/pages/__init__.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/__init__.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "score",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/agent_console.py"
+        },
+        {
+          "detail": "decision keywords: ['score', 'verdict']",
+          "kind": "content",
+          "source": "dashboard/pages/agent_console.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/pages/agent_console.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/agent_console.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "SCORE"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/analytics.py"
+        },
+        {
+          "detail": "decision keywords: ['SCORE']",
+          "kind": "content",
+          "source": "dashboard/pages/analytics.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/pages/analytics.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/analytics.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "Verdict",
+        "classification",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/attack_families.py"
+        },
+        {
+          "detail": "decision keywords: ['Verdict', 'classification', 'verdict']",
+          "kind": "content",
+          "source": "dashboard/pages/attack_families.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/pages/attack_families.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/attack_families.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/command_center.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "dashboard/pages/command_center.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/pages/command_center.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/command_center.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "VERDICT",
+        "Verdict",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "dashboard/pages/forensic_feed.py"
+        },
+        {
+          "detail": "decision keywords: ['VERDICT', 'Verdict', 'verdict']",
+          "kind": "content",
+          "source": "dashboard/pages/forensic_feed.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "dashboard/pages/forensic_feed.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "dashboard/pages/forensic_feed.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "generate_demo_dataset.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "generate_demo_dataset.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "generate_demo_dataset.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "generate_demo_dataset.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "Gate",
+        "Verdict",
+        "gate",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "main.py"
+        },
+        {
+          "detail": "decision keywords: ['Gate', 'Verdict', 'gate', 'verdict']",
+          "kind": "content",
+          "source": "main.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "main.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "CONNECTED_ALIVE",
+      "path": "main.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "mcp_mutante.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "mcp_mutante.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "mcp_mutante.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "mcp_mutante.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "score",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "pages/agent_console.py"
+        },
+        {
+          "detail": "decision keywords: ['score', 'verdict']",
+          "kind": "content",
+          "source": "pages/agent_console.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "pages/agent_console.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "pages/agent_console.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "SCORE"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "pages/analytics.py"
+        },
+        {
+          "detail": "decision keywords: ['SCORE']",
+          "kind": "content",
+          "source": "pages/analytics.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "pages/analytics.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "pages/analytics.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "Verdict",
+        "classification",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "pages/attack_families.py"
+        },
+        {
+          "detail": "decision keywords: ['Verdict', 'classification', 'verdict']",
+          "kind": "content",
+          "source": "pages/attack_families.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "pages/attack_families.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "pages/attack_families.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "pages/command_center.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "pages/command_center.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "pages/command_center.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "pages/command_center.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "VERDICT",
+        "Verdict",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 1 import reference(s)",
+          "kind": "caller_graph",
+          "source": "pages/forensic_feed.py"
+        },
+        {
+          "detail": "decision keywords: ['VERDICT', 'Verdict', 'verdict']",
+          "kind": "content",
+          "source": "pages/forensic_feed.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "pages/forensic_feed.py"
+        }
+      ],
+      "import_count": 1,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "DUPLICATE",
+      "path": "pages/forensic_feed.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "reimport_semantic.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "reimport_semantic.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "reimport_semantic.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "reimport_semantic.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "Verdict",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "reseed_elastic.py"
+        },
+        {
+          "detail": "decision keywords: ['Verdict', 'verdict']",
+          "kind": "content",
+          "source": "reseed_elastic.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1781096699",
+          "kind": "git_log",
+          "source": "reseed_elastic.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1781096699,
+      "module_class": "FOSSIL_HIGH_RISK",
+      "path": "reseed_elastic.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "gate",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "run_campaign.py"
+        },
+        {
+          "detail": "decision keywords: ['gate', 'verdict']",
+          "kind": "content",
+          "source": "run_campaign.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "run_campaign.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "FOSSIL_HIGH_RISK",
+      "path": "run_campaign.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "Gate",
+        "gate",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "test_demo_pipeline.py"
+        },
+        {
+          "detail": "decision keywords: ['Gate', 'gate', 'verdict']",
+          "kind": "content",
+          "source": "test_demo_pipeline.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "test_demo_pipeline.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "FOSSIL_HIGH_RISK",
+      "path": "test_demo_pipeline.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [
+        "VERDICT",
+        "verdict"
+      ],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "test_full_pipeline.py"
+        },
+        {
+          "detail": "decision keywords: ['VERDICT', 'verdict']",
+          "kind": "content",
+          "source": "test_full_pipeline.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "test_full_pipeline.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "FOSSIL_HIGH_RISK",
+      "path": "test_full_pipeline.py"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "source": "test_vertex_gemini.py"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "source": "test_vertex_gemini.py"
+        },
+        {
+          "detail": "last logic-touch epoch 1780598906",
+          "kind": "git_log",
+          "source": "test_vertex_gemini.py"
+        }
+      ],
+      "import_count": 0,
+      "language": "Python",
+      "last_commit_epoch": 1780598906,
+      "module_class": "DEAD_WEIGHT",
+      "path": "test_vertex_gemini.py"
+    }
+  ],
+  "root": "/home/labestiadevigia/mutante",
+  "schema_version": "1.1",
+  "stacks": [
+    {
+      "confidence": {
+        "denominator": 20,
+        "numerator": 19
+      },
+      "evidence": [
+        {
+          "detail": "Python: 43 files with extension",
+          "kind": "file_count",
+          "source": "filesystem"
+        },
+        {
+          "detail": "requirements.txt present",
+          "kind": "manifest",
+          "source": "filesystem"
+        }
+      ],
+      "name": "Python"
+    }
+  ],
+  "summary": {
+    "CONNECTED_ALIVE": 14,
+    "DEAD_WEIGHT": 10,
+    "DUPLICATE": 15,
+    "FOSSIL_HIGH_RISK": 4
+  }
+}

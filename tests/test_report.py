@@ -42,6 +42,9 @@ def test_report_separates_findings_discarded_scope_and_clean_module(tmp_path):
     assert 'data-severity="MEDIUM"' in report
     assert "data-search=" in report
     assert "Showing 1 of 1" in report
+    assert 'id="dashboard"' in report
+    assert "coverage-dial" in report
+    assert "Full metrics and audit telemetry" in report
 
 
 def test_report_escapes_hostile_content_in_findings_and_module_paths(tmp_path):

@@ -18,6 +18,8 @@ def test_all_tiers_preserve_identical_sealed_findings_and_outcomes(tmp_path):
     assert "Discarded hypotheses" not in outputs["summary"].read_text()
     assert "Discarded hypotheses" in outputs["standard"].read_text()
     assert "Contract evaluations" in outputs["extended"].read_text()
+    assert "background:var(--bg)" in outputs["standard"].read_text()
+    assert "--bg:#E3B8B8" in outputs["standard"].read_text()
 
 def test_report_cli_renders_existing_sealed_artifact(tmp_path, monkeypatch, capsys):
     manifest=VerificationManifest("2.0", "0.1.0", "1.0", str(tmp_path), 0, (), ())

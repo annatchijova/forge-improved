@@ -1,0 +1,1188 @@
+{
+  "applicability": {
+    "forge/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/__main__.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/agents/_scan.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/agents/archaeologist.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/bug_investigator.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/integrity_inspector.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/patch_reviewer.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/agents/recommendation_agent.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/report_composer.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/agents/security_auditor.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/benchmark.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/canonical.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cli.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/cronos/chain.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos/models.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos/narrator.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/cronos/quality.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos/store.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos/tracer.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/cronos_mcp_server.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/detector/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/detector/stack.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/evidence_package.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/governance/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/governance/runtime.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/harness/__init__.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "forge/harness/mining.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/harness/proposal.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/harness/validation.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/hypotheses.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/induction.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/io.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/mcp_server.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/metrics.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/models.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/orchestrator.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/report.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/reporting.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/runtime.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/sealing.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/severity.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/skills/validate_at_the_boundary/contract.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "forge/tiered_report.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/tracing.py": {
+      "validate-at-the-boundary": "UNDETERMINED"
+    },
+    "forge/verification.py": {
+      "validate-at-the-boundary": "APPLICABLE"
+    },
+    "tests/test_benchmark.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_caller_counts_performance.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_governance_runtime.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_hardening.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_harness.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_mcp_server.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_metrics.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_module1.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_module3.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_orchestrator.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_recommendation_agent.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_report.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_reporting.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_runtime_frontends.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_runtime_trace.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_sealing.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_specialized_agents.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_specialized_pipeline.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "tests/test_tiered_report.py": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    }
+  },
+  "domain_hypotheses": [
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/__main__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/__init__.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/agents/_scan.py"
+        }
+      ],
+      "module_path": "forge/agents/_scan.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/archaeologist.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/bug_investigator.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/integrity_inspector.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/agents/patch_reviewer.py"
+        }
+      ],
+      "module_path": "forge/agents/patch_reviewer.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/recommendation_agent.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/agents/report_composer.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/agents/security_auditor.py"
+        }
+      ],
+      "module_path": "forge/agents/security_auditor.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/benchmark.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/canonical.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cli.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/__init__.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic"
+      ],
+      "evidence": [
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "forge/cronos/chain.py"
+        }
+      ],
+      "module_path": "forge/cronos/chain.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/models.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/narrator.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/quality.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/store.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos/tracer.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/cronos_mcp_server.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/detector/__init__.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic"
+      ],
+      "evidence": [
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "forge/detector/stack.py"
+        }
+      ],
+      "module_path": "forge/detector/stack.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/evidence_package.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/governance/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic",
+        "input_boundary",
+        "machine_learning"
+      ],
+      "evidence": [
+        {
+          "detail": "ML framework import or reference",
+          "kind": "source_pattern",
+          "source": "forge/governance/runtime.py"
+        },
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/governance/runtime.py"
+        },
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "forge/governance/runtime.py"
+        }
+      ],
+      "module_path": "forge/governance/runtime.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/harness/__init__.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/harness/mining.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/harness/proposal.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/harness/validation.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/hypotheses.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/induction.py"
+        }
+      ],
+      "module_path": "forge/induction.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/io.py"
+        }
+      ],
+      "module_path": "forge/io.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/mcp_server.py"
+        }
+      ],
+      "module_path": "forge/mcp_server.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 2
+      },
+      "domains": [
+        "cryptographic",
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/metrics.py"
+        },
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "forge/metrics.py"
+        }
+      ],
+      "module_path": "forge/metrics.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/models.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/orchestrator.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/report.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/reporting.py"
+        }
+      ],
+      "module_path": "forge/reporting.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/runtime.py"
+        }
+      ],
+      "module_path": "forge/runtime.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "cryptographic"
+      ],
+      "evidence": [
+        {
+          "detail": "cryptographic library reference",
+          "kind": "source_pattern",
+          "source": "forge/sealing.py"
+        }
+      ],
+      "module_path": "forge/sealing.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/severity.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/skills/validate_at_the_boundary/contract.py"
+        }
+      ],
+      "module_path": "forge/skills/validate_at_the_boundary/contract.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/tiered_report.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "forge/tracing.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "forge/verification.py"
+        }
+      ],
+      "module_path": "forge/verification.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_benchmark.py"
+        }
+      ],
+      "module_path": "tests/test_benchmark.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_caller_counts_performance.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_governance_runtime.py"
+        }
+      ],
+      "module_path": "tests/test_governance_runtime.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_hardening.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_harness.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_mcp_server.py"
+        }
+      ],
+      "module_path": "tests/test_mcp_server.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_metrics.py"
+        }
+      ],
+      "module_path": "tests/test_metrics.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_module1.py"
+        }
+      ],
+      "module_path": "tests/test_module1.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_module3.py"
+        }
+      ],
+      "module_path": "tests/test_module3.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_orchestrator.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_recommendation_agent.py"
+        }
+      ],
+      "module_path": "tests/test_recommendation_agent.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_report.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_reporting.py"
+        }
+      ],
+      "module_path": "tests/test_reporting.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_runtime_frontends.py"
+        }
+      ],
+      "module_path": "tests/test_runtime_frontends.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_runtime_trace.py"
+        }
+      ],
+      "module_path": "tests/test_runtime_trace.py"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "tests/test_sealing.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_specialized_agents.py"
+        }
+      ],
+      "module_path": "tests/test_specialized_agents.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_specialized_pipeline.py"
+        }
+      ],
+      "module_path": "tests/test_specialized_pipeline.py"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "source": "tests/test_tiered_report.py"
+        }
+      ],
+      "module_path": "tests/test_tiered_report.py"
+    }
+  ],
+  "findings": [],
+  "limitations": []
+}

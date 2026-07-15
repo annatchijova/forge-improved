@@ -1,0 +1,117 @@
+{
+  "ast_unverified_families": [],
+  "ast_verified_families": [
+    "subprocess",
+    "parser",
+    "float comparison",
+    "eval/exec"
+  ],
+  "discarded": [
+    {
+      "module_path": "forge/governance/runtime.py",
+      "reason": "AST proves known parser exception handler."
+    }
+  ],
+  "findings": [
+    {
+      "agent": "bug_investigator",
+      "category": "INFERRED",
+      "description": "The parser call `render_report(required[\"triage\"], required[\"hypotheses\"], required[\"sealed\"], main, required[\"coverage\"], json.loads(required[\"metrics\"].read_text()))` at forge/reporting.py:43 has no nearby exception handling, so malformed input may escape as an opaque failure.",
+      "epistemic_level": "CONFIRMED BY INDUCTION",
+      "evidence": [
+        {
+          "detail": "render_report(required[\"triage\"], required[\"hypotheses\"], required[\"sealed\"], main, required[\"coverage\"], json.loads(required[\"metrics\"].read_text()))",
+          "kind": "source",
+          "source": "forge/reporting.py:43"
+        }
+      ],
+      "module_path": "forge/reporting.py",
+      "outcome": "OBSERVED",
+      "reasoning": "Malformed input raised opaque FileNotFoundError. Evidence: forge/reporting.py:43: FileNotFoundError: incomplete FORGE run; missing: {not valid json/triage-manifest.json, {not valid json/hypotheses-manifest.json, {not valid json/verification-manifest.sealed.json, {not valid json/coverage-report.json, {not valid json/metrics.json",
+      "severity": "HIGH"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "forge/benchmark.py:65"
+        }
+      ],
+      "module_path": "forge/benchmark.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "forge/report.py:291"
+        }
+      ],
+      "module_path": "forge/report.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "forge/report.py:291"
+        }
+      ],
+      "module_path": "forge/report.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "forge/report.py:291"
+        }
+      ],
+      "module_path": "forge/report.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    }
+  ],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784154808,
+  "hypotheses_schema_version": "1.0",
+  "induction": [
+    {
+      "detail": "Malformed input raised opaque FileNotFoundError.",
+      "evidence": "forge/reporting.py:43: FileNotFoundError: incomplete FORGE run; missing: {not valid json/triage-manifest.json, {not valid json/hypotheses-manifest.json, {not valid json/verification-manifest.sealed.json, {not valid json/coverage-report.json, {not valid json/metrics.json",
+      "family": "parser",
+      "line": "43",
+      "module_path": "forge/reporting.py",
+      "status": "CONFIRMED BY INDUCTION"
+    }
+  ],
+  "root": "/home/labestiadevigia/forge",
+  "schema_version": "2.0"
+}

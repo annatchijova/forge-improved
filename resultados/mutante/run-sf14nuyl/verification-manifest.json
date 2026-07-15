@@ -1,0 +1,350 @@
+{
+  "ast_unverified_families": [],
+  "ast_verified_families": [
+    "subprocess",
+    "parser",
+    "float comparison",
+    "eval/exec"
+  ],
+  "discarded": [],
+  "findings": [
+    {
+      "agent": "bug_investigator",
+      "category": "INFERRED",
+      "description": "The parser call `result = json.loads(raw)` at agent_mutante/engine/semiotic_llm_judge.py:113 has no nearby exception handling, so malformed input may escape as an opaque failure.",
+      "epistemic_level": "PLAUSIBLE HYPOTHESIS",
+      "evidence": [
+        {
+          "detail": "result = json.loads(raw)",
+          "kind": "source",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py:113"
+        }
+      ],
+      "module_path": "agent_mutante/engine/semiotic_llm_judge.py",
+      "outcome": "OBSERVED",
+      "reasoning": "Observed construct matches; induction was undetermined: Induction timed out after 1.0s; child process was terminated.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "security_auditor",
+      "category": "OBSERVED",
+      "description": "parameter reaches open() without proven normalization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "parameter reaches open() without proven normalization",
+          "kind": "source",
+          "source": "apply_license.py:26"
+        }
+      ],
+      "module_path": "apply_license.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: path-traversal.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "security_auditor",
+      "category": "OBSERVED",
+      "description": "parameter reaches open() without proven normalization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "parameter reaches open() without proven normalization",
+          "kind": "source",
+          "source": "apply_license.py:56"
+        }
+      ],
+      "module_path": "apply_license.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: path-traversal.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "main.py:73"
+        }
+      ],
+      "module_path": "main.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "main.py:115"
+        }
+      ],
+      "module_path": "main.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/bigquery_sink.py:71"
+        }
+      ],
+      "module_path": "agent_mutante/engine/bigquery_sink.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "unversioned serialization",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "unversioned serialization",
+          "kind": "source",
+          "source": "agent_mutante/engine/bigquery_sink.py:77"
+        }
+      ],
+      "module_path": "agent_mutante/engine/bigquery_sink.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: unversioned-serialization.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:194"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:195"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:196"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:160"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:161"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:162"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_semiotic_evaluator.py:211"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_semiotic_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_hybrid_evaluator.py:80"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_hybrid_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/mutante_hybrid_evaluator.py:82"
+        }
+      ],
+      "module_path": "agent_mutante/engine/mutante_hybrid_evaluator.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/semiotic_llm_judge.py:140"
+        }
+      ],
+      "module_path": "agent_mutante/engine/semiotic_llm_judge.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/quality_gate.py:46"
+        }
+      ],
+      "module_path": "agent_mutante/engine/quality_gate.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    },
+    {
+      "agent": "integrity_inspector",
+      "category": "OBSERVED",
+      "description": "non-deterministic arithmetic in a decision-adjacent path",
+      "epistemic_level": "CODE FACT",
+      "evidence": [
+        {
+          "detail": "non-deterministic arithmetic in a decision-adjacent path",
+          "kind": "source",
+          "source": "agent_mutante/engine/quality_gate.py:47"
+        }
+      ],
+      "module_path": "agent_mutante/engine/quality_gate.py",
+      "outcome": "OBSERVED",
+      "reasoning": "AST detector emitted this observation: decision-adjacent-float.",
+      "severity": "MEDIUM"
+    }
+  ],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784139970,
+  "hypotheses_schema_version": "1.0",
+  "induction": [
+    {
+      "detail": "Induction timed out after 1.0s; child process was terminated.",
+      "evidence": "agent_mutante/engine/semiotic_llm_judge.py:113",
+      "family": "parser",
+      "line": "113",
+      "module_path": "agent_mutante/engine/semiotic_llm_judge.py",
+      "status": "UNDETERMINED"
+    }
+  ],
+  "root": "/home/labestiadevigia/mutante",
+  "schema_version": "2.0"
+}
