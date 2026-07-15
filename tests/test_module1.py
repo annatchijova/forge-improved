@@ -20,14 +20,35 @@ def test_javascript_repo_is_not_python_overfit(tmp_path: Path):
     assert any(s.name == "JavaScript" for s in manifest.stacks)
     assert not any(s.name == "Python" for s in manifest.stacks)
 
-def test_hypotheses_read_live_source_and_are_falsifiable(tmp_path: Path):
-    (tmp_path / "main.py").write_text("def load_input(value):\n    return value\n")
-    manifest = triage(tmp_path)
-    generated = generate_hypotheses(manifest)
-    assert len(generated.hypotheses) == 5
-    assert all(h.falsification_test.strip() and h.file_lines for h in generated.hypotheses)
+def test_hypotheses_are_construct_specific_and_falsifiable(tmp_path: Path):
+    fixtures = {
+        "subprocess.py": "import subprocess\ndef run(cmd):\n    return subprocess.run(cmd)\n",
+        "parser.py": "import json\ndef load(raw):\n    return json.loads(raw)\n",
+        "score.py": "def score(value):\n    return 'high' if score(value) > 0.1 else 'low'\n",
+        "dynamic.py": "def run(expr):\n    return eval(expr)\n",
+    }
+    texts = []
+    for name, body in fixtures.items():
+        case = tmp_path / name
+        case.mkdir()
+        (case / "main.py").write_text(body)
+        result = generate_hypotheses(triage(case))
+        assert result.hypotheses
+        hypothesis = result.hypotheses[0]
+        assert hypothesis.falsification_test.strip() and hypothesis.file_lines
+        texts.append(hypothesis.description)
+    assert len(set(texts)) == 4
+    assert "subprocess.run" in texts[0]
+    assert "json.loads" in texts[1]
+    assert "float" in texts[2]
+    assert "eval" in texts[3]
 
 def test_boring_connected_module_gets_no_forced_hypotheses(tmp_path: Path):
     (tmp_path / "main.py").write_text("def greet():\n    return 'hello'\n")
+    generated = generate_hypotheses(triage(tmp_path))
+    assert generated.hypotheses == ()
+
+def test_keyword_in_safe_context_does_not_fire(tmp_path: Path):
+    (tmp_path / "main.py").write_text("# parse and subprocess are discussed here\nimport subprocess\ndef run():\n    try:\n        return subprocess.run(['trusted-tool'], check=True)\n    except subprocess.SubprocessError as exc:\n        raise RuntimeError('tool failed') from exc\n")
     generated = generate_hypotheses(triage(tmp_path))
     assert generated.hypotheses == ()

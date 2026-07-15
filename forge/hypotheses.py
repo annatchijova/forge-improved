@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -14,20 +15,23 @@ def _lines(path: Path) -> tuple[str, ...]:
 
 
 def _candidates(module_path: str, source: tuple[str, ...], language: str) -> list[Hypothesis]:
-    joined = "\n".join(source).lower()
-    risk_terms = ("input", "parse", "load", "open(", "exec(", "eval(", "subprocess", "socket", "request", "score", "verdict", "validate", "classif")
-    if not any(term in joined for term in risk_terms):
-        return []
-    lines = tuple(i for i, line in enumerate(source, 1) if any(term in line.lower() for term in risk_terms)) or (1,)
-    first = lines[0]
-    raw = [
-        ("If an untrusted input reaches this module without complete boundary validation, a crafted value could trigger an exception or alter the result.", f"Run the module's public entry point with malformed, empty, and non-finite inputs; if each is rejected with a named boundary error and no result changes, falsify this hypothesis."),
-        ("If parsing or loading accepts a shape different from the downstream contract, a minimally malformed fixture could produce silent corruption rather than a clear failure.", f"Execute a fixture with one missing, extra, or wrong-typed field and compare the returned value; a deterministic, explicit rejection falsifies this hypothesis."),
-        ("If an external resource or subprocess failure is swallowed, the caller could receive a plausible result that is marked as successful despite missing work.", f"Force the dependency to fail (invalid path, unavailable command, or injected exception); an observable failure or explicit degraded status falsifies this hypothesis."),
-        ("If repeated execution is not deterministic for identical source state and input, the same audit could emit different outputs and weaken reproducibility.", f"Run the same entry point twice in isolated processes with identical bytes and environment; byte-identical outputs falsify this hypothesis."),
-        ("If this live module participates in a decision path without a regression seam, a boundary case may change the decision without a focused executable check.", f"Run the smallest available integration entry point at each exact threshold and record the result; complete boundary coverage with a passing regression test falsifies this hypothesis."),
-    ]
-    return [Hypothesis(module_path, i, desc, (first,), test) for i, (desc, test) in enumerate(raw[:5], 1)]
+    candidates: list[tuple[str, int, str]] = []
+    for number, line in enumerate(source, 1):
+        stripped = line.strip()
+        # Ignore comments and strings that merely mention a risk word.
+        if not stripped or stripped.startswith("#"):
+            continue
+        if re.search(r"\b(subprocess\.(?:run|Popen|call|check_call|check_output)|os\.system)\s*\(", stripped):
+            if not any("try:" in source[i] for i in range(max(0, number - 4), number)):
+                candidates.append((f"The dynamic command invocation `{stripped}` at {module_path}:{number} may pass attacker-controlled arguments without an enclosing failure boundary.", number, f"Invoke this call with a harmless invalid executable and a shell metacharacter fixture; an explicit exception path with no command execution falsifies the hypothesis."))
+        if re.search(r"\b(?:json|yaml|toml)\.loads?\s*\(|\bparse\s*\(", stripped):
+            if not any("except" in source[i] for i in range(number, min(len(source), number + 5))):
+                candidates.append((f"The parser call `{stripped}` at {module_path}:{number} has no nearby exception handling, so malformed input may escape as an opaque failure.", number, f"Feed malformed input to the function containing line {number}; a named boundary error or explicit rejection falsifies the hypothesis."))
+        if re.search(r"\b(?:score|verdict|classif\w*)\b.*(?:[<>]=?|==).*\d+\.\d+", stripped):
+            candidates.append((f"The decision comparison `{stripped}` at {module_path}:{number} uses a binary float threshold, so rounding at the boundary may flip the result.", number, f"Run inputs immediately below, exactly at, and above the threshold using exact decimal values; stable, documented boundary behavior falsifies the hypothesis."))
+        if re.search(r"\b(eval|exec)\s*\(", stripped):
+            candidates.append((f"The dynamic evaluation `{stripped}` at {module_path}:{number} may execute data as code instead of treating it as data.", number, f"Supply a payload that would create a harmless sentinel file; absence of the sentinel and explicit rejection falsify the hypothesis."))
+    return [Hypothesis(module_path, rank, desc, (line,), test) for rank, (desc, line, test) in enumerate(candidates[:5], 1)]
 
 
 def generate_hypotheses(triage: TriageManifest) -> HypothesesManifest:
