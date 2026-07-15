@@ -3,6 +3,16 @@ from __future__ import annotations
 import ast, os, re
 from dataclasses import dataclass
 from pathlib import Path
+from forge.detector.stack import discover_files, triage
+from forge.models import ModuleClass
+
+@dataclass(frozen=True)
+class AgentScanResult:
+    findings: tuple
+    examinations: dict[str, str]
+    def __iter__(self): return iter(self.findings)
+    def __len__(self): return len(self.findings)
+    def __eq__(self, other): return tuple(self.findings) == tuple(other) if isinstance(other, (tuple, list)) else super().__eq__(other)
 
 @dataclass(frozen=True)
 class SecurityFinding:
@@ -46,9 +56,17 @@ def _paths(tree):
             yield SecurityFinding("path-traversal", "", n.lineno, "parameter reaches open() without proven normalization")
 
 def audit(root: str | os.PathLike[str]) -> tuple[SecurityFinding, ...]:
-    out=[]
-    for p in Path(root).rglob("*.py"):
+    base=Path(root); eligible={m.path for m in triage(base).modules if m.module_class in {ModuleClass.CONNECTED_ALIVE, ModuleClass.FOSSIL_HIGH_RISK, ModuleClass.DEAD_WEIGHT}}
+    out=[]; examinations={}
+    for p in discover_files(base, include_excluded=True):
+        rel=str(p.relative_to(base))
+        if any(part in {".git", ".venv", "venv", "node_modules", "__pycache__", ".mypy_cache", ".pytest_cache"} for part in p.relative_to(base).parts):
+            examinations[rel]="excluded_by_policy"; continue
+        if rel not in eligible or p.suffix != ".py":
+            examinations[rel]="excluded_by_scope"
+            continue
         try: tree=ast.parse(p.read_text())
-        except SyntaxError: continue
+        except (SyntaxError, OSError, UnicodeDecodeError): examinations[rel]="excluded_by_scope"; continue
         for f in (*_assigned(tree), *_deserialization(tree), *_paths(tree)): out.append(SecurityFinding(f.family, str(p.relative_to(root)), f.line, f.description))
-    return tuple(out)
+        examinations[rel]="examined_with_findings" if any(x.path == rel for x in out) else "examined_clean"
+    return AgentScanResult(tuple(out), examinations)

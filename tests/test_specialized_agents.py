@@ -4,7 +4,7 @@ from forge.agents.integrity_inspector import inspect
 from forge.agents.patch_reviewer import review
 
 def write(root, name, text):
-    p = root / name; p.write_text(text); return p
+    p = root / name; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(text); return p
 
 def test_security_credential_trigger_and_safe_context(tmp_path):
     write(tmp_path, "bad.py", "password = 'real-secret'\n")
@@ -30,6 +30,31 @@ def test_integrity_float_trigger_and_unversioned_serialization(tmp_path):
 def test_integrity_safe_float_and_versioned_serialization(tmp_path):
     write(tmp_path, "safe.py", "def display(value):\n    return float(value)\njson.dump({'schema_version': 1}, out)\n")
     assert inspect(tmp_path) == ()
+
+def test_shared_discovery_excludes_venv_from_security(tmp_path):
+    write(tmp_path, "main.py", "x = 1\n")
+    write(tmp_path, ".venv/site.py", "password = 'leaked'\n")
+    result = audit(tmp_path)
+    assert not result.findings
+    assert result.examinations[".venv/site.py"] == "excluded_by_policy"
+
+def test_security_broader_scope_but_integrity_live_scope_only(tmp_path):
+    write(tmp_path, "main.py", "import live\ndef score(decision):\n    return float(decision)\n")
+    write(tmp_path, "live.py", "password = 'live-secret'\ndef score(decision):\n    return float(decision)\n")
+    write(tmp_path, "fossil.py", "password = 'fossil-secret'\ndef score(decision):\n    return float(decision)\n")
+    security = audit(tmp_path)
+    integrity = inspect(tmp_path)
+    assert {x.path for x in security.findings if x.family == "hardcoded-credential"} == {"live.py", "fossil.py"}
+    assert {x.path for x in integrity.findings if x.family == "decision-adjacent-float"} == {"main.py", "live.py"}
+    assert integrity.examinations["fossil.py"] == "excluded_by_scope"
+
+def test_clean_connected_module_is_explicitly_examined(tmp_path):
+    write(tmp_path, "main.py", "import clean\n")
+    write(tmp_path, "clean.py", "VALUE = 1\n")
+    security = audit(tmp_path)
+    integrity = inspect(tmp_path)
+    assert security.examinations["clean.py"] == "examined_clean"
+    assert integrity.examinations["clean.py"] == "examined_clean"
 
 def test_archaeologist_adds_deletion_judgment(tmp_path):
     write(tmp_path, "dead.py", "x = 1\n")

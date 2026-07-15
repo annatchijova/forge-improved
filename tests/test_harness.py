@@ -12,3 +12,13 @@ def test_proposal_targets_real_comment_fix():
 def test_validation_exact_acceptance_rule():
     assert validate("p",1,2,5,5).accepted
     assert not validate("p",1,2,5,4).accepted
+
+def test_mining_has_no_security_signal_for_benign_examined_cases():
+    # The auditor can examine this safe credential surface, but currently
+    # emits no structured "examined and ruled benign" record.
+    safe_runs = [
+        {"manifest": {"discarded": [], "findings": [], "security_auditor": {"examined": ["safe.py"]}}}
+        for _ in range(3)
+    ]
+    bundle = mine(safe_runs)
+    assert not [cluster for cluster in bundle.clusters if cluster.agent == "security_auditor"]

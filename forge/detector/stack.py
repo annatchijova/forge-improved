@@ -22,8 +22,17 @@ BUILD_FILES = {"Makefile": "Make", "CMakeLists.txt": "CMake", "Dockerfile": "Doc
 CI_MARKERS = (".github/workflows", ".gitlab-ci.yml", "Jenkinsfile", ".circleci")
 
 
+def discover_files(root: str | os.PathLike[str], include_excluded: bool = False) -> list[Path]:
+    """Single filesystem walk shared by triage, coverage, and AST agents.
+
+    ``include_excluded`` is only for coverage accounting, which must report
+    policy exclusions rather than silently losing them.
+    """
+    base = Path(root)
+    return [p for p in base.rglob("*") if p.is_file() and (include_excluded or not any(part in SKIP_DIRS for part in p.relative_to(base).parts))]
+
 def _files(root: Path) -> list[Path]:
-    return [p for p in root.rglob("*") if p.is_file() and not any(part in SKIP_DIRS for part in p.relative_to(root).parts)]
+    return discover_files(root)
 
 
 def _evidence(kind: str, source: str, detail: str) -> Evidence:

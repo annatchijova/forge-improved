@@ -16,10 +16,10 @@ from forge.sealing import write_sealed_manifest
 from forge.verification import verify_hypotheses, write_verification_manifest
 from forge.agents import archaeologist, bug_investigator, security_auditor, integrity_inspector, report_composer
 from forge.models import CoverageReport, Evidence, Finding, VerificationManifest
-from forge.detector.stack import SKIP_DIRS
+from forge.detector.stack import SKIP_DIRS, discover_files
 
 def _coverage(root: Path, families=()) -> CoverageReport:
-    discovered = list(p for p in root.rglob("*") if p.is_file())
+    discovered = discover_files(root, include_excluded=True)
     skipped: dict[str, list[str]] = {"excluded_by_policy": [], "syntax_error": [], "binary_or_unreadable": [], "non_python_not_analyzed": []}
     analyzed = 0
     for p in discovered:
@@ -50,7 +50,8 @@ def run_specialized_pipeline(repo: str | Path, output_dir: str | Path, max_conne
     if connected > max_connected: raise ValueError(f"scope guard: {connected} CONNECTED_ALIVE modules exceeds max_connected={max_connected}")
     coverage = _coverage(root)
     bug = bug_investigator.investigate(triage_manifest)
-    security = security_auditor.audit(root); integrity = integrity_inspector.inspect(root)
+    security_result = security_auditor.audit(root); integrity_result = integrity_inspector.inspect(root)
+    security, integrity = security_result.findings, integrity_result.findings
     findings = list(bug.verification.findings)
     findings = [Finding(f.category, f.epistemic_level, f.module_path, f.description, f.evidence, f.reasoning, "bug_investigator") for f in findings]
     findings += [_agent_finding("security_auditor", x, root) for x in security]
@@ -63,6 +64,9 @@ def run_specialized_pipeline(repo: str | Path, output_dir: str | Path, max_conne
     write_manifest(triage_manifest, triage_path); write_hypotheses_manifest(bug.manifest, hypotheses_path)
     write_verification_manifest(verification, verification_path); write_sealed_manifest(verification, sealed_path); coverage_path.write_text(json.dumps(coverage.to_dict(), indent=2, sort_keys=True) + "\n")
     metrics = {"archaeologist": {"modules_classified": len(triage_manifest.modules), "elapsed_seconds": round(time.monotonic()-started, 6)}, "bug_investigator": {"hypotheses_generated": len(bug.hypotheses), "discarded": len(verification.discarded), "survived": len([f for f in findings if f.agent == "bug_investigator"])}, "security_auditor": {"findings_per_family": {family: sum(x.family == family for x in security) for family in ("hardcoded-credential", "unsafe-deserialization", "path-traversal")}}, "integrity_inspector": {"findings_per_family": {family: sum(x.family == family for x in integrity) for family in ("decision-adjacent-float", "unversioned-serialization")}}}
+    metrics["bug_investigator"]["examinations"] = {m.path: ("examined_with_findings" if any(f.module_path == m.path for f in findings if f.agent == "bug_investigator") else "examined_clean") if m.module_class.value == "CONNECTED_ALIVE" else "excluded_by_scope" for m in triage_manifest.modules}
+    metrics["security_auditor"]["examinations"] = security_result.examinations
+    metrics["integrity_inspector"]["examinations"] = integrity_result.examinations
     report_composer.compose(triage_path, hypotheses_path, sealed_path, report_path, coverage_path, metrics)
     return {"repo": str(root), "connected_alive": connected, "findings": len(findings), "coverage": coverage.to_dict(), "artifacts": {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "report": str(report_path)}}
 

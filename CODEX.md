@@ -172,3 +172,14 @@ predefined edits against FORGE's detector surface, and validate them with
 held-in fixtures plus the existing pytest suite as held-out regression. It is
 not the full paper implementation: there is no stochastic evaluation, task
 generation, external model-under-test, or LLM proposer.
+
+## Agent scope strategy
+
+Archaeologist classifies every discovered file. Bug Investigator examines only
+`CONNECTED_ALIVE` modules, as does Integrity Inspector because its decision-path
+determinism check concerns live execution. Security Auditor deliberately
+examines `CONNECTED_ALIVE`, `FOSSIL_HIGH_RISK`, and `DEAD_WEIGHT` modules: a
+credential in dead or fossil code remains a leaked secret in repository history.
+All three detector agents publish per-module statuses (`examined_clean`,
+`examined_with_findings`, `excluded_by_policy`, or `excluded_by_scope`) so an
+absence of a finding cannot be mistaken for absence of examination.

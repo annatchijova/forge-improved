@@ -123,3 +123,14 @@ The self-harness is a scoped deterministic analogue applied to FORGE itself. It
 mines signatures from sealed runs, proposes only predefined edits, and uses the
 real regression suite as held-out validation. The name does not imply the
 paper's full stochastic, LLM-proposer implementation.
+
+### Self-harness mining coverage limitation
+
+Self-harness weakness mining currently observes only
+`bug_investigator`'s structured discarded-hypothesis records. The
+`security_auditor` and `integrity_inspector` do not yet emit equivalent
+"examined, ruled benign" records. Therefore the harness cannot learn from
+their false-positive-avoidance patterns or benign safe-context decisions. A
+synthetic regression test confirms that three safe Security Auditor runs
+produce zero mining clusters; this is an explicit coverage gap, not evidence
+that those agents had no examinable cases.
