@@ -45,3 +45,14 @@ def test_metrics_reads_loc_once_per_discovered_file(tmp_path, monkeypatch):
     monkeypatch.setattr(metrics_module, "_loc", counted)
     Runtime().audit(tmp_path, tmp_path / "out")
     assert len(calls) == 2
+
+
+def test_identical_fixture_runs_have_identical_finding_digest(tmp_path):
+    (tmp_path / "main.py").write_text("import security\n")
+    (tmp_path / "security.py").write_text("password = 'synthetic-secret'\n")
+    first = Runtime().audit(tmp_path, tmp_path / "out-1")
+    second = Runtime().audit(tmp_path, tmp_path / "out-2")
+    first_metrics = json.loads((tmp_path / "out-1/metrics.json").read_text())
+    second_metrics = json.loads((tmp_path / "out-2/metrics.json").read_text())
+    assert first_metrics["findings"]["finding_digest"] == second_metrics["findings"]["finding_digest"]
+    assert first.finding_records == second.finding_records

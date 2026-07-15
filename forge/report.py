@@ -192,6 +192,10 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
         ("AST-verified families", _e(families)),
         ("AST-unverified families", _e(ast_unverified)),
     ]
+    quality_metrics = metrics.get("quality", {})
+    contract_ratio = quality_metrics.get("contract_coverage", {})
+    if contract_ratio:
+        quality_rows.append(("Contract coverage", f"{_e(contract_ratio.get('covered', 0))}/{_e(contract_ratio.get('total', 0))} — {_e(quality_metrics.get('contract_coverage_note', 'context unavailable'))}"))
     quality_table_html = "".join(f"<tr><td>{label}</td><td>{value}</td></tr>" for label, value in quality_rows)
     document = f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>FORGE report</title>
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />

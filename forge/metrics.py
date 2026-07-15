@@ -7,13 +7,16 @@ not collect the required evidence.
 from __future__ import annotations
 
 import ast
+import hashlib
 import platform
 import sys
+from dataclasses import asdict
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
 from forge.models import ModuleClass
+from forge.canonical import canonical_json
 
 
 def _ratio(covered: int, total: int) -> dict[str, int]:
@@ -121,6 +124,10 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
     }
     evidence_metrics = {"evidence_items": sum(evidence.values()), "primary_evidence": evidence.get("source", 0), "secondary_evidence": sum(value for key, value in evidence.items() if key != "source"), "by_kind": dict(sorted(evidence.items())), "evidence_reused": None, "evidence_conflicts": None}
     finding_metrics = {"by_outcome": {key: outcomes.get(key, 0) for key in ("OBSERVED", "PROTOCOL_GAP", "DESIGN_INCONSISTENCY", "UNDETERMINED", "NOT_APPLICABLE")}, "discarded_hypotheses": len(discarded), "by_agent": dict(Counter(item.agent for item in findings)), "by_module": dict(Counter(item.module_path for item in findings))}
+    finding_digest = hashlib.sha256(canonical_json([asdict(item) for item in findings]).encode("utf-8")).hexdigest()
     trace_metrics = {"runtime_events": len(trace.events), "events_hashed": len(trace.events), "events_verified": None, "artifacts_produced": None, "hash_chain_length": None, "chain_verification": None, "tampering_detected": None, "partial_trace": event_kinds.get("run_failed", 0) > 0}
     reproducibility = {"runtime_deterministic": None, "seed_used": None, "environment": {"python": sys.version.split()[0], "os": platform.platform()}, "forge_version": "0.1.0", "skill_versions": {item["name"]: item["version"] for item in skills}, "schema_versions": {"triage": triage.schema_version}, "artifact_hashes": None, "seal_verified": None}
-    return {"repository": repo, "scope": scope, "discovery": discovery, "domain_classification": {"modules_by_domain": dict(sorted(domains.items())), "hypothesis_confidence": [{"module_path": item.module_path, "domains": item.domains, "confidence": {"numerator": item.confidence.numerator, "denominator": item.confidence.denominator}, "alternatives": item.alternatives, "evidence_count": len(item.evidence)} for item in governance.hypotheses]}, "skill_runtime": skill_counts, "agents": agent, "evidence": evidence_metrics, "findings": finding_metrics, "audit_trail": trace_metrics, "reproducibility": reproducibility, "honest_degradation": {"skipped_reasons": coverage.skipped_reasons, "limitations": list(governance.limitations)}, "quality": {"repository_coverage": _ratio(coverage.files_analyzed, coverage.files_discovered), "module_coverage": _ratio(analyzed_modules, len(triage.modules)), "contract_coverage": _ratio(applicability["APPLICABLE"], sum(applicability.values()) or 1), "evidence_completeness": None, "verification_coverage": None}}
+    finding_metrics["finding_digest"] = finding_digest
+    executable_count = len(skills)
+    quality = {"repository_coverage": _ratio(coverage.files_analyzed, coverage.files_discovered), "module_coverage": _ratio(analyzed_modules, len(triage.modules)), "contract_coverage": _ratio(applicability["APPLICABLE"], sum(applicability.values()) or 1), "contract_coverage_note": f"{executable_count} executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.", "evidence_completeness": None, "evidence_completeness_note": "Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.", "verification_coverage": None, "verification_coverage_note": "Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons."}
+    return {"repository": repo, "scope": scope, "discovery": discovery, "domain_classification": {"modules_by_domain": dict(sorted(domains.items())), "hypothesis_confidence": [{"module_path": item.module_path, "domains": item.domains, "confidence": {"numerator": item.confidence.numerator, "denominator": item.confidence.denominator}, "alternatives": item.alternatives, "evidence_count": len(item.evidence)} for item in governance.hypotheses]}, "skill_runtime": skill_counts, "agents": agent, "evidence": evidence_metrics, "findings": finding_metrics, "audit_trail": trace_metrics, "reproducibility": reproducibility, "honest_degradation": {"skipped_reasons": coverage.skipped_reasons, "limitations": list(governance.limitations)}, "quality": quality}

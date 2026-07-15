@@ -156,6 +156,17 @@ trace hash is verified with the findings chain. On failure, a partial
 `audit-trace.json` with `run_failed` is retained; there is no claim of an
 external append-only database or external final-hash anchor yet.
 
+Metric interpretation is explicit. `contract_coverage` counts applicability
+observations only for executable skill plugins loaded in that run; it is not
+coverage of the larger documented `skills-gpt/` catalog. `evidence_completeness`
+will require an obligation ledger mapping each contract obligation to a
+satisfied or missing Evidence item. `verification_coverage` will require a
+ledger of planned checks, executed checks, skipped checks, and skip reasons.
+Until those ledgers exist, both remain `null` by design. Finding
+reproducibility is separately testable through the canonical `finding_digest`;
+it does not imply that timestamps, runtime duration, or the full trace bytes
+are deterministic.
+
 **Threat model — in-process plugin execution (documented, not sandboxed).**
 `forge/governance/runtime.py::load_skills()` loads a skill's `entrypoint.py`
 via `importlib.util.spec_from_file_location(...)` and
