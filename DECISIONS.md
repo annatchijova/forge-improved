@@ -44,6 +44,11 @@ encoding and a SHA-256 genesis hash chain. The seal proves that findings were
 not altered after sealing; it does not prove that findings are correct. A
 full-access attacker who can rewrite the entire report can forge a consistent
 replacement chain from scratch, so the seal is tamper-evident, not tamper-proof.
+`reported_chain_length` is not a truncation defense: it can be edited to match
+any truncated chain with zero additional cost. Real truncation detection requires
+an external anchor to the chain's final hash, published elsewhere and out of the
+attacker's reach; this module does not implement one. It must not be presented as
+a security property in reports or the demo video.
 
 ## Safety and provenance
 

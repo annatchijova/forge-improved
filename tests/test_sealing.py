@@ -27,3 +27,12 @@ def test_chain_passes_and_catches_local_tamper_but_not_full_cascade_forgery():
         entry["hash"] = _digest({"index": entry["index"], "finding": entry["finding"]}, previous)
         previous = entry["hash"]
     assert verify_sealed(forged)["ok"]
+
+
+def test_truncation_with_edited_reported_length_is_expected_limitation():
+    sealed = seal_manifest(_manifest())
+    truncated = copy.deepcopy(sealed)
+    truncated["chain"] = truncated["chain"][:2]
+    truncated["reported_chain_length"] = 2
+    # This deliberately passes: the length is a freely editable convenience field.
+    assert verify_sealed(truncated)["ok"]

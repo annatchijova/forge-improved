@@ -30,7 +30,7 @@ def seal_manifest(manifest: VerificationManifest) -> dict[str, Any]:
         "seal_version": "1",
         "canonicalize_version": CANONICALIZE_VERSION,
         "manifest": data,
-        "chain_length": len(chain),
+        "reported_chain_length": len(chain),
         "chain": chain,
         "limitations": [
             "The seal proves findings were not altered after sealing.",
@@ -47,9 +47,10 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
     integrity_ok = True
     issues: list[str] = []
     chain = data.get("chain", [])
-    if data.get("chain_length") != len(chain):
+    # This is informational only: an attacker can edit it after truncating.
+    if data.get("reported_chain_length") != len(chain):
         linkage_ok = False
-        issues.append("chain length mismatch")
+        issues.append("reported chain length mismatch")
     previous = GENESIS_HASH
     for expected_index, entry in enumerate(chain):
         index = entry.get("index")
