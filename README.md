@@ -148,9 +148,18 @@ when a repository has more `CONNECTED_ALIVE` modules than `--max-connected`
 allows. The guard runs immediately after triage, so it bounds the rest of the
 pipeline but not triage's own cost.
 
-An MCP transport that exposes the same pipeline as a tool for other coding
-agents is a planned integration, not a current dependency. It would change
-**how** FORGE is invoked, not **how** FORGE reasons.
+An MCP transport is now available in `forge/mcp_server.py`. It exposes
+`audit_repository`, `get_coverage`, `get_findings`, `verify_seal`, and the
+standalone `review_patch` tool. It changes **how** FORGE is invoked, not
+**how** FORGE reasons.
+
+### Running the MCP server
+
+With the Python MCP SDK installed, start the stdio server with:
+
+```bash
+python3 -m forge.mcp_server
+```
 
 ---
 

@@ -38,8 +38,10 @@ evidence; it never promotes a plausible pattern by rhetoric alone.
 
 The current orchestrator is sequential orchestration of specialized-responsibility
 workers. It is not a set of concurrent, autonomous, or negotiating agents.
-`run_pipeline()` is a dependency-ordered local call chain. A future MCP may
-transport the same contracts, but MCP is not required by the current core.
+`run_pipeline()` is a dependency-ordered local call chain. The MCP transport is
+implemented in `forge/mcp_server.py` with `audit_repository`, `get_coverage`,
+`get_findings`, `verify_seal`, and standalone `review_patch` tools. It is a
+transport adapter only and does not add detection behavior.
 
 The scope guard is checked after module 1 returns. It prevents modules 2–5 from
 running on an unexpectedly broad result, but cannot remove the internal cost of
@@ -159,9 +161,9 @@ summary promote a plausible hypothesis into a verified defect.
 
 ## Honest status of this agent
 
-FORGE's deterministic pipeline, sealing, HTML reporting, role contracts, and
-sequential orchestrator are implemented. The numeric/ML specialist remains an
-extension point, and MCP transport, concurrent agent execution, negotiation,
+FORGE's deterministic pipeline, sealing, HTML reporting, role contracts,
+sequential orchestrator, and MCP transport are implemented. The numeric/ML
+specialist remains an extension point; concurrent agent execution, negotiation,
 and LLM-mediated reasoning are not implemented by this file.
 
 ## Scoped self-harness boundary
