@@ -63,6 +63,25 @@ def test_caller_counts_matches_reference_on_multi_language_fixture(tmp_path):
     assert _caller_counts(tmp_path, paths) == _reference_caller_counts(tmp_path, paths)
 
 
+def test_caller_counts_matches_reference_with_multiple_keywords_and_stems_on_one_line(tmp_path):
+    # Two import-like keywords ("import" and "from") on the same physical
+    # line, plus a trailing comment that itself mentions two more stems via
+    # a third keyword ("use") - the exact shape that would break a naive
+    # single-match-per-line rewrite of _reference_tallies().
+    _write(tmp_path, "main.py", "import a; from b import c  # also see d and use e\n")
+    for name in ("a", "b", "c", "d", "e"):
+        _write(tmp_path, f"{name}.py", f"x = {name!r}\n")
+    _write(tmp_path, "unrelated.py", "x = 0\n")
+    paths = sorted(tmp_path.glob("*.py"))
+    old = _reference_caller_counts(tmp_path, paths)
+    new = _caller_counts(tmp_path, paths)
+    assert new == old
+    # Guard against a degenerate rewrite that silently returns all-zero
+    # counts and would otherwise make the equality assertion above pass
+    # trivially.
+    assert any(count[1] > 0 for count in old.values())
+
+
 def test_caller_counts_regex_scan_count_does_not_scale_with_module_count(tmp_path, monkeypatch):
     original_findall = re.findall
     calls = {"n": 0}
