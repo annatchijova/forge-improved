@@ -253,3 +253,47 @@ skill's evaluation in a `try/except Exception`: a failing skill now records
 so the failure is visible and attributed rather than either silently
 swallowed or fatal to the run. This is a reliability boundary only — it does
 not change the in-process execution threat model documented above.
+
+### Sealed finding-chain hashes were not reproducible across runs (fixed 2026-07-15)
+
+`forge/sealing.py::seal_manifest()` folded `trace_hash` (a SHA-256 of the
+`audit_trace` payload, which contains a fresh `uuid4()` `run_id` and a
+wall-clock `started_at` timestamp) into the per-finding chain hash payload
+alongside `{index, finding}`. Confirmed empirically: running `Runtime().audit()`
+twice on the identical repository produced *different* `chain[].hash` values
+for the identical findings, purely because `run_id`/`started_at` differed
+between runs. This is exactly the class of leak `deterministic-core` names
+explicitly ("an unpinned timestamp or RNG seed") and breaks the project's own
+testable claim that a seal is reproducible from identical inputs.
+
+Fixed by removing `trace_hash` from the digest payload entirely (both in
+`seal_manifest()` and the matching recomputation in `verify_sealed()`); the
+finding-chain hash is now derived only from `{index, finding}`, as it always
+was before the audit-trace feature was added. This costs nothing: the trace
+is still independently tamper-evident via `manifest.audit_trace_hash`
+(a top-level field, verified against the stored `audit_trace` in
+`verify_sealed()`), which was already sufficient to detect a
+substituted/altered trace without needing to also bind every finding's hash
+to it. A regression test (`test_finding_chain_hashes_are_reproducible_even_with_an_audit_trace`)
+seals the same findings under two different synthetic traces and asserts the
+chain hashes match.
+
+This has no schema-version bump and no backward-compatibility shim: the
+broken behavior had zero test coverage and was added very recently (the same
+work session that introduced `audit_trace`), so there is no prior sealed
+artifact format to stay compatible with.
+
+### `load_skills()` skips a broken plugin without recording why (known limitation)
+
+`load_skills()`'s `except (...): continue` (see the in-process plugin threat
+model note above) silently drops a skill whose manifest/entrypoint/contract
+failed to load - it does not appear in `SkillRun.applicability` or
+`SkillRun.limitations`, unlike a skill that loads but fails during
+`applicability()`/`evaluate()` (which *is* now recorded, see above). A
+completely broken skill is therefore invisible rather than degraded-with-a-note.
+Not fixed here: `load_skills()`'s return type (`tuple[LoadedSkill, ...]`) would
+need to change to also carry skipped-skill diagnostics, which touches every
+caller (`Runtime.list_available_skills`, `Runtime.run_skill`, `run_skills`).
+Left as a documented gap rather than a silent one; the fix is to return
+`(loaded, skipped_with_reasons)` and fold `skipped_with_reasons` into
+`SkillRun.limitations` in `run_skills()`.

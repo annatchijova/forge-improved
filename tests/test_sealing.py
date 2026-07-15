@@ -36,3 +36,19 @@ def test_truncation_with_edited_reported_length_is_expected_limitation():
     truncated["reported_chain_length"] = 2
     # This deliberately passes: the length is a freely editable convenience field.
     assert verify_sealed(truncated)["ok"]
+
+
+def test_finding_chain_hashes_are_reproducible_even_with_an_audit_trace():
+    # A run-specific audit_trace (random run_id, wall-clock timestamps) must
+    # not leak into the per-finding chain hash: two honest runs over
+    # identical findings must produce identical chain hashes, or the seal's
+    # bit-for-bit reproducibility claim (deterministic-core) is false.
+    trace_a = {"trace_version": "1", "run_id": "11111111-1111-1111-1111-111111111111", "started_at": "2026-01-01T00:00:00Z", "events": []}
+    trace_b = {"trace_version": "1", "run_id": "22222222-2222-2222-2222-222222222222", "started_at": "2026-01-01T00:00:01Z", "events": []}
+    sealed_a = seal_manifest(_manifest(), trace_a)
+    sealed_b = seal_manifest(_manifest(), trace_b)
+    assert [entry["hash"] for entry in sealed_a["chain"]] == [entry["hash"] for entry in sealed_b["chain"]], (
+        "chain hashes differ between two runs with identical findings but different "
+        "audit traces - the trace (run_id/timestamp) is leaking into the finding hash"
+    )
+    assert verify_sealed(sealed_a)["ok"] and verify_sealed(sealed_b)["ok"]

@@ -24,10 +24,16 @@ def seal_manifest(manifest: VerificationManifest, audit_trace: dict[str, Any] | 
     chain = []
     previous = GENESIS_HASH
     for index, finding in enumerate(findings):
+        # The chain hash intentionally excludes trace_hash: run_id and
+        # started_at inside audit_trace are run-specific (a fresh UUID and a
+        # wall-clock timestamp each run), so folding them into the per-finding
+        # hash would make two honest runs over identical findings produce
+        # different chain hashes - a real bit-for-bit reproducibility break
+        # (deterministic-core), for no security benefit, since audit_trace_hash
+        # is already independently tamper-evident as top-level manifest
+        # metadata (verified against the stored audit_trace below).
         entry = {"index": index, "prev_hash": previous, "finding": finding}
-        if trace_hash: entry["trace_hash"] = trace_hash
         payload = {"index": index, "finding": finding}
-        if trace_hash: payload["trace_hash"] = trace_hash
         entry["hash"] = _digest(payload, previous)
         chain.append(entry)
         previous = entry["hash"]
@@ -74,7 +80,6 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
             linkage_ok = False
             issues.append(f"entry {expected_index}: broken prev_hash linkage")
         payload = {"index": index, "finding": entry.get("finding")}
-        if entry.get("trace_hash"): payload["trace_hash"] = entry.get("trace_hash")
         actual = _digest(payload, entry.get("prev_hash", ""))
         if entry.get("hash") != actual:
             integrity_ok = False
