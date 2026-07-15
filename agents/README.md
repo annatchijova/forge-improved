@@ -2,7 +2,9 @@
 
 These role cards define the first local agent set. They are intentionally
 framework-neutral so a later MCP transport can expose the same inputs and
-outputs.
+outputs. Today this is sequential orchestration of specialized-responsibility
+workers, not a set of concurrent or negotiating agents; `run_pipeline()` is a
+dependency-ordered call chain.
 
 | Agent | Responsibility | Output |
 |---|---|---|
@@ -17,6 +19,10 @@ The first five deterministic pipeline stages are implemented by
 `forge.orchestrator`; `numeric_ml_review` is currently a role contract awaiting
 its dedicated detector. The orchestrator stops at a configurable scope guard,
 and agents may not mutate the audited repository.
+
+The scope guard is evaluated immediately after `triage()` returns. It prevents
+downstream work for a broad repository such as VIGIA (153 connected modules in
+the earlier run), but it does not eliminate the internal cost of triage itself.
 
 Every agent must preserve the distinction between observation, abductive
 hypothesis, deductive falsifier, and inductive conclusion. A transport layer or

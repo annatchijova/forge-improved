@@ -25,7 +25,10 @@ where results become evidence; floats and probabilistic ML outputs remain
 explicitly bounded, labeled, and tested at their boundary conditions.
 
 The first local orchestrator is available as `python3 -m forge.orchestrator`.
-It runs the deterministic agents in dependency order, writes all artifacts to
-an output directory, and stops when `--max-connected` is exceeded. Agent role
-contracts live in `forge/agents/README.md`. MCP remains a planned transport
-integration, not a current dependency.
+It is sequential orchestration of specialized-responsibility agents today, not
+concurrent or negotiating agents: `run_pipeline()` is a dependency-ordered
+call chain. It writes all artifacts to an output directory and stops when
+`--max-connected` is exceeded. The guard runs after `triage()` returns, so it
+blocks downstream work on broad repositories such as VIGIA but does not remove
+triage's own cost. Agent role contracts live in `forge/agents/README.md`. MCP
+remains a planned transport integration, not a current dependency.

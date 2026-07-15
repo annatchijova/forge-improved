@@ -14,12 +14,19 @@ from forge.verification import verify_hypotheses, write_verification_manifest
 
 
 def run_pipeline(repo: str | Path, output_dir: str | Path, max_connected: int = 100) -> dict[str, Any]:
-    """Run agents in dependency order and refuse unexpectedly broad scope."""
+    """Run specialized agents sequentially and refuse broad downstream scope.
+
+    The guard runs immediately after ``triage()`` returns. It prevents the
+    remaining agents from running, but cannot make triage itself cheaper.
+    """
     root = Path(repo).resolve()
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     triage_manifest = triage(root)
-    connected = sum(m.module_class.value == "CONNECTED_ALIVE" for m in triage_manifest.modules)
+    connected = triage_manifest.summary.get(
+        "CONNECTED_ALIVE",
+        sum(m.module_class.value == "CONNECTED_ALIVE" for m in triage_manifest.modules),
+    )
     if connected > max_connected:
         raise ValueError(f"scope guard: {connected} CONNECTED_ALIVE modules exceeds max_connected={max_connected}")
     triage_path = out / "triage-manifest.json"
