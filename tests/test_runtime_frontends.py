@@ -85,6 +85,18 @@ def test_audit_survives_a_skill_with_a_missing_entrypoint_file(tmp_path):
     result = Runtime(skills_root=skills_root).audit(repo, tmp_path / "out").to_dict()
     assert result["connected_alive"] == 1
 
+def test_get_findings_raises_a_clear_error_for_a_missing_run(tmp_path):
+    # Runtime.get_findings() lets FileNotFoundError propagate for a missing
+    # run rather than swallowing it or returning an empty list that would be
+    # indistinguishable from "a real run with zero findings". Regression
+    # guard: the message must still name the expected artifact path, not
+    # just say "not found" - a direct Python API caller (no MCP wrapper in
+    # front of it) has only this message to go on.
+    import pytest
+    missing = tmp_path / "no-such-run"
+    with pytest.raises(FileNotFoundError, match="no-such-run.*verification-manifest.sealed.json"):
+        Runtime().get_findings(missing)
+
 def test_cli_rejects_inert_legacy_pipeline_flags(tmp_path, monkeypatch):
     put(tmp_path, "main.py", "x = 1\n")
     import pytest

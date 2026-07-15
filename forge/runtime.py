@@ -17,13 +17,14 @@ from forge.detector.stack import SKIP_DIRS, discover_files, write_manifest
 from forge.governance.runtime import infer_domains, load_skills, run_skills
 from forge.hypotheses import generate_hypotheses, write_hypotheses_manifest
 from forge.models import CoverageReport, Evidence, Finding, ModelRouting, TriageManifest, VerificationManifest
+from forge.metrics import collect_metrics
 from forge.report import render_report
 from forge.sealing import read_and_verify, write_sealed_manifest
 from forge.tracing import RuntimeTrace
 from forge.verification import verify_hypotheses, write_verification_manifest
 
-def _coverage(root: Path, families=()) -> CoverageReport:
-    discovered = discover_files(root, include_excluded=True)
+def _coverage(root: Path, families=(), discovered=None) -> CoverageReport:
+    discovered = discovered if discovered is not None else discover_files(root, include_excluded=True)
     skipped: dict[str, list[str]] = {"excluded_by_policy": [], "syntax_error": [], "binary_or_unreadable": [], "non_python_not_analyzed": []}
     analyzed = 0
     for path in discovered:
@@ -114,6 +115,7 @@ class Runtime:
 
     def _audit(self, repo: str | Path, output_dir: str | Path, max_connected: int | None, trace: RuntimeTrace) -> AuditResult:
         root, out = Path(repo).resolve(), Path(output_dir)
+        discovered = discover_files(root, include_excluded=True)
         out.mkdir(parents=True, exist_ok=True)
         started = time.monotonic(); trace.record("run_started", repository=str(root), max_connected=self.max_connected if max_connected is None else max_connected, model_routing=self.model_routing.to_dict())
         triage_manifest = self.triage_repository(root)
@@ -122,7 +124,7 @@ class Runtime:
         connected = triage_manifest.summary.get("CONNECTED_ALIVE", 0)
         limit = self.max_connected if max_connected is None else max_connected
         if connected > limit: raise ValueError(f"scope guard: {connected} CONNECTED_ALIVE modules exceeds max_connected={limit}")
-        coverage = _coverage(root)
+        coverage = _coverage(root, discovered=discovered)
         trace.record("coverage_collected", discovered=coverage.files_discovered, analyzed=coverage.files_analyzed, skipped=coverage.files_skipped, skipped_reasons=coverage.skipped_reasons)
         governance = run_skills(triage_manifest, self.skills_root)
         trace.record("domain_hypotheses_formed", hypotheses=governance.to_dict()["domain_hypotheses"])
@@ -145,7 +147,7 @@ class Runtime:
         coverage = CoverageReport(coverage.files_discovered, coverage.files_analyzed, coverage.files_skipped, coverage.skipped_reasons, verification.ast_verified_families, coverage.coverage_ratio)
         triage_path, hypotheses_path = out / "triage-manifest.json", out / "hypotheses-manifest.json"
         verification_path, sealed_path, coverage_path = out / "verification-manifest.json", out / "verification-manifest.sealed.json", out / "coverage-report.json"
-        skills_path, report_path = out / "skills-runtime.json", out / "forge-report.html"
+        skills_path, metrics_path, report_path = out / "skills-runtime.json", out / "metrics.json", out / "forge-report.html"
         write_manifest(triage_manifest, triage_path); write_hypotheses_manifest(bug.manifest, hypotheses_path)
         write_verification_manifest(verification, verification_path)
         coverage_path.write_text(json.dumps(coverage.to_dict(), indent=2, sort_keys=True) + "\n")
@@ -156,15 +158,18 @@ class Runtime:
             if module.path in bug_finding_paths: return "examined_with_findings"
             if module.path in bug_generated_paths: return "hypothesis_discarded_benign"
             return "no_hypothesis_generated"
-        metrics = {
+        agent_metrics = {
             "archaeologist": {"modules_classified": len(triage_manifest.modules), "elapsed_seconds": str(round(time.monotonic() - started, 6))},
             "bug_investigator": {"hypotheses_generated": len(bug.hypotheses), "discarded": len(verification.discarded), "survived": len([f for f in findings if f.agent == "bug_investigator"]), "examinations": {m.path: bug_status(m) for m in triage_manifest.modules}},
             "security_auditor": {"findings_per_family": {family: sum(item.family == family for item in security_result.findings) for family in ("hardcoded-credential", "unsafe-deserialization", "path-traversal")}, "examinations": security_result.examinations},
             "integrity_inspector": {"findings_per_family": {family: sum(item.family == family for item in integrity_result.findings) for family in ("decision-adjacent-float", "unversioned-serialization")}, "examinations": integrity_result.examinations},
             "governance_skills": {"loaded": [item["name"] for item in self.list_available_skills()], "findings": len(governance.findings), "applicability_counts": {state: sum(state in values.values() for values in governance.applicability.values()) for state in ("APPLICABLE", "NOT_APPLICABLE", "UNDETERMINED")}},
         }
+        metrics = collect_metrics(root=root, discovered=discovered, triage=triage_manifest, coverage=coverage, governance=governance, findings=findings, discarded=verification.discarded, trace=trace, skills=self.list_available_skills())
+        metrics["agent_metrics"] = agent_metrics
+        metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n")
         trace.record("metrics_computed", metrics=metrics)
-        for name, path in (("triage", triage_path), ("hypotheses", hypotheses_path), ("verification", verification_path), ("coverage", coverage_path), ("skills", skills_path)):
+        for name, path in (("triage", triage_path), ("hypotheses", hypotheses_path), ("verification", verification_path), ("coverage", coverage_path), ("skills", skills_path), ("metrics", metrics_path)):
             trace.record("artifact_written", artifact=name, path=str(path))
         trace.record("artifact_written", artifact="report", path=str(report_path))
         trace.record("seal_created", artifact="sealed", findings=len(findings))
@@ -173,7 +178,7 @@ class Runtime:
         trace_path.write_text(json.dumps(trace.to_dict(), indent=2, sort_keys=True) + "\n")
         write_sealed_manifest(verification, sealed_path, trace.to_dict())
         report_composer.compose(triage_path, hypotheses_path, sealed_path, report_path, coverage_path, metrics)
-        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "trace": str(trace_path), "report": str(report_path)}
+        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "trace": str(trace_path), "report": str(report_path)}
         return AuditResult(str(root), connected, len(findings), len(verification.discarded), tuple(findings), coverage.to_dict(), artifacts)
 
     def verify_findings(self, sealed_path: str | Path) -> dict[str, Any]:

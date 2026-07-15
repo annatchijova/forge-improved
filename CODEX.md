@@ -134,18 +134,32 @@ From `/home/labestiadevigia/forge`:
 # Tests
 python3 -m pytest -q tests
 
-# Existing direct pipeline
-python3 -m forge /path/to/repository \
-  -o triage.json --hypotheses hypotheses.json \
-  --verify verification.json --seal --report
-
-# Bounded sequential orchestration
-python3 -m forge.orchestrator /path/to/repository \
+# Full governance pipeline (triage, hypotheses, verification, security,
+# integrity, governance skills, sealing, HTML report - one call)
+python3 -m forge audit /path/to/repository \
   --output-dir forge-run --max-connected 100
+
+# Render an HTML report from an existing sealed artifact
+python3 -m forge report path/to/verification-manifest.sealed.json --mode standard
+
+# Legacy triage-only invocation (no subcommand): writes only the triage
+# manifest, does not run hypotheses/verification/sealing/report
+python3 -m forge /path/to/repository -o triage.json
 
 # Independent seal verification
 python3 -m forge --verify-seal verification.json.sealed.json
+
+# MCP server (audit_repository, get_coverage, get_findings, verify_seal,
+# triage_repository, infer_module_domains, list_available_skills, run_skill,
+# repository_summary, generate_report, seal_results, review_patch)
+python3 -m forge.mcp_server
 ```
+
+`--hypotheses`, `--verify`, `--seal`, and `--report` are no longer separate CLI
+flags (removed when the CLI/MCP/orchestrator frontends were unified onto one
+`forge.runtime.Runtime` engine); `audit` now performs all of that in one call.
+`python3 -m forge.orchestrator` still works as a thin backward-compatible
+alias for `audit`, for anything that already scripts against it.
 
 Write outputs into FORGE or a designated report directory, never into the
 audited repository. For a broad repository, perform the scope check first and
@@ -210,6 +224,19 @@ same object to `Runtime`. The current built-in agents are deterministic AST
 detectors, so these identifiers are recorded configuration rather than a claim
 that an LLM was invoked. This keeps model selection auditable and prevents a
 frontend from silently implementing a second execution path.
+
+## Objective metric layers
+
+`metrics.json` is an accounting artifact, not a scientific score. It currently
+contains repository inventory and LOC counts, scope and exact coverage,
+Archaeologist classifications, per-module domain hypotheses, skill-runtime
+counts, agent accounting, evidence and finding counts, audit-trace accounting,
+reproducibility metadata, and honest degradation reasons. Values that require
+data FORGE does not collect yet are `null`, including peak memory, CPU time,
+branch/tag inspection, cyclomatic hotspots, evidence conflict rates, and
+probabilistic confidence. Ratios are stored as covered/total or exact rational
+numerator/denominator pairs; no synthetic precision or opaque health score is
+generated.
 
 ## Agent scope strategy
 
