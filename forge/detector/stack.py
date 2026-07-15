@@ -88,12 +88,37 @@ def _git_available(root: Path) -> bool:
         return False
 
 
+_IMPORT_LINE_TAIL = re.compile(r"(?:import|from|require|use).*")
+
+
+def _reference_tallies(text: str, stems: set[str]) -> dict[str, int]:
+    """Count, in one pass over ``text``, how many import-like line tails mention each stem.
+
+    Replaces a design that ran one `re.findall` full-text scan per module
+    (O(total_repo_text_size x number_of_modules)) with a single scan that
+    tallies every stem at once (O(total_repo_text_size)). `.` never matches
+    a newline here (no DOTALL), so each match is confined to one line, same
+    as the per-stem regex it replaces; within that line-tail, only the
+    distinct stems present are counted, matching the old per-stem regex's
+    one-match-per-qualifying-line behavior.
+    """
+    if not stems:
+        return {}
+    stem_pattern = re.compile(r"\b(" + "|".join(re.escape(s) for s in stems) + r")\b")
+    tallies: dict[str, int] = {}
+    for tail_match in _IMPORT_LINE_TAIL.finditer(text):
+        for stem in set(stem_pattern.findall(tail_match.group(0))):
+            tallies[stem] = tallies.get(stem, 0) + 1
+    return tallies
+
+
 def _caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[int, int]]:
     text = "\n".join(p.read_text(errors="ignore") for p in _files(root) if p.suffix.lower() in {".py", ".js", ".ts", ".rs", ".go", ".java", ".rb"})
+    paths = list(paths)
+    tallies = _reference_tallies(text, {p.stem for p in paths})
     result = {}
     for p in paths:
-        stem = p.stem
-        imports = len(re.findall(rf"(?:import|from|require|use).*\b{re.escape(stem)}\b", text))
+        imports = tallies.get(p.stem, 0)
         callers = max(0, imports - 1 if p.suffix == ".py" else imports)
         result[str(p.relative_to(root))] = (callers, imports)
     return result

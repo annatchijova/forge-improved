@@ -65,7 +65,7 @@ These are structural proof obligations, not heuristics:
 
 1. **Parser without handling.** A parser call is benign only when its `ast.Call` has an actual `ast.Try` ancestor and an `ast.ExceptHandler` catches a known parse exception (`json.JSONDecodeError`, `ValueError`, `yaml.YAMLError`, or an equivalent explicitly named parser exception). A bare `except Exception` is classified as **silenced**, not handled: it does not prove that malformed input is distinguished safely.
 2. **Float comparison.** A comparison is benign when its operands are statically non-float exact types (`Decimal`/`Fraction` expressions), or when the surrounding expression is an explicit `math.isclose` call with a tolerance (`rel_tol` or `abs_tol`). Exact comparisons against `0.0` or `1.0` remain risk candidates; they may be legitimate edge checks, but legitimacy is not an AST proof of numerical safety.
-3. **Eval/exec.** Dynamic evaluation is benign only when its argument is an `ast.Constant` string literal. Variables, concatenations, attributes, and all other expressions remain findings because their provenance is not structurally constrained.
+3. **Eval/exec.** Dynamic evaluation is benign only when its argument is an `ast.Constant` string literal *and* that literal's text does not itself contain an OS-execution pattern (`os.system`, `subprocess.*`, `shutil.rmtree`, a nested `eval`/`exec`, etc. — see `_DANGEROUS_EVAL_CONTENT` in `forge/verification.py`). Variables, concatenations, attributes, and all other expressions remain findings because their provenance is not structurally constrained. A literal argument only proves *provenance* is fixed at read time (an attacker cannot inject a different string at runtime); it does not prove the literal's own content is safe to execute, so a literal that is itself an OS-command payload remains a finding regardless of provenance. (Fixed 2026-07-15: `eval('os.system("rm -rf /")')` was previously discarded as benign purely because the argument was a constant string.)
 4. **Subprocess.** A subprocess call is benign only when its `ast.Call` has a real `ast.Try` ancestor with an explicit subprocess-related handler (`subprocess.SubprocessError`, `OSError`, or a named equivalent). A generic catch does not establish a safe boundary.
 
 `VerificationManifest` must report these four families as `AST-verified`; any family without an implemented structural checker is explicitly `unverified — falls through to PLAUSIBLE HYPOTHESIS without structural check`.
@@ -128,9 +128,12 @@ paper's full stochastic, LLM-proposer implementation.
 
 `hypotheses._candidates()` intentionally surfaces only `candidates[:5]` per
 module. A module that triggers more than five distinct risk patterns therefore
-has later candidates silently omitted; this cap is currently not surfaced in
-the user report. It is a known completeness limitation, not evidence that the
-omitted patterns were absent.
+has later candidates omitted. This is a known completeness limitation, not
+evidence that the omitted patterns were absent — and, as of 2026-07-15, it is
+surfaced rather than silent: `generate_hypotheses()` adds one entry per capped
+module to `HypothesesManifest.limitations` (`"<module>: N additional risk
+pattern(s) ... omitted"`), so it reaches the manifest and the report instead
+of only living in this document.
 
 ## Executable skill runtime boundary
 
@@ -154,29 +157,53 @@ synthetic regression test confirms that three safe Security Auditor runs
 produce zero mining clusters; this is an explicit coverage gap, not evidence
 that those agents had no examinable cases.
 
-### `examined_clean` conflates two different depths of scrutiny (known limitation)
+### `examined_clean` conflated two different depths of scrutiny (fixed 2026-07-15)
 
-`bug_investigator`'s per-module `examinations` status (surfaced in the HTML
-report's agent-metrics summary and in `forge/orchestrator.py`) labels a
-module `examined_clean` in two structurally different cases:
+`bug_investigator`'s per-module `examinations` status used to label a module
+`examined_clean` in two structurally different cases: (1) no hypothesis was
+generated at all because no risk keyword matched anywhere in the module, and
+(2) a hypothesis was generated, then discarded during module 3's adversarial
+verification because an AST proof established the pattern was benign. Case 2
+involved active scrutiny and a structural proof of safety; case 1 involved no
+scrutiny beyond a keyword miss — conflating them understated how much
+scrutiny a "clean" module actually got, the same distinction
+`daubert-defensible-writing` requires elsewhere in this project.
 
-1. No hypothesis was generated at all, because no risk keyword matched
-   anywhere in the module (module 2's pattern step never fired).
-2. A hypothesis was generated, then discarded during module 3's adversarial
-   verification because an AST proof established the pattern was benign
-   (e.g. a parser call with a real exception handler).
+Fixed in `forge/orchestrator.py::run_specialized_pipeline` by splitting the
+status into `no_hypothesis_generated` (module path absent from
+`bug.manifest.hypotheses`) and `hypothesis_discarded_benign` (module path
+present there but not in the surviving findings), the same way
+`examined_with_findings` / `excluded_by_scope` were already distinct.
+`security_auditor` and `integrity_inspector` were never ambiguous here: their
+`examined_clean` always meant an AST walk ran and found no match.
 
-Case 2 involved active scrutiny and a structural proof of safety. Case 1
-involved no scrutiny beyond a keyword miss. Both currently render as the
-same `examined_clean` label, which conflates "looked hard and found nothing"
-with "never looked closely" — the same distinction `daubert-defensible-writing`
-requires elsewhere in this project (do not let a single label average over
-different evidence strengths). `security_auditor` and `integrity_inspector`
-do not have this ambiguity: their `examined_clean` always means an AST walk
-ran over the file and found no match for any of their implemented families.
+### `_caller_counts()` O(n^2) scan fixed (2026-07-15)
 
-Not fixed as part of the coverage-report/report.py work above; flagged here
-so it is a deliberate, documented gap rather than a silent one. A fix would
-split `bug_investigator`'s `examined_clean` into two statuses (e.g.
-`no_hypothesis_generated` vs. `hypothesis_discarded_benign`) the same way
-`examined_with_findings` / `excluded_by_scope` are already distinct today.
+`forge/detector/stack.py::_caller_counts()` used to concatenate every
+discovered file's text into one string once, then run a fresh `re.findall()`
+full-text scan over that entire blob *per module* in the caller loop —
+`O(total_repo_text_size x number_of_modules)`. Confirmed empirically before
+touching anything: a synthetic fixture showed `re.findall` call count scaling
+exactly 1:1 with module count (10/30/60 files -> 10/30/60 calls), with wall
+time growing accordingly since the scanned text also grows with repo size.
+This is why a ~484-file repository like VIGIA could be slow even after the
+git-log batching fix.
+
+Fixed by replacing the per-module loop with a single combined pass
+(`_reference_tallies()`): one scan collects every `(?:import|from|require|use)`
+line-tail via `finditer`, and for each such tail, tallies whichever known
+module stems appear in it. Total regex work no longer scales with the number
+of modules — only with total text size, once. `re.escape`'d stems are
+still matched via `\b...\b` word boundaries against **line-scoped tails**
+(`.` does not match `\n`, so behavior can't cross a line boundary), and only
+the *distinct* stems present in each tail are tallied once, which reproduces
+the old per-stem `re.findall(...).*\bstem\b` semantics for every case that
+occurs in real code. Verified with parity tests comparing old vs. new output
+on cross-import, duplicate-stem-in-different-directories, and multi-language
+fixtures (byte-identical `(caller_count, import_count)` per module) plus a
+scan-count regression test. The only theoretical divergence from the old
+algorithm is an unreachable-in-practice edge case (the *same* stem name
+repeated after a *second* keyword occurrence later on the *same physical
+line*) that no real code in this repo's fixtures or corpus exercises; the
+lexical/conservative caller-graph limitation already documented above still
+applies unchanged.
