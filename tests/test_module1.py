@@ -1,6 +1,7 @@
 from pathlib import Path
 from forge.detector.stack import triage
 from forge.models import ModuleClass
+from forge.hypotheses import generate_hypotheses
 
 def test_python_repo_detects_stack_and_classes(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n")
@@ -18,3 +19,15 @@ def test_javascript_repo_is_not_python_overfit(tmp_path: Path):
     manifest = triage(tmp_path)
     assert any(s.name == "JavaScript" for s in manifest.stacks)
     assert not any(s.name == "Python" for s in manifest.stacks)
+
+def test_hypotheses_read_live_source_and_are_falsifiable(tmp_path: Path):
+    (tmp_path / "main.py").write_text("def load_input(value):\n    return value\n")
+    manifest = triage(tmp_path)
+    generated = generate_hypotheses(manifest)
+    assert len(generated.hypotheses) == 5
+    assert all(h.falsification_test.strip() and h.file_lines for h in generated.hypotheses)
+
+def test_boring_connected_module_gets_no_forced_hypotheses(tmp_path: Path):
+    (tmp_path / "main.py").write_text("def greet():\n    return 'hello'\n")
+    generated = generate_hypotheses(triage(tmp_path))
+    assert generated.hypotheses == ()
