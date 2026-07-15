@@ -52,3 +52,8 @@ def test_keyword_in_safe_context_does_not_fire(tmp_path: Path):
     (tmp_path / "main.py").write_text("# parse and subprocess are discussed here\nimport subprocess\ndef run():\n    try:\n        return subprocess.run(['trusted-tool'], check=True)\n    except subprocess.SubprocessError as exc:\n        raise RuntimeError('tool failed') from exc\n")
     generated = generate_hypotheses(triage(tmp_path))
     assert generated.hypotheses == ()
+
+def test_float_pattern_ignores_inline_comment(tmp_path: Path):
+    (tmp_path / "main.py").write_text('from enum import Enum\nclass Level(Enum):\n    SILENT = "SILENT"      # score < 0.2 — memory update only\n')
+    generated = generate_hypotheses(triage(tmp_path))
+    assert generated.hypotheses == ()

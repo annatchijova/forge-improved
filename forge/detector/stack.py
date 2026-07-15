@@ -49,12 +49,25 @@ def detect_stack(root: Path) -> tuple[StackFingerprint, ...]:
     return tuple(out)
 
 
-def _git_epoch(root: Path, rel: str) -> int | None:
+def _git_epochs(root: Path) -> dict[str, int]:
     try:
-        out = subprocess.check_output(["git", "-C", str(root), "log", "-1", "--format=%ct", "--", rel], stderr=subprocess.DEVNULL, text=True).strip()
-        return int(out) if out else None
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return None
+        out = subprocess.check_output(
+            ["git", "-C", str(root), "log", "--name-only", "--format=COMMIT:%H %ct", "--"],
+            stderr=subprocess.DEVNULL, text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    latest: dict[str, int] = {}
+    epoch = None
+    for line in out.splitlines():
+        if line.startswith("COMMIT:"):
+            try:
+                epoch = int(line.rsplit(" ", 1)[1])
+            except (IndexError, ValueError):
+                epoch = None
+        elif line and epoch is not None and line not in latest:
+            latest[line] = epoch
+    return latest
 
 
 def _git_available(root: Path) -> bool:
@@ -81,6 +94,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
     files = [p for p in _files(base) if p.suffix.lower() in LANG_EXT]
     callers = _caller_counts(base, files)
     git_ok = _git_available(base)
+    git_epochs = _git_epochs(base) if git_ok else {}
     now = int(time.time())
     records: list[ModuleRecord] = []
     seen_hashes: dict[str, str] = {}
@@ -95,7 +109,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
             seen_hashes[content_hash] = rel
     for p in files:
         rel = str(p.relative_to(base)); caller_count, import_count = callers.get(rel, (0, 0))
-        epoch = _git_epoch(base, rel) if git_ok else None
+        epoch = git_epochs.get(rel) if git_ok else None
         text = p.read_text(errors="ignore")
         keywords = tuple(sorted(set(re.findall(r"\b(score|verdict|classif(?:y|ication)|decision|gate|validate)\b", text, re.I))))
         age_days = (now - epoch) / 86400 if epoch else None

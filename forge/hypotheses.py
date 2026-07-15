@@ -14,10 +14,26 @@ def _lines(path: Path) -> tuple[str, ...]:
     return tuple(path.read_text(encoding="utf-8", errors="replace").splitlines())
 
 
+def _code_before_comment(line: str) -> str:
+    """Return code before an inline comment, preserving '#' inside strings."""
+    quote = None
+    escaped = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = False
+        elif char == "\\" and quote:
+            escaped = True
+        elif char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+        elif char == "#" and quote is None:
+            return line[:index]
+    return line
+
+
 def _candidates(module_path: str, source: tuple[str, ...], language: str) -> list[Hypothesis]:
     candidates: list[tuple[str, int, str]] = []
     for number, line in enumerate(source, 1):
-        stripped = line.strip()
+        stripped = _code_before_comment(line).strip()
         # Ignore comments and strings that merely mention a risk word.
         if not stripped or stripped.startswith("#"):
             continue
