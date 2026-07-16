@@ -294,6 +294,29 @@ def test_integrity_does_not_trust_json_dumps_in_an_unrelated_tuple(tmp_path):
     ))
     assert [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
 
+def test_integrity_trusts_a_dump_assigned_to_a_name_later_hashed(tmp_path):
+    # forge/agent_independence.py::_fingerprint(): payload = json.dumps(work,
+    # ...) then hashlib.sha256(payload.encode(...)) two lines later - a
+    # content-fingerprint input, not a persisted document. Same exemption
+    # as canonical_json's own internal dump, just split across two
+    # statements instead of one nested expression.
+    write(tmp_path, "agent_independence.py", (
+        "import hashlib, json\n"
+        "def _fingerprint(work):\n"
+        "    payload = json.dumps(work, sort_keys=True, separators=(',', ':'), default=str)\n"
+        "    return hashlib.sha256(payload.encode('utf-8')).hexdigest()\n"
+    ))
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
+def test_integrity_does_not_trust_a_dump_assigned_to_a_name_never_hashed(tmp_path):
+    write(tmp_path, "writer.py", (
+        "import json\n"
+        "def write(destination, work):\n"
+        "    payload = json.dumps(work, sort_keys=True)\n"
+        "    destination.write_text(payload)\n"
+    ))
+    assert [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
 def test_integrity_suppresses_decision_adjacent_float_for_ml_domain_paths(tmp_path):
     # Same code, same detector: whether it fires depends only on whether the
     # caller (runtime.py, via infer_domains) marked this path machine_learning.

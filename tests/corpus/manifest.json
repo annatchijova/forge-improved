@@ -25,6 +25,7 @@
     {"name": "integrity-negative-8", "agent": "integrity_inspector", "path": "integrity/negative-8", "expected_families": []},
     {"name": "integrity-negative-9", "agent": "integrity_inspector", "path": "integrity/negative-9", "expected_families": []},
     {"name": "integrity-negative-10", "agent": "integrity_inspector", "path": "integrity/negative-10", "expected_families": []},
+    {"name": "integrity-negative-11", "agent": "integrity_inspector", "path": "integrity/negative-11", "expected_families": []},
     {"name": "web-positive-1", "agent": "web_auditor", "path": "web/positive-1", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},
     {"name": "web-positive-2", "agent": "web_auditor", "path": "web/positive-2", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},
     {"name": "web-positive-3", "agent": "web_auditor", "path": "web/positive-3", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},

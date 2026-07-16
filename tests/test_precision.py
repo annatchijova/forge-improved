@@ -52,8 +52,12 @@ def test_golden_corpus_has_three_positive_and_negative_cases_per_agent():
     #   directly to execute/executemany, not any enclosing tuple): a
     #   broader version of this check silently suppressed 31 real findings
     #   elsewhere in the codebase.
+    # - integrity_inspector negative-11: a json.dumps() call assigned to a
+    #   name that is only ever later hashed (hashlib.sha256(...)), never
+    #   persisted - found via a self-audit of
+    #   forge/agent_independence.py::_fingerprint().
     expected_positives = {"integrity_inspector": 4, "security_auditor": 5, "web_auditor": 3}
-    expected_negatives = {"integrity_inspector": 10, "security_auditor": 5, "web_auditor": 3}
+    expected_negatives = {"integrity_inspector": 11, "security_auditor": 5, "web_auditor": 3}
     assert result["case_count"] == sum(expected_positives.values()) + sum(expected_negatives.values())
     for agent in {row["agent"] for row in result["cases"]}:
         cases = [row for row in result["cases"] if row["agent"] == agent]

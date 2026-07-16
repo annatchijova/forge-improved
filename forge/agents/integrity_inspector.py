@@ -167,6 +167,35 @@ def _versioned_payload_names(tree: ast.AST, producer_functions: frozenset[str] =
     return names
 
 
+def _hash_input_names(tree: ast.AST) -> set[str]:
+    """Local names assigned from `json.dumps(...)`/`pickle.dumps(...)` whose
+    only later use, within the same function, feeds `hashlib.<algo>(...)`.
+
+    This is `canonical_json`'s exemption again (a hashing primitive is not
+    itself a persisted artifact needing a version key), for the shape where
+    the dump and the hash are two separate statements rather than one
+    nested expression: `forge/agent_independence.py::_fingerprint()`
+    computes `payload = json.dumps(work, ...)` then
+    `hashlib.sha256(payload.encode(...))` two lines later.
+    """
+    names: set[str] = set()
+    for fn in (n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
+        dumped_names: set[str] = set()
+        for node in ast.walk(fn):
+            if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Attribute) and node.value.func.attr == "dumps"
+                    and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id in {"json", "pickle"}):
+                dumped_names.update(target.id for target in node.targets if isinstance(target, ast.Name))
+        if not dumped_names:
+            continue
+        for node in ast.walk(fn):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name) and node.func.value.id == "hashlib"):
+                continue
+            names.update(inner.id for inner in ast.walk(node) if isinstance(inner, ast.Name) and inner.id in dumped_names)
+    return names
+
+
 def _is_internal_serialization(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> bool:
     current = parents.get(call)
     while current is not None:
@@ -247,6 +276,7 @@ def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None, ml_d
     for rel, tree in scan.modules:
         parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
         versioned_payload_names = _versioned_payload_names(tree, producer_functions)
+        hash_input_names = _hash_input_names(tree)
         # A module inferred as machine_learning domain (governance.runtime's
         # infer_domains: torch/tensorflow/sklearn/numpy/pandas import) uses
         # float legitimately for numeric computation - model weights,
@@ -271,11 +301,17 @@ def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None, ml_d
             out.append(IntegrityFinding("money-as-float", rel, line, "round() over a floating-point division touching a money-shaped value; no explicit float() call, so it bypasses decision-adjacent-float"))
         for n in ast.walk(tree):
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"dump", "dumps"} and isinstance(n.func.value, ast.Name) and n.func.value.id in {"json","pickle"}:
+                assigned_to = parents.get(n)
+                assigned_names = (
+                    {target.id for target in assigned_to.targets if isinstance(target, ast.Name)}
+                    if isinstance(assigned_to, ast.Assign) else set()
+                )
                 if (_is_internal_serialization(n, parents) or _is_presentation_serialization(n, parents)
                         or _serialization_has_version(n)
                         or (isinstance(n.args[0], ast.Name) and n.args[0].id in versioned_payload_names)
                         or _is_trusted_versioning_name(_enclosing_function(n, parents))
-                        or _is_sql_parameter_binding(n, parents)):
+                        or _is_sql_parameter_binding(n, parents)
+                        or bool(assigned_names & hash_input_names)):
                     continue
                 out.append(IntegrityFinding("unversioned-serialization", rel, n.lineno, "unversioned serialization"))
         examinations[rel]="examined_with_findings" if any(x.path == rel for x in out) else "examined_clean"

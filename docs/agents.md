@@ -202,7 +202,13 @@ Also pure AST scanning. Flags three families:
   never "any enclosing tuple" — because a broader version of this exact
   check silently suppressed 31 real findings elsewhere in the codebase,
   where a tuple happened to hold a genuine standalone JSON document (an
-  `Evidence`/`Finding` field).
+  `Evidence`/`Finding` field). Finally, a `json.dumps(...)` assigned to a
+  local name that is only ever later passed to `hashlib.<algo>(...)` is
+  trusted the same as `canonical_json`'s own internal dump — a
+  content-fingerprint input, not a persisted document — found via a
+  self-audit of `forge/agent_independence.py::_fingerprint()`, which splits
+  the dump and the hash across two statements instead of one nested
+  expression.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 
