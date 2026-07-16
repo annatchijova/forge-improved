@@ -24,6 +24,10 @@ def _e(value: Any) -> str:
     return html.escape(str(value))
 
 
+def _option_tags(values: list[str]) -> str:
+    return "".join(f'<option value="{_e(value)}">{_e(value)}</option>' for value in values)
+
+
 def _load(path: str | Path) -> dict[str, Any]:
     return load_json(path, f"report artifact {path}")
 
@@ -181,11 +185,14 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
     agents = sorted({str(f.get("agent", "bug_investigator")) for f in findings})
     severities = [name for name in _SEVERITY_ORDER if any(str(f.get("severity", "MEDIUM")).upper() == name for f in findings)]
     epistemic_levels = sorted({str(f.get("epistemic_level", "")) for f in findings if f.get("epistemic_level")})
+    agent_options = _option_tags(agents)
+    severity_options = _option_tags(severities)
+    epistemic_options = _option_tags(epistemic_levels)
     filter_html = f"""<div class=\"finding-toolbar\" role=\"search\" aria-label=\"Finding filters\">
   <label>Search <input id=\"finding-search\" type=\"search\" placeholder=\"module, description, reasoning…\"></label>
-  <label>Agent <select id=\"finding-agent\"><option value=\"\">All agents</option>{''.join(f'<option value=\"{_e(value)}\">{_e(value)}</option>' for value in agents)}</select></label>
-  <label>Severity <select id=\"finding-severity\"><option value=\"\">All severities</option>{''.join(f'<option value=\"{_e(value)}\">{_e(value)}</option>' for value in severities)}</select></label>
-  <label>Status <select id=\"finding-epistemic\"><option value=\"\">All statuses</option>{''.join(f'<option value=\"{_e(value)}\">{_e(value)}</option>' for value in epistemic_levels)}</select></label>
+  <label>Agent <select id=\"finding-agent\"><option value=\"\">All agents</option>{agent_options}</select></label>
+  <label>Severity <select id=\"finding-severity\"><option value=\"\">All severities</option>{severity_options}</select></label>
+  <label>Status <select id=\"finding-epistemic\"><option value=\"\">All statuses</option>{epistemic_options}</select></label>
   <span id=\"finding-count\" class=\"filter-count\">Showing {len(findings)} of {len(findings)}</span>
 </div>"""
     discarded_html = "".join(f"<article class=\"discarded\"><strong>{_e(item.get('module_path'))}</strong><p>{_e(item.get('reason'))}</p></article>" for item in discarded) or "<p>No discarded hypotheses recorded.</p>"
