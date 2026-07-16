@@ -143,6 +143,12 @@ Outputs:
 Details on why artifacts are split rather than nested into one blob, and on
 what the seal does and does not prove, in [`docs/artifacts.md`](docs/artifacts.md).
 
+Historical audit and benchmark runs — including full findings, discarded
+hypotheses, and known false positives — are kept out of this checkout and
+published at
+[`annatchijova/forge-results`](https://github.com/annatchijova/forge-results)
+so anyone can browse past evidence without cloning large run artifacts.
+
 ---
 
 ## Why is FORGE different?
@@ -239,6 +245,7 @@ FORGE intentionally does **not**:
 **Reference**
 * [`DECISIONS.md`](DECISIONS.md) — recorded architectural decisions and their boundaries
 * [`agents/README.md`](agents/README.md) — agent role contracts
+* [`annatchijova/forge-results`](https://github.com/annatchijova/forge-results) — historical audit/benchmark runs, findings, and false positives
 
 Run all commands (`pytest`, `python3 -m forge`, and Git operations) from the
 repository root: `/home/labestiadevigia/forge`. Running from a parent
