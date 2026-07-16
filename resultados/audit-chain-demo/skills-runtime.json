@@ -1,0 +1,60 @@
+{
+  "applicability": {
+    "AuditChain.java": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "audit_chain.c": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    },
+    "main.rs": {
+      "validate-at-the-boundary": "NOT_APPLICABLE"
+    }
+  },
+  "domain_hypotheses": [
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "AuditChain.java"
+    },
+    {
+      "alternatives": [
+        "mixed_or_unknown"
+      ],
+      "confidence": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "domains": [],
+      "evidence": [],
+      "module_path": "audit_chain.c"
+    },
+    {
+      "alternatives": [],
+      "confidence": {
+        "denominator": 3,
+        "numerator": 1
+      },
+      "domains": [
+        "input_boundary"
+      ],
+      "evidence": [
+        {
+          "detail": "input or parser boundary call",
+          "kind": "source_pattern",
+          "role": "primary",
+          "source": "main.rs"
+        }
+      ],
+      "module_path": "main.rs"
+    }
+  ],
+  "findings": [],
+  "limitations": []
+}

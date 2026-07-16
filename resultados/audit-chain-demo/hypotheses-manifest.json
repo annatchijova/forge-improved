@@ -1,0 +1,12 @@
+{
+  "audited_modules": [],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784162388,
+  "hypotheses": [],
+  "limitations": [
+    "Hypotheses require module 3 verification; parser candidates may receive isolated induction, while unsupported families remain AST-only."
+  ],
+  "root": "/home/labestiadevigia/audit-chain",
+  "schema_version": "1.0",
+  "triage_schema_version": "1.1"
+}

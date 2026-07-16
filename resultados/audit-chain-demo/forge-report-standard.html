@@ -1,0 +1,451 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>FORGE standard report</title>
+<style>
+:root{--bg:#E3B8B8;--bg-elevated:#FFFFFF;--bg-sunken:#E8E9E3;--ink:#1C2222;--ink-muted:#5B6460;--rule:#D5D6CE;--accent:#2B5D63;--ok:#3C7A52;--fail:#A8501C;--serif:Georgia,"Times New Roman",serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:0 auto;padding:0 24px 56px}header{border-bottom:2px solid var(--ink);padding:40px 0 22px;margin-bottom:36px}h1{font:600 clamp(28px,4vw,40px) var(--serif);margin:0 0 18px}h2{font:600 21px var(--serif);color:var(--accent);border-bottom:1px solid var(--rule);padding-bottom:10px}h3{font:600 17px var(--serif);margin-bottom:6px}section{background:var(--bg-elevated);border:1px solid var(--rule);border-radius:3px;margin:24px 0;padding:22px 24px;box-shadow:0 4px 14px rgba(28,34,34,.06)}#seal p{display:inline-block;background:#DFEDE2;color:#2A5A3C;border-radius:14px;padding:6px 12px;font:12px var(--mono);letter-spacing:.04em}.finding{background:var(--bg);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:3px;padding:14px 18px;margin:14px 0}.finding p:first-of-type{color:var(--ink-muted);font:12px var(--mono)}pre{background:var(--bg-sunken);border-radius:3px;padding:12px 14px;overflow:auto;white-space:pre-wrap;font:13px/1.5 var(--mono)}#limitations h2,#discarded h2{color:var(--fail)}
+</style>
+</head><body><div class='wrap'><header><h1>FORGE standard report</h1></header><section id='seal'><h2>Seal status</h2><p>VERIFIED</p></section><section id='findings'><h2>Findings</h2></section><section id='limitations'><h2>Limitations</h2><ul><li>The seal proves findings were not altered after sealing.</li><li>The seal does not prove findings are correct.</li><li>A full-access attacker can forge a consistent replacement chain from scratch.</li></ul></section><section id='discarded'><h2>Discarded hypotheses</h2><pre>[]</pre></section><section id='coverage'><h2>Per-module coverage</h2><pre>{
+  ".git/COMMIT_EDITMSG": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/config": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/description": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/applypatch-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/commit-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/fsmonitor-watchman.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/post-update.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-applypatch.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-commit.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-merge-commit.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-push.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-rebase.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/pre-receive.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/prepare-commit-msg.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/push-to-checkout.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/sendemail-validate.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/hooks/update.sample": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/index": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/info/exclude": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/HEAD": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/heads/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/logs/refs/remotes/origin/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/01/5f44647368931aab77434c1bf52e791445f273": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/08/fe655e77daa30e599bfe7e7b297bea61bc0a1b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/18/2a6ba4e5550d44200f414981546f537ced68a1": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/1b/eb4de99ca6ed8a61397fe77b420a77bffaf73e": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/24/a859196cb7385567bee8b26cfcea0cc91d9d34": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/41/68d91842452e9d42394f909b1f708f6050dafe": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/44/e8ebe0bcca0191c8397995c27f55a1e9048af2": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/62/448b73a0f977050ac754d469c1d808d86c20b6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/64/8f13003ddadf3d7ad453f7f340e7c960cb4dd6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/69/127349abc2c4cc7d1edc2b30c7a728f3e38bae": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6b/521f1d297696bdf0676fd657797c113ac74aac": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/6f/6714eb2e7b3478d9dbd3a9e7f9b19ee19f346f": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/71/1d46ea9013725b5c7989e1454965678f9298c5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/86/d1ddfb5054097077c960e34cbbfbadc12f190d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/8f/ecd2ad221cb64d1da750d73252b12db1c7ff17": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/90/9c5ca9c56a3f55dc6c1304ff552206613a3e60": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/95/7785fa8e565d916b5bbf377a4b87f13a5d867d": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/99/0c824a6461003b6d423fe7a16e2c3a9434466b": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/a8/c7dd6c61f3b8c6faf6907e47ba04f887700bcc": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/ac/29a5d6551ed1ca3d1312110f0c5107667764af": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/b0/1a919e5bdc9bbc960f57dc3ca2cc1b2ee02ab0": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/bd/6351676344f1df2595e8a07f2c81d948aeae76": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/d5/cebb15a131fce72118f4f4ac91acae21c3e0f6": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/e2/92317cd597ab92456e08118706392ec73a8edc": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f5/8e184a6f3f18cace087fba740a0c678197c06a": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/objects/f6/bc88f861748f739d8d676839d55dad6d87aeb5": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/heads/main": {
+    "coverage": "excluded_by_policy"
+  },
+  ".git/refs/remotes/origin/main": {
+    "coverage": "excluded_by_policy"
+  },
+  "AuditChain.java": {
+    "coverage": "non_python_not_analyzed",
+    "triage": "DEAD_WEIGHT"
+  },
+  "Cargo.lock": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "Cargo.toml": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "README.md": {
+    "coverage": "non_python_not_analyzed"
+  },
+  "audit_chain": {
+    "coverage": "binary_or_unreadable"
+  },
+  "audit_chain.c": {
+    "coverage": "non_python_not_analyzed",
+    "triage": "DEAD_WEIGHT"
+  },
+  "main.rs": {
+    "coverage": "non_python_not_analyzed",
+    "triage": "DEAD_WEIGHT"
+  },
+  "target/.rustc_info.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/CACHEDIR.TAG": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.cargo-artifact-lock": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.cargo-build-lock": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.cargo-lock": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/audit_chain-4dfe5812c675220f/bin-audit_chain": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/audit_chain-4dfe5812c675220f/bin-audit_chain.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/audit_chain-4dfe5812c675220f/dep-bin-audit_chain": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/audit_chain-4dfe5812c675220f/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/block-buffer-2e78499d38849d2d/dep-lib-block_buffer": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/block-buffer-2e78499d38849d2d/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/block-buffer-2e78499d38849d2d/lib-block_buffer": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/block-buffer-2e78499d38849d2d/lib-block_buffer.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/dep-lib-cfg_if": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/lib-cfg_if": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/lib-cfg_if.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/dep-lib-cpufeatures": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/lib-cpufeatures": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/lib-cpufeatures.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/crypto-common-073e76c356bf8cea/dep-lib-crypto_common": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/crypto-common-073e76c356bf8cea/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/crypto-common-073e76c356bf8cea/lib-crypto_common": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/crypto-common-073e76c356bf8cea/lib-crypto_common.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/digest-f9a3b330ca0c2b60/dep-lib-digest": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/digest-f9a3b330ca0c2b60/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/digest-f9a3b330ca0c2b60/lib-digest": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/digest-f9a3b330ca0c2b60/lib-digest.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-b855746921b2bf56/run-build-script-build-script-build": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-b855746921b2bf56/run-build-script-build-script-build.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/dep-lib-generic_array": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/lib-generic_array": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/lib-generic_array.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c8e37b08632023bf/build-script-build-script-build": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c8e37b08632023bf/build-script-build-script-build.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c8e37b08632023bf/dep-build-script-build-script-build": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/generic-array-c8e37b08632023bf/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/sha2-70156082fb07be5b/dep-lib-sha2": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/sha2-70156082fb07be5b/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/sha2-70156082fb07be5b/lib-sha2": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/sha2-70156082fb07be5b/lib-sha2.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/typenum-749a717715ca227e/dep-lib-typenum": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/typenum-749a717715ca227e/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/typenum-749a717715ca227e/lib-typenum": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/typenum-749a717715ca227e/lib-typenum.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/version_check-2684396f8ab600a7/dep-lib-version_check": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/version_check-2684396f8ab600a7/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/version_check-2684396f8ab600a7/lib-version_check": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/.fingerprint/version_check-2684396f8ab600a7/lib-version_check.json": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/audit_chain": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/audit_chain.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-b855746921b2bf56/invoked.timestamp": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-b855746921b2bf56/output": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-b855746921b2bf56/root-output": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-b855746921b2bf56/stderr": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-c8e37b08632023bf/build-script-build": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-c8e37b08632023bf/build_script_build-c8e37b08632023bf": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/build/generic-array-c8e37b08632023bf/build_script_build-c8e37b08632023bf.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/audit_chain-4dfe5812c675220f": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/audit_chain-4dfe5812c675220f.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/block_buffer-2e78499d38849d2d.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/cfg_if-e7a7221cad5f9b8a.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/cpufeatures-8cf72b7cf2537222.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/crypto_common-073e76c356bf8cea.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/digest-f9a3b330ca0c2b60.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/generic_array-c42f9f5f54aa8ae3.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libblock_buffer-2e78499d38849d2d.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libblock_buffer-2e78499d38849d2d.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcfg_if-e7a7221cad5f9b8a.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcfg_if-e7a7221cad5f9b8a.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcpufeatures-8cf72b7cf2537222.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcpufeatures-8cf72b7cf2537222.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcrypto_common-073e76c356bf8cea.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libcrypto_common-073e76c356bf8cea.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libdigest-f9a3b330ca0c2b60.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libdigest-f9a3b330ca0c2b60.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libgeneric_array-c42f9f5f54aa8ae3.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libgeneric_array-c42f9f5f54aa8ae3.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libsha2-70156082fb07be5b.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libsha2-70156082fb07be5b.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libtypenum-749a717715ca227e.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libtypenum-749a717715ca227e.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libversion_check-2684396f8ab600a7.rlib": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/libversion_check-2684396f8ab600a7.rmeta": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/sha2-70156082fb07be5b.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/typenum-749a717715ca227e.d": {
+    "coverage": "excluded_by_policy"
+  },
+  "target/release/deps/version_check-2684396f8ab600a7.d": {
+    "coverage": "excluded_by_policy"
+  }
+}</pre></section><meta id='forge-findings' data-canonical-base64='W10='></div></body></html>

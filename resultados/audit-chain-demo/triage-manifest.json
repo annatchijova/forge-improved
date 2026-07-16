@@ -1,0 +1,157 @@
+{
+  "deletion_judgments": {
+    "AuditChain.java": "deleting would remove unreachable code",
+    "audit_chain.c": "deleting would remove unreachable code",
+    "main.rs": "deleting would remove unreachable code"
+  },
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784162388,
+  "limitations": [],
+  "modules": [
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "role": "primary",
+          "source": "AuditChain.java"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "role": "primary",
+          "source": "AuditChain.java"
+        },
+        {
+          "detail": "last logic-touch epoch 1784061152",
+          "kind": "git_log",
+          "role": "primary",
+          "source": "AuditChain.java"
+        }
+      ],
+      "import_count": 0,
+      "language": "Java",
+      "last_commit_epoch": 1784061152,
+      "module_class": "DEAD_WEIGHT",
+      "path": "AuditChain.java"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "role": "primary",
+          "source": "audit_chain.c"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "role": "primary",
+          "source": "audit_chain.c"
+        },
+        {
+          "detail": "last logic-touch epoch 1784060091",
+          "kind": "git_log",
+          "role": "primary",
+          "source": "audit_chain.c"
+        }
+      ],
+      "import_count": 0,
+      "language": "C",
+      "last_commit_epoch": 1784060091,
+      "module_class": "DEAD_WEIGHT",
+      "path": "audit_chain.c"
+    },
+    {
+      "caller_count": 0,
+      "decision_keywords": [],
+      "evidence": [
+        {
+          "detail": "0 caller(s), 0 import reference(s)",
+          "kind": "caller_graph",
+          "role": "primary",
+          "source": "main.rs"
+        },
+        {
+          "detail": "decision keywords: []",
+          "kind": "content",
+          "role": "primary",
+          "source": "main.rs"
+        },
+        {
+          "detail": "last logic-touch epoch 1784061152",
+          "kind": "git_log",
+          "role": "primary",
+          "source": "main.rs"
+        }
+      ],
+      "import_count": 0,
+      "language": "Rust",
+      "last_commit_epoch": 1784061152,
+      "module_class": "DEAD_WEIGHT",
+      "path": "main.rs"
+    }
+  ],
+  "root": "/home/labestiadevigia/audit-chain",
+  "schema_version": "1.1",
+  "stacks": [
+    {
+      "confidence": {
+        "denominator": 60,
+        "numerator": 11
+      },
+      "evidence": [
+        {
+          "detail": "C: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "C"
+    },
+    {
+      "confidence": {
+        "denominator": 60,
+        "numerator": 11
+      },
+      "evidence": [
+        {
+          "detail": "Java: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "Java"
+    },
+    {
+      "confidence": {
+        "denominator": 12,
+        "numerator": 7
+      },
+      "evidence": [
+        {
+          "detail": "Rust: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        },
+        {
+          "detail": "Cargo.toml present",
+          "kind": "manifest",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "Rust"
+    }
+  ],
+  "summary": {
+    "DEAD_WEIGHT": 3
+  }
+}

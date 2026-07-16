@@ -1,0 +1,253 @@
+{
+  "audit_duration_seconds": 0.14225,
+  "confidence": {
+    "discarded_hypotheses": 0,
+    "limitations": 3
+  },
+  "connected_modules": 0,
+  "coverage": {
+    "ast_verified_families": [
+      "subprocess",
+      "parser",
+      "float comparison",
+      "eval/exec"
+    ],
+    "coverage_ratio": {
+      "denominator": 1,
+      "numerator": 0
+    },
+    "files_analyzed": 0,
+    "files_discovered": 147,
+    "files_skipped": 147,
+    "skipped_reasons": {
+      "binary_or_unreadable": [
+        "audit_chain"
+      ],
+      "excluded_by_policy": [
+        ".git/COMMIT_EDITMSG",
+        ".git/HEAD",
+        ".git/config",
+        ".git/description",
+        ".git/hooks/applypatch-msg.sample",
+        ".git/hooks/commit-msg.sample",
+        ".git/hooks/fsmonitor-watchman.sample",
+        ".git/hooks/post-update.sample",
+        ".git/hooks/pre-applypatch.sample",
+        ".git/hooks/pre-commit.sample",
+        ".git/hooks/pre-merge-commit.sample",
+        ".git/hooks/pre-push.sample",
+        ".git/hooks/pre-rebase.sample",
+        ".git/hooks/pre-receive.sample",
+        ".git/hooks/prepare-commit-msg.sample",
+        ".git/hooks/push-to-checkout.sample",
+        ".git/hooks/sendemail-validate.sample",
+        ".git/hooks/update.sample",
+        ".git/index",
+        ".git/info/exclude",
+        ".git/logs/HEAD",
+        ".git/logs/refs/heads/main",
+        ".git/logs/refs/remotes/origin/main",
+        ".git/objects/01/5f44647368931aab77434c1bf52e791445f273",
+        ".git/objects/08/fe655e77daa30e599bfe7e7b297bea61bc0a1b",
+        ".git/objects/18/2a6ba4e5550d44200f414981546f537ced68a1",
+        ".git/objects/1b/eb4de99ca6ed8a61397fe77b420a77bffaf73e",
+        ".git/objects/24/a859196cb7385567bee8b26cfcea0cc91d9d34",
+        ".git/objects/41/68d91842452e9d42394f909b1f708f6050dafe",
+        ".git/objects/44/e8ebe0bcca0191c8397995c27f55a1e9048af2",
+        ".git/objects/62/448b73a0f977050ac754d469c1d808d86c20b6",
+        ".git/objects/64/8f13003ddadf3d7ad453f7f340e7c960cb4dd6",
+        ".git/objects/69/127349abc2c4cc7d1edc2b30c7a728f3e38bae",
+        ".git/objects/6b/521f1d297696bdf0676fd657797c113ac74aac",
+        ".git/objects/6f/6714eb2e7b3478d9dbd3a9e7f9b19ee19f346f",
+        ".git/objects/71/1d46ea9013725b5c7989e1454965678f9298c5",
+        ".git/objects/86/d1ddfb5054097077c960e34cbbfbadc12f190d",
+        ".git/objects/8f/ecd2ad221cb64d1da750d73252b12db1c7ff17",
+        ".git/objects/90/9c5ca9c56a3f55dc6c1304ff552206613a3e60",
+        ".git/objects/95/7785fa8e565d916b5bbf377a4b87f13a5d867d",
+        ".git/objects/99/0c824a6461003b6d423fe7a16e2c3a9434466b",
+        ".git/objects/a8/c7dd6c61f3b8c6faf6907e47ba04f887700bcc",
+        ".git/objects/ac/29a5d6551ed1ca3d1312110f0c5107667764af",
+        ".git/objects/b0/1a919e5bdc9bbc960f57dc3ca2cc1b2ee02ab0",
+        ".git/objects/bd/6351676344f1df2595e8a07f2c81d948aeae76",
+        ".git/objects/d5/cebb15a131fce72118f4f4ac91acae21c3e0f6",
+        ".git/objects/e2/92317cd597ab92456e08118706392ec73a8edc",
+        ".git/objects/f5/8e184a6f3f18cace087fba740a0c678197c06a",
+        ".git/objects/f6/bc88f861748f739d8d676839d55dad6d87aeb5",
+        ".git/refs/heads/main",
+        ".git/refs/remotes/origin/main",
+        "target/.rustc_info.json",
+        "target/CACHEDIR.TAG",
+        "target/release/.cargo-artifact-lock",
+        "target/release/.cargo-build-lock",
+        "target/release/.cargo-lock",
+        "target/release/.fingerprint/audit_chain-4dfe5812c675220f/bin-audit_chain",
+        "target/release/.fingerprint/audit_chain-4dfe5812c675220f/bin-audit_chain.json",
+        "target/release/.fingerprint/audit_chain-4dfe5812c675220f/dep-bin-audit_chain",
+        "target/release/.fingerprint/audit_chain-4dfe5812c675220f/invoked.timestamp",
+        "target/release/.fingerprint/block-buffer-2e78499d38849d2d/dep-lib-block_buffer",
+        "target/release/.fingerprint/block-buffer-2e78499d38849d2d/invoked.timestamp",
+        "target/release/.fingerprint/block-buffer-2e78499d38849d2d/lib-block_buffer",
+        "target/release/.fingerprint/block-buffer-2e78499d38849d2d/lib-block_buffer.json",
+        "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/dep-lib-cfg_if",
+        "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/invoked.timestamp",
+        "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/lib-cfg_if",
+        "target/release/.fingerprint/cfg-if-e7a7221cad5f9b8a/lib-cfg_if.json",
+        "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/dep-lib-cpufeatures",
+        "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/invoked.timestamp",
+        "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/lib-cpufeatures",
+        "target/release/.fingerprint/cpufeatures-8cf72b7cf2537222/lib-cpufeatures.json",
+        "target/release/.fingerprint/crypto-common-073e76c356bf8cea/dep-lib-crypto_common",
+        "target/release/.fingerprint/crypto-common-073e76c356bf8cea/invoked.timestamp",
+        "target/release/.fingerprint/crypto-common-073e76c356bf8cea/lib-crypto_common",
+        "target/release/.fingerprint/crypto-common-073e76c356bf8cea/lib-crypto_common.json",
+        "target/release/.fingerprint/digest-f9a3b330ca0c2b60/dep-lib-digest",
+        "target/release/.fingerprint/digest-f9a3b330ca0c2b60/invoked.timestamp",
+        "target/release/.fingerprint/digest-f9a3b330ca0c2b60/lib-digest",
+        "target/release/.fingerprint/digest-f9a3b330ca0c2b60/lib-digest.json",
+        "target/release/.fingerprint/generic-array-b855746921b2bf56/run-build-script-build-script-build",
+        "target/release/.fingerprint/generic-array-b855746921b2bf56/run-build-script-build-script-build.json",
+        "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/dep-lib-generic_array",
+        "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/invoked.timestamp",
+        "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/lib-generic_array",
+        "target/release/.fingerprint/generic-array-c42f9f5f54aa8ae3/lib-generic_array.json",
+        "target/release/.fingerprint/generic-array-c8e37b08632023bf/build-script-build-script-build",
+        "target/release/.fingerprint/generic-array-c8e37b08632023bf/build-script-build-script-build.json",
+        "target/release/.fingerprint/generic-array-c8e37b08632023bf/dep-build-script-build-script-build",
+        "target/release/.fingerprint/generic-array-c8e37b08632023bf/invoked.timestamp",
+        "target/release/.fingerprint/sha2-70156082fb07be5b/dep-lib-sha2",
+        "target/release/.fingerprint/sha2-70156082fb07be5b/invoked.timestamp",
+        "target/release/.fingerprint/sha2-70156082fb07be5b/lib-sha2",
+        "target/release/.fingerprint/sha2-70156082fb07be5b/lib-sha2.json",
+        "target/release/.fingerprint/typenum-749a717715ca227e/dep-lib-typenum",
+        "target/release/.fingerprint/typenum-749a717715ca227e/invoked.timestamp",
+        "target/release/.fingerprint/typenum-749a717715ca227e/lib-typenum",
+        "target/release/.fingerprint/typenum-749a717715ca227e/lib-typenum.json",
+        "target/release/.fingerprint/version_check-2684396f8ab600a7/dep-lib-version_check",
+        "target/release/.fingerprint/version_check-2684396f8ab600a7/invoked.timestamp",
+        "target/release/.fingerprint/version_check-2684396f8ab600a7/lib-version_check",
+        "target/release/.fingerprint/version_check-2684396f8ab600a7/lib-version_check.json",
+        "target/release/audit_chain",
+        "target/release/audit_chain.d",
+        "target/release/build/generic-array-b855746921b2bf56/invoked.timestamp",
+        "target/release/build/generic-array-b855746921b2bf56/output",
+        "target/release/build/generic-array-b855746921b2bf56/root-output",
+        "target/release/build/generic-array-b855746921b2bf56/stderr",
+        "target/release/build/generic-array-c8e37b08632023bf/build-script-build",
+        "target/release/build/generic-array-c8e37b08632023bf/build_script_build-c8e37b08632023bf",
+        "target/release/build/generic-array-c8e37b08632023bf/build_script_build-c8e37b08632023bf.d",
+        "target/release/deps/audit_chain-4dfe5812c675220f",
+        "target/release/deps/audit_chain-4dfe5812c675220f.d",
+        "target/release/deps/block_buffer-2e78499d38849d2d.d",
+        "target/release/deps/cfg_if-e7a7221cad5f9b8a.d",
+        "target/release/deps/cpufeatures-8cf72b7cf2537222.d",
+        "target/release/deps/crypto_common-073e76c356bf8cea.d",
+        "target/release/deps/digest-f9a3b330ca0c2b60.d",
+        "target/release/deps/generic_array-c42f9f5f54aa8ae3.d",
+        "target/release/deps/libblock_buffer-2e78499d38849d2d.rlib",
+        "target/release/deps/libblock_buffer-2e78499d38849d2d.rmeta",
+        "target/release/deps/libcfg_if-e7a7221cad5f9b8a.rlib",
+        "target/release/deps/libcfg_if-e7a7221cad5f9b8a.rmeta",
+        "target/release/deps/libcpufeatures-8cf72b7cf2537222.rlib",
+        "target/release/deps/libcpufeatures-8cf72b7cf2537222.rmeta",
+        "target/release/deps/libcrypto_common-073e76c356bf8cea.rlib",
+        "target/release/deps/libcrypto_common-073e76c356bf8cea.rmeta",
+        "target/release/deps/libdigest-f9a3b330ca0c2b60.rlib",
+        "target/release/deps/libdigest-f9a3b330ca0c2b60.rmeta",
+        "target/release/deps/libgeneric_array-c42f9f5f54aa8ae3.rlib",
+        "target/release/deps/libgeneric_array-c42f9f5f54aa8ae3.rmeta",
+        "target/release/deps/libsha2-70156082fb07be5b.rlib",
+        "target/release/deps/libsha2-70156082fb07be5b.rmeta",
+        "target/release/deps/libtypenum-749a717715ca227e.rlib",
+        "target/release/deps/libtypenum-749a717715ca227e.rmeta",
+        "target/release/deps/libversion_check-2684396f8ab600a7.rlib",
+        "target/release/deps/libversion_check-2684396f8ab600a7.rmeta",
+        "target/release/deps/sha2-70156082fb07be5b.d",
+        "target/release/deps/typenum-749a717715ca227e.d",
+        "target/release/deps/version_check-2684396f8ab600a7.d"
+      ],
+      "non_python_not_analyzed": [
+        "AuditChain.java",
+        "Cargo.lock",
+        "Cargo.toml",
+        "README.md",
+        "audit_chain.c",
+        "main.rs"
+      ]
+    }
+  },
+  "domains": [
+    "input_boundary"
+  ],
+  "findings": {
+    "by_agent": {},
+    "by_severity": {},
+    "total": 0
+  },
+  "languages": [
+    {
+      "confidence": {
+        "denominator": 60,
+        "numerator": 11
+      },
+      "evidence": [
+        {
+          "detail": "C: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "C"
+    },
+    {
+      "confidence": {
+        "denominator": 60,
+        "numerator": 11
+      },
+      "evidence": [
+        {
+          "detail": "Java: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "Java"
+    },
+    {
+      "confidence": {
+        "denominator": 12,
+        "numerator": 7
+      },
+      "evidence": [
+        {
+          "detail": "Rust: 1 files with extension",
+          "kind": "file_count",
+          "role": "primary",
+          "source": "filesystem"
+        },
+        {
+          "detail": "Cargo.toml present",
+          "kind": "manifest",
+          "role": "primary",
+          "source": "filesystem"
+        }
+      ],
+      "name": "Rust"
+    }
+  ],
+  "module_summary": {
+    "DEAD_WEIGHT": 3
+  },
+  "modules": 3,
+  "note": "Profile summarizes observed audit artifacts; it is not an invented repository quality score.",
+  "profile_schema_version": "1.0",
+  "repository": "/home/labestiadevigia/audit-chain",
+  "skills": {
+    "activated": 0,
+    "loaded": [
+      "validate-at-the-boundary"
+    ],
+    "undetermined": 0
+  }
+}

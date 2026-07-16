@@ -1,0 +1,19 @@
+{
+  "ast_unverified_families": [],
+  "ast_verified_families": [
+    "subprocess",
+    "parser",
+    "float comparison",
+    "eval/exec"
+  ],
+  "discarded": [],
+  "findings": [],
+  "forge_version": "0.1.0",
+  "generated_at_epoch": 1784162388,
+  "hypotheses_schema_version": "1.0",
+  "induction": [],
+  "repository_snapshot_sha256": "680e448810d187ed36ddf1120eaad13c3054919e3c4b7e06e396393348c5e047",
+  "root": "/home/labestiadevigia/audit-chain",
+  "schema_version": "2.0",
+  "source_attestation": "91f49b650281b310ee20e726536a2b40c500a3ee8e0ce34c9d894338d8515c0d"
+}
