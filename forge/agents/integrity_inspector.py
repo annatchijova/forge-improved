@@ -75,20 +75,31 @@ def _enclosing_function(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> str:
     return ""
 
 
-def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None) -> tuple[IntegrityFinding, ...]:
+def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None, ml_domain_paths: frozenset[str] | None = None) -> tuple[IntegrityFinding, ...]:
     base=Path(root); records=triage(base).modules
     eligible = set(eligible) if eligible is not None else {m.path for m in records if m.module_class is ModuleClass.CONNECTED_ALIVE}
     # Preserve the standalone detector contract for tiny unit fixtures with no
     # live module at all; a real repository with any live module uses the
     # explicit CONNECTED_ALIVE-only policy below.
     if not eligible: eligible={m.path for m in records}
+    ml_domain_paths = ml_domain_paths or frozenset()
     scan=prepare_python_scan(base, eligible); out=[]; examinations=dict(scan.examinations)
     for rel, tree in scan.modules:
         parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
         versioned_payload_names = _versioned_payload_names(tree)
-        for fn in (n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
-            for line in sorted(float_calls_reaching_return(fn)):
-                out.append(IntegrityFinding("decision-adjacent-float", rel, line, "non-deterministic arithmetic in a decision-adjacent path"))
+        # A module inferred as machine_learning domain (governance.runtime's
+        # infer_domains: torch/tensorflow/sklearn/numpy/pandas import) uses
+        # float legitimately for numeric computation - model weights,
+        # predictions, physical quantities derived from signals. Flagging
+        # every float() reaching a return there is exactly the FP-001 class
+        # of mistake (proxy signal instead of a real decision/verdict path),
+        # just triggered by domain instead of by naming proximity. The
+        # module is still examined and still checked for the other
+        # families below.
+        if rel not in ml_domain_paths:
+            for fn in (n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
+                for line in sorted(float_calls_reaching_return(fn)):
+                    out.append(IntegrityFinding("decision-adjacent-float", rel, line, "non-deterministic arithmetic in a decision-adjacent path"))
         for n in ast.walk(tree):
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"dump", "dumps"} and isinstance(n.func.value, ast.Name) and n.func.value.id in {"json","pickle"}:
                 if (_is_internal_serialization(n, parents) or _is_presentation_serialization(n, parents)

@@ -13,6 +13,7 @@
     {"name": "integrity-negative-1", "agent": "integrity_inspector", "path": "integrity/negative-1", "expected_families": []},
     {"name": "integrity-negative-2", "agent": "integrity_inspector", "path": "integrity/negative-2", "expected_families": []},
     {"name": "integrity-negative-3", "agent": "integrity_inspector", "path": "integrity/negative-3", "expected_families": []},
+    {"name": "integrity-negative-4", "agent": "integrity_inspector", "path": "integrity/negative-4", "expected_families": []},
     {"name": "web-positive-1", "agent": "web_auditor", "path": "web/positive-1", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},
     {"name": "web-positive-2", "agent": "web_auditor", "path": "web/positive-2", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},
     {"name": "web-positive-3", "agent": "web_auditor", "path": "web/positive-3", "expected_families": ["dynamic-evaluation", "parser-boundary", "path-traversal", "subprocess"]},

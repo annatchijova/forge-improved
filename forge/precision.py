@@ -9,11 +9,16 @@ from typing import Any, Callable
 from forge.agents.integrity_inspector import inspect as inspect_integrity
 from forge.agents.security_auditor import audit as audit_security
 from forge.agents.web_auditor import audit as audit_web
+from forge.detector.stack import triage
+from forge.governance.runtime import infer_domains
 
 
 def _families(agent: str, root: Path) -> set[str]:
     if agent == "integrity_inspector":
-        result = inspect_integrity(root)
+        ml_domain_paths = frozenset(
+            h.module_path for h in infer_domains(triage(root)) if "machine_learning" in h.domains
+        )
+        result = inspect_integrity(root, ml_domain_paths=ml_domain_paths)
         return {finding.family for finding in result.findings}
     if agent == "security_auditor":
         result = audit_security(root)

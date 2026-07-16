@@ -308,7 +308,8 @@ class Runtime:
             security_result = AgentScanResult((), {"*": "agent_unavailable"}, mandatory_protocol("security_auditor", (message,), ()))
             self._event(trace, cronos, "agent_degraded", agent="security_auditor", error=message)
         try:
-            integrity_result = integrity_inspector.inspect(root, connected_paths)
+            ml_domain_paths = frozenset(h.module_path for h in governance.hypotheses if "machine_learning" in h.domains)
+            integrity_result = integrity_inspector.inspect(root, connected_paths, ml_domain_paths=ml_domain_paths)
         except Exception as exc:
             message = f"integrity_inspector unavailable: {type(exc).__name__}: {exc}"
             degraded_reasons.append(message)

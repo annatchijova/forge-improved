@@ -120,9 +120,17 @@ conservative, named benign criteria (see `DECISIONS.md`):
 
 Also pure AST scanning. Flags two families:
 
-* **decision-adjacent-float** — a `float(...)` call inside (or touching a
-  variable named like) a function whose name or locals suggest a decision,
-  score, verdict, classification, or gate
+* **decision-adjacent-float** — a `float(...)` call whose value has a
+  shallow data-flow path to a `return` statement, in *any* function. There is
+  currently no name-based gate (no check for "decision"/"score"/"verdict" in
+  the function or variable name) — the check is purely structural. The one
+  exception is domain-based, not local to the function: a module inferred as
+  `machine_learning` by `forge/governance/runtime.py::infer_domains()` (an
+  import of `torch`/`tensorflow`/`sklearn`/`numpy`/`pandas`) is excluded,
+  since ordinary numeric computation (model weights, predictions, physical
+  quantities derived from signals) would otherwise be flagged identically to
+  an actual governance verdict. The module is still examined for the other
+  family below.
 * **unversioned-serialization** — a `json`/`pickle` dump whose payload is not
   visibly a mapping containing `schema_version` or `version`
 

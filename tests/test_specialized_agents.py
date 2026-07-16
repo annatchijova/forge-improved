@@ -98,6 +98,19 @@ def test_integrity_does_not_trust_forge_specific_payload_names(tmp_path):
     hits = inspect(tmp_path)
     assert [(item.family, item.path) for item in hits] == [("unversioned-serialization", "unrelated.py")]
 
+def test_integrity_suppresses_decision_adjacent_float_for_ml_domain_paths(tmp_path):
+    # Same code, same detector: whether it fires depends only on whether the
+    # caller (runtime.py, via infer_domains) marked this path machine_learning.
+    write(tmp_path, "signal.py", "def estimate(z):\n    return float(z * 343.0)\n")
+    assert [x.family for x in inspect(tmp_path)] == ["decision-adjacent-float"]
+    assert not inspect(tmp_path, ml_domain_paths=frozenset({"signal.py"}))
+
+def test_integrity_ml_domain_suppression_is_scoped_to_flagged_paths_only(tmp_path):
+    write(tmp_path, "signal.py", "def estimate(z):\n    return float(z * 343.0)\n")
+    write(tmp_path, "verdict.py", "def decide(z):\n    return float(z) > 0.5\n")
+    hits = inspect(tmp_path, ml_domain_paths=frozenset({"signal.py"}))
+    assert [x.path for x in hits] == ["verdict.py"]
+
 def test_shared_discovery_excludes_venv_from_security(tmp_path):
     write(tmp_path, "main.py", "x = 1\n")
     write(tmp_path, ".venv/site.py", "password = 'leaked'\n")
