@@ -166,6 +166,17 @@ def test_scope_policy_excludes_prior_audit_output_from_all_agents(tmp_path):
     for directory in ("resultados", "results", "artifacts", ".forge-results"):
         assert result.examinations[f"{directory}/prior.json"] == "excluded_by_policy"
 
+
+def test_scope_policy_excludes_binary_files_without_decoding_them(tmp_path):
+    write(tmp_path, "main.py", "VALUE = 1\n")
+    binary = tmp_path / "assets" / "image.bin"
+    binary.parent.mkdir()
+    binary.write_bytes(b"\x89PNG\r\n\x1a\n\x00" + b"x" * 8192)
+    discovered = {str(path.relative_to(tmp_path)) for path in discover_files(tmp_path)}
+    result = audit(tmp_path)
+    assert "assets/image.bin" not in discovered
+    assert result.examinations["assets/image.bin"] == "excluded_by_policy"
+
 def test_archaeologist_adds_deletion_judgment(tmp_path):
     write(tmp_path, "dead.py", "x = 1\n")
     result = assess(tmp_path)

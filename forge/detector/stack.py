@@ -51,7 +51,27 @@ def discover_files(root: str | os.PathLike[str], include_excluded: bool = False)
 def is_excluded_by_policy(path: Path, root: Path) -> bool:
     """Return whether a path is outside the agent audit boundary."""
     relative = path.relative_to(root)
-    return path.name in SKIP_FILE_NAMES or any(part in SKIP_DIRS for part in relative.parts)
+    return path.name in SKIP_FILE_NAMES or any(part in SKIP_DIRS for part in relative.parts) or is_binary_file(path)
+
+
+def is_binary_file(path: Path, sample_size: int = 8192) -> bool:
+    """Classify binary or undecodable files without loading whole artifacts."""
+    try:
+        with path.open("rb") as handle:
+            sample = handle.read(sample_size)
+    except OSError:
+        return True
+    if not sample:
+        return False
+    return b"\x00" in sample or _cannot_decode_utf8(sample)
+
+
+def _cannot_decode_utf8(sample: bytes) -> bool:
+    try:
+        sample.decode("utf-8")
+    except UnicodeDecodeError:
+        return True
+    return False
 
 def _files(root: Path) -> list[Path]:
     return discover_files(root)
