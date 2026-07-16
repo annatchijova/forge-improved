@@ -7,6 +7,7 @@ import re
 import subprocess
 import time
 import tomllib
+import ast
 from fractions import Fraction
 from collections import Counter
 from pathlib import Path
@@ -134,15 +135,86 @@ def _reference_tallies(text: str, stems: set[str]) -> dict[str, int]:
 
 
 def _caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[int, int]]:
-    text = "\n".join(p.read_text(errors="ignore") for p in _files(root) if p.suffix.lower() in {".py", ".js", ".ts", ".rs", ".go", ".java", ".rb"})
     paths = list(paths)
-    tallies = _reference_tallies(text, {p.stem for p in paths})
-    result = {}
-    for p in paths:
-        imports = tallies.get(p.stem, 0)
-        callers = max(0, imports - 1 if p.suffix == ".py" else imports)
-        result[str(p.relative_to(root))] = (callers, imports)
+    result: dict[str, tuple[int, int]] = {}
+    python_paths = [path for path in paths if path.suffix.lower() == ".py"]
+    result.update(_python_caller_counts(root, paths))
+    other_paths = [path for path in paths if path.suffix.lower() != ".py"]
+    if other_paths:
+        text = "\n".join(p.read_text(errors="ignore") for p in _files(root) if p.suffix.lower() in {".js", ".ts", ".rs", ".go", ".java", ".rb"})
+        tallies = _reference_tallies(text, {p.stem for p in other_paths})
+        for path in other_paths:
+            imports = tallies.get(path.stem, 0)
+            key = str(path.relative_to(root))
+            current = result.get(key, (0, 0))
+            result[key] = (max(current[0], imports), max(current[1], imports))
     return result
+
+
+def _python_module_map(root: Path, paths: Iterable[Path]) -> dict[str, str]:
+    modules: dict[str, str] = {}
+    for path in paths:
+        relative = path.relative_to(root)
+        parts = list(relative.with_suffix("").parts)
+        if parts[-1] == "__init__":
+            parts.pop()
+        if parts:
+            modules[".".join(parts)] = str(relative)
+    return modules
+
+
+def _resolve_python_module(module: str, source: Path, module_map: dict[str, str]) -> str | None:
+    if module in module_map:
+        return module_map[module]
+    source_parts = list(source.with_suffix("").parts[:-1])
+    for index in range(len(source_parts) + 1):
+        candidate = ".".join(source_parts[:index] + module.split("."))
+        if candidate in module_map:
+            return module_map[candidate]
+    return None
+
+
+def _python_import_targets(node: ast.Import | ast.ImportFrom, source: Path, module_map: dict[str, str]) -> set[str]:
+    targets: set[str] = set()
+    if isinstance(node, ast.Import):
+        for alias in node.names:
+            target = _resolve_python_module(alias.name, source, module_map)
+            if target:
+                targets.add(target)
+    else:
+        prefix = node.module or ""
+        if node.level:
+            source_parts = list(source.with_suffix("").parts[:-1])
+            source_parts = source_parts[: max(0, len(source_parts) - node.level + 1)]
+            prefix = ".".join(source_parts + ([prefix] if prefix else []))
+        target = _resolve_python_module(prefix, source, module_map) if prefix else None
+        if target:
+            targets.add(target)
+        for alias in node.names:
+            candidate = ".".join(part for part in (prefix, alias.name) if part)
+            target = _resolve_python_module(candidate, source, module_map)
+            if target:
+                targets.add(target)
+    return targets
+
+
+def _python_caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[int, int]]:
+    paths = list(paths)
+    module_map = _python_module_map(root, paths)
+    references: dict[str, set[str]] = {str(path.relative_to(root)): set() for path in paths}
+    for source in (path for path in paths if path.suffix.lower() == ".py"):
+        try:
+            tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            continue
+        source_relative = str(source.relative_to(root))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Import, ast.ImportFrom)):
+                continue
+            for target in _python_import_targets(node, Path(source_relative), module_map):
+                if target != source_relative and target in references:
+                    references[target].add(source_relative)
+    return {path: (len(callers), len(callers)) for path, callers in references.items()}
 
 
 def _entry_point_paths(root: Path, paths: Iterable[Path]) -> set[str]:

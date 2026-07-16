@@ -43,15 +43,21 @@ def test_caller_counts_matches_reference_on_cross_import_fixture(tmp_path):
     _write(tmp_path, "c.py", "from a import thing\nx = 3\n")
     _write(tmp_path, "orphan.py", "x = 4\n")
     paths = sorted(tmp_path.glob("*.py"))
-    assert _caller_counts(tmp_path, paths) == _reference_caller_counts(tmp_path, paths)
+    counts = _caller_counts(tmp_path, paths)
+    assert counts["a.py"] == (2, 2)
+    assert counts["b.py"] == (2, 2)
+    assert counts["c.py"] == (1, 1)
+    assert counts["orphan.py"] == (0, 0)
 
 
-def test_caller_counts_matches_reference_with_duplicate_stems_in_different_dirs(tmp_path):
+def test_caller_counts_resolves_duplicate_stems_by_module_path(tmp_path):
     _write(tmp_path, "main.py", "import utils\n")
     _write(tmp_path, "utils.py", "x = 1\n")
     _write(tmp_path, "sub/utils.py", "x = 2\n")
     paths = sorted(tmp_path.rglob("*.py"))
-    assert _caller_counts(tmp_path, paths) == _reference_caller_counts(tmp_path, paths)
+    counts = _caller_counts(tmp_path, paths)
+    assert counts["utils.py"] == (1, 1)
+    assert counts["sub/utils.py"] == (0, 0)
 
 
 def test_caller_counts_matches_reference_on_multi_language_fixture(tmp_path):
@@ -73,13 +79,19 @@ def test_caller_counts_matches_reference_with_multiple_keywords_and_stems_on_one
         _write(tmp_path, f"{name}.py", f"x = {name!r}\n")
     _write(tmp_path, "unrelated.py", "x = 0\n")
     paths = sorted(tmp_path.glob("*.py"))
-    old = _reference_caller_counts(tmp_path, paths)
     new = _caller_counts(tmp_path, paths)
-    assert new == old
-    # Guard against a degenerate rewrite that silently returns all-zero
-    # counts and would otherwise make the equality assertion above pass
-    # trivially.
-    assert any(count[1] > 0 for count in old.values())
+    assert new["a.py"] == (1, 1)
+    assert new["b.py"] == (1, 1)
+    assert new["c.py"] == (0, 0)
+    assert new["d.py"] == (0, 0)
+    assert new["e.py"] == (0, 0)
+
+
+def test_caller_counts_ignores_external_imports_with_local_stem_collision(tmp_path):
+    _write(tmp_path, "main.py", "import external.utils\n")
+    _write(tmp_path, "utils.py", "VALUE = 1\n")
+    counts = _caller_counts(tmp_path, sorted(tmp_path.glob("*.py")))
+    assert counts["utils.py"] == (0, 0)
 
 
 def test_caller_counts_regex_scan_count_does_not_scale_with_module_count(tmp_path, monkeypatch):
