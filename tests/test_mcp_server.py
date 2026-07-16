@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from forge.mcp_server import audit_repository, get_findings, verify_seal, review_patch, runtime_info
+from forge.mcp_server import audit_repository, get_findings, narrate_findings, verify_seal, review_patch, runtime_info
 from forge.build_info import RUNTIME_FINGERPRINT
 
 def put(root, name, text):
@@ -40,6 +40,15 @@ def test_mcp_verify_seal_reports_tamper(tmp_path):
     path=tmp_path/"tampered.json"; path.write_text(json.dumps(sealed))
     verified=verify_seal(str(path))
     assert verified["ok"] is False and any("hash mismatch" in issue for issue in verified["issues"])
+
+def test_mcp_narration_is_read_only_and_non_evidentiary(tmp_path):
+    put(tmp_path, "main.py", "password = 'secret'\n")
+    result = audit_repository(str(tmp_path))
+    response = narrate_findings(result["artifacts"]["sealed"])
+    assert response["ok"] is True
+    assert response["summary"]["seal_verified"] is True
+    assert response["summary"]["evidence_authority"] is False
+    assert response["summary"]["decision_authority"] is False
 
 def test_mcp_audit_invalid_path_is_structured(tmp_path):
     result=audit_repository(str(tmp_path/"missing"))

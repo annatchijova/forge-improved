@@ -562,6 +562,11 @@ class Runtime:
         from forge.agents.recommendation_agent import recommend
         return recommend(sealed_path, metrics_path)
 
+    def narrate_findings(self, sealed_path: str | Path):
+        """Create non-evidentiary prose from one verified sealed artifact only."""
+        from forge.findings_narrator import narrate_sealed_findings
+        return narrate_sealed_findings(sealed_path)
+
     def seal_results(self, verification_path: str | Path, destination: str | Path | None = None) -> Path:
         data = load_json(verification_path, f"verification manifest {verification_path}")
         findings = tuple(Finding(item["category"], item["epistemic_level"], item["module_path"], item["description"], tuple(Evidence(e["kind"], e["source"], e["detail"], e.get("role", "primary")) for e in item["evidence"]), item["reasoning"], item.get("agent", "bug_investigator"), item.get("outcome", "OBSERVED"), item.get("severity", "MEDIUM"), tuple(item.get("provenance", ()))) for item in data.get("findings", []))

@@ -267,6 +267,20 @@ def recommend_changes(sealed_path: str, metrics_path: str | None = None) -> dict
         return _error("recommendation_failed", str(exc))
 
 @mcp.tool()
+def narrate_findings(sealed_path: str) -> dict[str, Any]:
+    """Create non-evidentiary prose from one verified sealed finding artifact.
+
+    The tool only reads the manifest, verifies it first, and cannot alter the
+    audit decision, finding severity, or sealed evidence.
+    """
+    try:
+        return {"ok": True, "summary": runtime.narrate_findings(sealed_path).to_dict()}
+    except FileNotFoundError:
+        return _error("not_found", f"sealed manifest not found: {sealed_path}")
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        return _error("narration_failed", str(exc))
+
+@mcp.tool()
 def generate_report(sealed_path: str, mode: str = "standard", output: str | None = None) -> dict[str, Any]:
     """Render a self-contained HTML forensic report from a sealed verification manifest.
 

@@ -3,8 +3,13 @@
 FORGE exposes its runtime through MCP as a first-class frontend, alongside the
 Python API and the CLI. MCP transport is in `forge/mcp_server.py`. It exposes
 `audit_repository`, `get_coverage`, `get_findings`, `verify_seal`, the optional
-`recommend_changes`, and the standalone `review_patch` tool. It changes **how**
+`recommend_changes`, `narrate_findings`, and the standalone `review_patch` tool. It changes **how**
 FORGE is invoked, not **how** FORGE reasons.
+
+`narrate_findings(sealed_path)` is presentation-only: it verifies one sealed
+finding manifest before producing deterministic reader-oriented prose. That
+prose is visibly marked as **not verified**, is not part of the seal, and
+cannot alter findings, severity, disposition, or the audit decision.
 
 ## Stale-process detection: `runtime_info()`
 

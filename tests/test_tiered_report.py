@@ -58,6 +58,7 @@ def test_tiered_report_has_review_overview_groups_duplicates_and_exposes_reprodu
     assert "Grouped 2 related sealed records for review." in report
     assert "Review actions" in report and "forge audit /workspace/payments --output forge-run" in report
     assert "href='#overview'" in report and "href='#findings'" in report
+    assert "💬 Narrated summary (not verified)" in report
 
 
 def test_tiered_report_marks_partial_disposition_non_green(tmp_path):
