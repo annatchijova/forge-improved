@@ -131,6 +131,7 @@ def validate_independent_results(
     if repeated:
         raise AgentIndependenceError(f"duplicate agent work products: {repeated}")
     return {
+        "independence_schema_version": "1.0",
         "status": "INDEPENDENCE_VERIFIED",
         "agents": list(required),
         "unique_work_products": len(fingerprints),

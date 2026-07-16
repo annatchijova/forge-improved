@@ -208,6 +208,41 @@ def test_integrity_trusts_json_dumps_inside_a_trusted_functions_own_body(tmp_pat
     ))
     assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
 
+def test_integrity_trusts_a_local_name_assigned_from_a_versioned_producer_call(tmp_path):
+    # metrics = collect_metrics(...) in forge/runtime.py: the version key
+    # lives in collect_metrics()'s own return literal, in a different file -
+    # a plain literal-dict-assignment check can never see across that call
+    # boundary. Found via a self-audit of forge/runtime.py itself.
+    write(tmp_path, "metrics.py", (
+        "def collect_metrics(root):\n"
+        "    return {'metrics_schema_version': '1.0', 'root': str(root)}\n"
+    ))
+    write(tmp_path, "runtime.py", (
+        "import json\n"
+        "from metrics import collect_metrics\n"
+        "def audit(root, out):\n"
+        "    metrics = collect_metrics(root)\n"
+        "    out.write_text(json.dumps(metrics, indent=2))\n"
+    ))
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
+def test_integrity_trusts_a_transitive_versioned_producer_chain(tmp_path):
+    # load_and_validate() (forge/agent_independence.py) returns
+    # validate_independent_results(...)'s own already-versioned dict - one
+    # more call away than the direct case above. The producer-function
+    # index must resolve this transitively, not just one hop.
+    write(tmp_path, "agent_independence.py", (
+        "import json\n"
+        "def validate_independent_results(results):\n"
+        "    return {'independence_schema_version': '1.0', 'status': 'INDEPENDENCE_VERIFIED'}\n"
+        "def load_and_validate(directory):\n"
+        "    return validate_independent_results({})\n"
+        "def write_validation_artifact(directory, destination):\n"
+        "    summary = load_and_validate(directory)\n"
+        "    destination.write_text(json.dumps(summary, indent=2))\n"
+    ))
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
 def test_integrity_trusts_any_canonical_prefixed_function_by_name(tmp_path):
     # canonical_findings_bytes (forge/tiered_report.py) is the identical
     # "canonical_*" naming convention as canonical_json, just a different

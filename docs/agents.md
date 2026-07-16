@@ -184,6 +184,16 @@ Also pure AST scanning. Flags three families:
   embedded as human-readable text, never a persisted artifact — is
   recognized both as f-string interpolation and as
   `html.escape(json.dumps(...))`, the report renderers' own convention.
+  Version keys are also recognized any `_version` suffix, not just
+  `_schema_version` (`trace_version` in `forge/multi_agent.py` follows the
+  convention without the word "schema"). Finally, a local name assigned
+  from a call to a *versioned-producer function* — one defined anywhere in
+  the audited scope whose body returns a dict literal carrying a version
+  key, resolved transitively through `return other_producer(...)` chains —
+  is trusted the same as a literal dict assignment: `metrics =
+  collect_metrics(...)` (`forge/runtime.py`) is versioned because
+  `collect_metrics()` itself returns one, in a different file a literal
+  check could never see across.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 

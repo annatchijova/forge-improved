@@ -39,8 +39,14 @@ def test_golden_corpus_has_three_positive_and_negative_cases_per_agent():
     #   forge/tiered_report.py), and html.escape(json.dumps(...)) - the
     #   report renderers' presentation shape, previously only recognized
     #   via the f-string (JoinedStr) shape.
+    # - integrity_inspector negative-9: a local name assigned from a call to
+    #   a versioned-producer function defined in another file
+    #   (metrics = collect_metrics(...)), and the transitive case
+    #   (load_and_validate() returning validate_independent_results(...)'s
+    #   already-versioned dict) - found via self-audits of forge/runtime.py
+    #   and forge/agent_independence.py.
     expected_positives = {"integrity_inspector": 4, "security_auditor": 5, "web_auditor": 3}
-    expected_negatives = {"integrity_inspector": 8, "security_auditor": 5, "web_auditor": 3}
+    expected_negatives = {"integrity_inspector": 9, "security_auditor": 5, "web_auditor": 3}
     assert result["case_count"] == sum(expected_positives.values()) + sum(expected_negatives.values())
     for agent in {row["agent"] for row in result["cases"]}:
         cases = [row for row in result["cases"] if row["agent"] == agent]

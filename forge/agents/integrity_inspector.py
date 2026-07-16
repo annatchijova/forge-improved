@@ -74,12 +74,15 @@ def _is_version_key(name: object) -> bool:
     profile_schema_version, sharding_schema_version,
     comparison_schema_version, hypotheses_schema_version,
     benchmark_schema_version, precision_schema_version,
-    loop_schema_version, ...) - one per artifact type, and a new artifact
-    adds another. An exact-match set silently misses every one it was not
-    updated for, which is exactly the class of self-inflicted false
-    positive an enumerated list produces as the codebase grows.
+    loop_schema_version, trace_version, ...) - one per artifact type, and a
+    new artifact adds another. An exact-match set silently misses every one
+    it was not updated for, which is exactly the class of self-inflicted
+    false positive an enumerated list produces as the codebase grows. Any
+    "_version" suffix counts, not just "_schema_version" specifically -
+    trace_version (forge/multi_agent.py) follows the same convention
+    without the word "schema".
     """
-    return isinstance(name, str) and (name == "version" or name.endswith("schema_version"))
+    return isinstance(name, str) and (name == "version" or name.endswith("_version"))
 
 
 _VERSIONING_TRUSTED_NAMES = {"seal_manifest", "seal_findings"}
@@ -110,20 +113,57 @@ def _serialization_has_version(call: ast.Call) -> bool:
     return False
 
 
-def _versioned_payload_names(tree: ast.AST) -> set[str]:
-    """Find simple local names bound to dicts carrying a schema/version key."""
+def _versioned_producer_functions(modules: list[tuple[str, ast.AST]]) -> set[str]:
+    """Function names, anywhere in the audited scope, whose body returns a
+    versioned payload - directly (a dict literal carrying a version key) or
+    transitively (`return other_producer(...)`, e.g. `load_and_validate`
+    returning `validate_independent_results(...)`'s already-versioned dict).
+
+    A local variable assigned from a call to one of these (`metrics =
+    collect_metrics(...)`, a `profile` parameter passed in from
+    `build_repository_profile(...)`, `comparison = compare_runs(...)`) is
+    versioned exactly the same as a literal dict assignment is - the
+    version key is just one function call away, in a different file.
+    Computed once, structurally, over whatever is in scope: no enumerated
+    list of "known FORGE functions" to maintain as new ones are added.
+    """
+    functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
+    for _, tree in modules:
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                functions.setdefault(node.name, node)
+    producers: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for name, node in functions.items():
+            if name in producers:
+                continue
+            for stmt in ast.walk(node):
+                if not (isinstance(stmt, ast.Return) and stmt.value is not None):
+                    continue
+                if isinstance(stmt.value, ast.Dict) and any(isinstance(key, ast.Constant) and _is_version_key(key.value) for key in stmt.value.keys):
+                    producers.add(name); changed = True; break
+                if isinstance(stmt.value, ast.Call) and isinstance(stmt.value.func, ast.Name) and stmt.value.func.id in producers:
+                    producers.add(name); changed = True; break
+    return producers
+
+
+def _versioned_payload_names(tree: ast.AST, producer_functions: frozenset[str] = frozenset()) -> set[str]:
+    """Find simple local names bound to a versioned payload - a dict
+    literal carrying a version key, or a call to a versioned-producer
+    function (see `_versioned_producer_functions`)."""
     names: set[str] = set()
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Assign, ast.AnnAssign)):
             continue
         value = node.value
-        if not isinstance(value, ast.Dict):
-            continue
-        if not any(isinstance(key, ast.Constant) and _is_version_key(key.value)
-                   for key in value.keys):
-            continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-        names.update(target.id for target in targets if isinstance(target, ast.Name))
+        target_names = [target.id for target in targets if isinstance(target, ast.Name)]
+        if isinstance(value, ast.Dict) and any(isinstance(key, ast.Constant) and _is_version_key(key.value) for key in value.keys):
+            names.update(target_names)
+        elif isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and value.func.id in producer_functions:
+            names.update(target_names)
     return names
 
 
@@ -180,9 +220,10 @@ def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None, ml_d
     if not eligible: eligible={m.path for m in records}
     ml_domain_paths = ml_domain_paths or frozenset()
     scan=prepare_python_scan(base, eligible); out=[]; examinations=dict(scan.examinations)
+    producer_functions = frozenset(_versioned_producer_functions(scan.modules))
     for rel, tree in scan.modules:
         parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
-        versioned_payload_names = _versioned_payload_names(tree)
+        versioned_payload_names = _versioned_payload_names(tree, producer_functions)
         # A module inferred as machine_learning domain (governance.runtime's
         # infer_domains: torch/tensorflow/sklearn/numpy/pandas import) uses
         # float legitimately for numeric computation - model weights,
