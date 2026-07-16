@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +17,20 @@ GENESIS_HASH = hashlib.sha256(b"FORGE-FINDINGS-GENESIS-v1").hexdigest()
 
 def _digest(payload: Any, previous: str) -> str:
     return hashlib.sha256((canonical_json(payload) + previous).encode("utf-8")).hexdigest()
+
+
+def _configured_authentication_key() -> bytes | None:
+    """Read the optional out-of-band seal key without serializing it."""
+    value = os.environ.get("FORGE_SEAL_HMAC_KEY")
+    return value.encode("utf-8") if value else None
+
+
+def _authentication_payload(sealed: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in sealed.items() if key != "authentication"}
+
+
+def _authentication_tag(sealed: dict[str, Any], key: bytes) -> str:
+    return hmac.new(key, canonical_json(_authentication_payload(sealed)).encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def seal_manifest(manifest: VerificationManifest, audit_trace: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -44,7 +60,7 @@ def seal_findings(findings: list[dict[str, Any]], metadata: dict[str, Any] | Non
         entry["hash"] = _digest(payload, previous)
         chain.append(entry)
         previous = entry["hash"]
-    return {
+    sealed = {
         "seal_version": "1",
         "canonicalize_version": CANONICALIZE_VERSION,
         "manifest": data,
@@ -57,6 +73,10 @@ def seal_findings(findings: list[dict[str, Any]], metadata: dict[str, Any] | Non
             "A full-access attacker can forge a consistent replacement chain from scratch.",
         ],
     }
+    key = _configured_authentication_key()
+    if key is not None:
+        sealed["authentication"] = {"scheme": "HMAC-SHA256", "tag": _authentication_tag(sealed, key)}
+    return sealed
 
 
 def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
@@ -64,6 +84,8 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "linkage_ok": False, "integrity_ok": False, "issues": ["unsupported canonicalize_version"]}
     linkage_ok = True
     integrity_ok = True
+    authentication_ok: bool | None = None
+    authentication_status = "NOT_CONFIGURED"
     issues: list[str] = []
     chain = data.get("chain", [])
     # This is informational only: an attacker can edit it after truncating.
@@ -92,7 +114,31 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
             integrity_ok = False
             issues.append(f"entry {expected_index}: hash mismatch")
         previous = entry.get("hash", "")
-    return {"ok": linkage_ok and integrity_ok, "linkage_ok": linkage_ok, "integrity_ok": integrity_ok, "issues": issues}
+    authentication = data.get("authentication")
+    if authentication is not None:
+        if not isinstance(authentication, dict) or authentication.get("scheme") != "HMAC-SHA256":
+            authentication_ok = False
+            authentication_status = "UNSUPPORTED"
+            issues.append("unsupported authentication scheme")
+        else:
+            key = _configured_authentication_key()
+            if key is None:
+                authentication_ok = False
+                authentication_status = "KEY_UNAVAILABLE"
+                issues.append("authentication key unavailable")
+            else:
+                authentication_ok = hmac.compare_digest(str(authentication.get("tag", "")), _authentication_tag(data, key))
+                authentication_status = "VERIFIED" if authentication_ok else "FAILED"
+                if not authentication_ok:
+                    issues.append("authentication tag mismatch")
+    return {
+        "ok": linkage_ok and integrity_ok and authentication_ok is not False,
+        "linkage_ok": linkage_ok,
+        "integrity_ok": integrity_ok,
+        "authentication_ok": authentication_ok,
+        "authentication_status": authentication_status,
+        "issues": issues,
+    }
 
 
 def write_sealed_manifest(manifest: VerificationManifest, destination: str | Path, audit_trace: dict[str, Any] | None = None) -> None:

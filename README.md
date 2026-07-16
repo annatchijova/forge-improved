@@ -266,6 +266,7 @@ FORGE intentionally does **not**:
 
 **Evidence**
 * [`docs/artifacts.md`](docs/artifacts.md) — output artifacts and sealing
+* [`docs/seal-authentication.md`](docs/seal-authentication.md) — optional HMAC authentication for sealed artifacts and key handling
 * [`docs/model-routing.md`](docs/model-routing.md) — model routing and the measured cost advantage
 
 **Governance**

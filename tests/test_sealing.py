@@ -39,6 +39,28 @@ def test_truncation_with_edited_reported_length_is_expected_limitation():
     assert verify_sealed(truncated)["ok"]
 
 
+def test_optional_hmac_authentication_covers_the_complete_artifact(monkeypatch):
+    monkeypatch.setenv("FORGE_SEAL_HMAC_KEY", "test-only-external-key")
+    sealed = seal_manifest(_manifest())
+    assert sealed["authentication"]["scheme"] == "HMAC-SHA256"
+    assert verify_sealed(sealed)["ok"]
+    assert verify_sealed(sealed)["authentication_status"] == "VERIFIED"
+
+    sealed["manifest"]["discarded"] = [{"reason": "attacker-controlled"}]
+    verified = verify_sealed(sealed)
+    assert verified["ok"] is False
+    assert "authentication tag mismatch" in verified["issues"]
+
+
+def test_signed_artifact_fails_closed_when_authentication_key_is_unavailable(monkeypatch):
+    monkeypatch.setenv("FORGE_SEAL_HMAC_KEY", "test-only-external-key")
+    sealed = seal_manifest(_manifest())
+    monkeypatch.delenv("FORGE_SEAL_HMAC_KEY")
+    verified = verify_sealed(sealed)
+    assert verified["ok"] is False
+    assert verified["authentication_status"] == "KEY_UNAVAILABLE"
+
+
 def test_finding_chain_hashes_are_reproducible_even_with_an_audit_trace():
     # A run-specific audit_trace (random run_id, wall-clock timestamps) must
     # not leak into the per-finding chain hash: two honest runs over
