@@ -4,6 +4,28 @@ from __future__ import annotations
 
 CORE_MODULE_MARKERS = ("__main__", "runtime", "sealing", "verification", "cronos/chain")
 
+_SEVERITY_RANK = {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+_IMPACT_BY_FAMILY = {
+    "credential": "CRITICAL",
+    "path-traversal": "CRITICAL",
+    "shell-true": "CRITICAL",
+    "dynamic-evaluation": "CRITICAL",
+    "subprocess": "HIGH",
+    "parser-boundary": "HIGH",
+    "numeric-boundary": "MEDIUM",
+    "unversioned-serialization": "MEDIUM",
+}
+_CONFIDENCE_CEILING = {
+    "PLAUSIBLE HYPOTHESIS": "MEDIUM",
+    "CODE FACT": "HIGH",
+    "CONFIRMED BY INDUCTION": "CRITICAL",
+    "FALSIFIED": "INFO",
+    "PROTOCOL_GAP": "LOW",
+    "DESIGN_INCONSISTENCY": "LOW",
+    "UNDETERMINED": "LOW",
+    "NOT_APPLICABLE": "INFO",
+}
+
 
 def finding_family(description: str) -> str:
     text = description.lower()
@@ -27,27 +49,17 @@ def finding_family(description: str) -> str:
 
 
 def severity_for(module_path: str, epistemic_level: str, description: str, agent: str = "", family: str | None = None) -> str:
-    # Agent detectors know the family; use it when supplied instead of
-    # guessing from prose.  The fallback preserves compatibility for callers
-    # that only have a serialized Finding.
+    """Return potential impact capped by the evidence level.
+
+    Impact and confidence are deliberately separate dimensions. A dangerous
+    family can still be only a plausible hypothesis; it must not become a
+    critical result merely because of its family or module name.
+    """
     family = family or finding_family(description)
-    score = 2
-    if epistemic_level == "CODE FACT":
-        score += 1
-    elif epistemic_level == "CONFIRMED BY INDUCTION":
-        score += 2
-    elif epistemic_level == "FALSIFIED":
-        score = 0
-    if any(marker in module_path for marker in CORE_MODULE_MARKERS):
-        score += 1
-    if family in {"credential", "path-traversal", "shell-true", "dynamic-evaluation"}:
-        score += 2
-    if agent == "validate-at-the-boundary":
-        score += 1
-    if score >= 5:
-        return "CRITICAL"
-    if score >= 4:
-        return "HIGH"
-    if score >= 2:
-        return "MEDIUM"
-    return "LOW"
+    impact = _IMPACT_BY_FAMILY.get(family, "MEDIUM")
+    if any(marker in module_path for marker in CORE_MODULE_MARKERS) and _SEVERITY_RANK[impact] < _SEVERITY_RANK["HIGH"]:
+        impact = "HIGH"
+    if agent == "validate-at-the-boundary" and _SEVERITY_RANK[impact] < _SEVERITY_RANK["HIGH"]:
+        impact = "HIGH"
+    ceiling = _CONFIDENCE_CEILING.get(epistemic_level, "LOW")
+    return impact if _SEVERITY_RANK[impact] <= _SEVERITY_RANK[ceiling] else ceiling

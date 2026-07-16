@@ -35,8 +35,14 @@ def test_pipeline_preserves_security_family_for_severity(tmp_path):
     sealed = json.loads((tmp_path / "out/verification-manifest.sealed.json").read_text())
     finding = next(entry["finding"] for entry in sealed["chain"] if entry["finding"]["agent"] == "security_auditor")
     expected = severity_for("reader.py", "CODE FACT", finding["description"], "security_auditor", family="path-traversal")
-    assert expected == "CRITICAL"
+    assert expected == "HIGH"
     assert finding["severity"] == expected
+
+
+def test_severity_confidence_caps_potential_critical_impact():
+    assert severity_for("runtime.py", "PLAUSIBLE HYPOTHESIS", "path reaches open()", family="path-traversal") == "MEDIUM"
+    assert severity_for("runtime.py", "CODE FACT", "path reaches open()", family="path-traversal") == "HIGH"
+    assert severity_for("runtime.py", "CONFIRMED BY INDUCTION", "path reaches open()", family="path-traversal") == "CRITICAL"
 
 def test_integrity_float_trigger_and_unversioned_serialization(tmp_path):
     write(tmp_path, "bad.py", "def score(decision):\n    value = float(decision)\n    json.dump({'score': value}, out)\n")
