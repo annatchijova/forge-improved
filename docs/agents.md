@@ -106,7 +106,7 @@ never promoted to a stronger claim without an executed check.
 
 ## Security Auditor (`forge/agents/security_auditor.py`)
 
-Pure AST scanning, no network calls, no execution. Flags three families with
+Pure AST scanning, no network calls, no execution. Flags four families with
 conservative, named benign criteria (see `DECISIONS.md`):
 
 * **hardcoded-credential** — a non-empty, non-placeholder string literal
@@ -121,6 +121,22 @@ conservative, named benign criteria (see `DECISIONS.md`):
   `yaml.load` without `Loader=yaml.SafeLoader`
 * **path-traversal** — a function parameter reaching `os.path.*` or `open()`
   without a visible `normpath`/`realpath` step first
+* **unverified-webhook** — a state-mutating route (`@app.post`/`put`/`patch`/
+  `delete`) whose path is named like a webhook, with no FastAPI
+  `Depends(...)` parameter and no signature/HMAC verification anywhere in
+  its own body. Scoped to the "webhook" naming convention deliberately: a
+  blanket "no `Depends()`" rule would flag intentionally public endpoints
+  (checkout, cart) by design. A webhook claims to be an authoritative
+  callback from an external system (a payment provider) and conventionally
+  requires verifying the caller really is that system — accepting whatever
+  the request body claims is a real, CRITICAL-impact bug (an unauthenticated
+  caller can mark any order paid). Found the same way as
+  `money-as-float`/`hardcoded-credential`: a stress-test audit of a
+  quickly-built checkout service, where an AI coding agent's own narrative
+  summary described this exact bug as if FORGE had verified it via
+  execution — it had not; FORGE's sealed output at the time had no
+  `bug_investigator` findings at all. Verified against the live code
+  independently, then implemented as a real, sealed, evidence-backed check.
 
 ## Integrity Inspector (`forge/agents/integrity_inspector.py`)
 

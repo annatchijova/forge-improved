@@ -9,6 +9,8 @@
     {"name": "security-negative-3", "agent": "security_auditor", "path": "security/negative-3", "expected_families": []},
     {"name": "security-positive-4", "agent": "security_auditor", "path": "security/positive-4", "expected_families": ["hardcoded-credential"]},
     {"name": "security-negative-4", "agent": "security_auditor", "path": "security/negative-4", "expected_families": []},
+    {"name": "security-positive-5", "agent": "security_auditor", "path": "security/positive-5", "expected_families": ["unverified-webhook"]},
+    {"name": "security-negative-5", "agent": "security_auditor", "path": "security/negative-5", "expected_families": []},
     {"name": "integrity-positive-1", "agent": "integrity_inspector", "path": "integrity/positive-1", "expected_families": ["decision-adjacent-float", "unversioned-serialization"]},
     {"name": "integrity-positive-2", "agent": "integrity_inspector", "path": "integrity/positive-2", "expected_families": ["decision-adjacent-float", "unversioned-serialization"]},
     {"name": "integrity-positive-3", "agent": "integrity_inspector", "path": "integrity/positive-3", "expected_families": ["decision-adjacent-float", "unversioned-serialization"]},

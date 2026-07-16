@@ -47,6 +47,55 @@ def _getenv_default_credential(tree):
         if _CRED.search(env_name):
             yield SecurityFinding("hardcoded-credential", "", node.lineno, f"os.getenv default value for {env_name!r} is a non-empty hardcoded credential")
 
+_WEBHOOK_PATH = re.compile(r"webhook", re.I)
+_SIGNATURE_VERIFICATION = re.compile(r"\b(hmac|signature|verify_signature|compare_digest)\b", re.I)
+_MUTATING_HTTP_METHODS = {"post", "put", "patch", "delete"}
+
+
+def _route_decorators(function: ast.FunctionDef | ast.AsyncFunctionDef):
+    """Yield (http_method, path) for @app.<method>("path")-style route decorators."""
+    for decorator in function.decorator_list:
+        if (isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute)
+                and decorator.func.attr in _MUTATING_HTTP_METHODS and decorator.args
+                and isinstance(decorator.args[0], ast.Constant) and isinstance(decorator.args[0].value, str)):
+            yield decorator.func.attr, decorator.args[0].value
+
+
+def _has_depends_parameter(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    def is_depends_call(node):
+        return isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "Depends"
+    positional = function.args.posonlyargs + function.args.args
+    paired_defaults = list(zip(positional[len(positional) - len(function.args.defaults):], function.args.defaults))
+    if any(is_depends_call(default) for _, default in paired_defaults):
+        return True
+    return any(default is not None and is_depends_call(default) for default in function.args.kw_defaults)
+
+
+def _unverified_webhooks(tree):
+    """A route named like a webhook (an external system's callback) that
+    mutates state (POST/PUT/PATCH/DELETE) with no FastAPI Depends(...)
+    parameter and no signature/HMAC verification anywhere in its own body.
+
+    Scoped to the "webhook" naming convention deliberately: a generic
+    "no Depends()" check would flag every intentionally public endpoint
+    (checkout, cart) that this project's own design makes public by choice.
+    A webhook is different - it claims to be an authoritative callback from
+    an external system (a payment provider), which conventionally requires
+    verifying the caller really is that system (a shared-secret signature),
+    not just accepting whatever a request body claims.
+    """
+    for function in (n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
+        for method, path in _route_decorators(function):
+            if not _WEBHOOK_PATH.search(path):
+                continue
+            if _has_depends_parameter(function):
+                continue
+            body_source = ast.unparse(function)
+            if _SIGNATURE_VERIFICATION.search(body_source):
+                continue
+            yield SecurityFinding("unverified-webhook", "", function.lineno, f"{method.upper()} route {path!r} has no auth dependency and no signature/HMAC verification in its body")
+
+
 def _deserialization(tree):
     for n in ast.walk(tree):
         if not isinstance(n, ast.Call) or not isinstance(n.func, ast.Attribute) or not isinstance(n.func.value, ast.Name): continue
@@ -96,7 +145,7 @@ def audit(root: str | os.PathLike[str], eligible: set[str] | None = None) -> tup
     scope = set(eligible) if eligible is not None else {m.path for m in triage(base).modules if m.module_class in {ModuleClass.CONNECTED_ALIVE, ModuleClass.FOSSIL_HIGH_RISK, ModuleClass.DEAD_WEIGHT}}
     scan=prepare_python_scan(base, scope); out=[]; examinations=dict(scan.examinations)
     for rel, tree in scan.modules:
-        for f in (*_assigned(tree), *_getenv_default_credential(tree), *_deserialization(tree), *_paths(tree)): out.append(SecurityFinding(f.family, rel, f.line, f.description))
+        for f in (*_assigned(tree), *_getenv_default_credential(tree), *_unverified_webhooks(tree), *_deserialization(tree), *_paths(tree)): out.append(SecurityFinding(f.family, rel, f.line, f.description))
         examinations[rel]="examined_with_findings" if any(x.path == rel for x in out) else "examined_clean"
     return AgentScanResult(
         tuple(out), examinations,

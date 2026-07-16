@@ -35,6 +35,57 @@ def test_security_ignores_getenv_default_for_non_credential_name(tmp_path):
     write(tmp_path, "app.py", "import os\nTIMEOUT = os.getenv('REQUEST_TIMEOUT', '30')\n")
     assert not [x for x in audit(tmp_path) if x.family == "hardcoded-credential"]
 
+def test_security_flags_unverified_webhook_route(tmp_path):
+    write(tmp_path, "app.py", (
+        "from fastapi import FastAPI\n"
+        "app = FastAPI()\n"
+        "@app.post('/webhooks/payment')\n"
+        "def payment_webhook(payload):\n"
+        "    connection.execute('UPDATE orders SET status=? WHERE id=?', (payload.status, payload.order_id))\n"
+        "    return {'ok': True}\n"
+    ))
+    hits = [x for x in audit(tmp_path) if x.family == "unverified-webhook"]
+    assert len(hits) == 1 and "/webhooks/payment" in hits[0].description
+
+def test_security_ignores_webhook_guarded_by_depends(tmp_path):
+    write(tmp_path, "app.py", (
+        "from fastapi import Depends, FastAPI\n"
+        "app = FastAPI()\n"
+        "def require_admin(): return 'admin'\n"
+        "@app.post('/webhooks/payment')\n"
+        "def payment_webhook(payload, _: str = Depends(require_admin)):\n"
+        "    connection.execute('UPDATE orders SET status=? WHERE id=?', (payload.status, payload.order_id))\n"
+        "    return {'ok': True}\n"
+    ))
+    assert not [x for x in audit(tmp_path) if x.family == "unverified-webhook"]
+
+def test_security_ignores_webhook_with_signature_check(tmp_path):
+    write(tmp_path, "app.py", (
+        "import hmac\n"
+        "from fastapi import FastAPI\n"
+        "app = FastAPI()\n"
+        "@app.post('/webhooks/payment')\n"
+        "def payment_webhook(payload, request):\n"
+        "    if not hmac.compare_digest(request.headers['X-Signature'], expected(payload)):\n"
+        "        raise PermissionError()\n"
+        "    connection.execute('UPDATE orders SET status=? WHERE id=?', (payload.status, payload.order_id))\n"
+        "    return {'ok': True}\n"
+    ))
+    assert not [x for x in audit(tmp_path) if x.family == "unverified-webhook"]
+
+def test_security_ignores_non_webhook_mutating_route_without_depends(tmp_path):
+    # This project's own design keeps checkout intentionally public - a
+    # blanket "no Depends()" rule would be a false positive here.
+    write(tmp_path, "app.py", (
+        "from fastapi import FastAPI\n"
+        "app = FastAPI()\n"
+        "@app.post('/checkout')\n"
+        "def checkout(payload):\n"
+        "    connection.execute(\"INSERT INTO orders(status) VALUES('pending_payment')\")\n"
+        "    return {'ok': True}\n"
+    ))
+    assert not [x for x in audit(tmp_path) if x.family == "unverified-webhook"]
+
 def test_security_deserialization_trigger_and_safe_yaml(tmp_path):
     write(tmp_path, "bad.py", "pickle.load(stream)\nyaml.load(raw)\nmarshal.loads(raw)\n")
     write(tmp_path, "safe.py", "yaml.load(raw, Loader=yaml.SafeLoader)\n# pickle.load(trusted)\n")

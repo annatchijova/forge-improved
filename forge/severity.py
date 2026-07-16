@@ -10,6 +10,7 @@ _IMPACT_BY_FAMILY = {
     "path-traversal": "CRITICAL",
     "shell-true": "CRITICAL",
     "dynamic-evaluation": "CRITICAL",
+    "unverified-webhook": "CRITICAL",
     "subprocess": "HIGH",
     "parser-boundary": "HIGH",
     "numeric-boundary": "MEDIUM",
@@ -29,6 +30,8 @@ _CONFIDENCE_CEILING = {
 
 def finding_family(description: str) -> str:
     text = description.lower()
+    if "webhook" in text:
+        return "unverified-webhook"
     if "unversioned serialization" in text or "unversioned-serialization" in text:
         return "unversioned-serialization"
     if "parser call" in text or "parser boundary" in text:
