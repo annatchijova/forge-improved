@@ -75,9 +75,9 @@ def _enclosing_function(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> str:
     return ""
 
 
-def inspect(root: str | os.PathLike[str]) -> tuple[IntegrityFinding, ...]:
+def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None) -> tuple[IntegrityFinding, ...]:
     base=Path(root); records=triage(base).modules
-    eligible={m.path for m in records if m.module_class is ModuleClass.CONNECTED_ALIVE}
+    eligible = set(eligible) if eligible is not None else {m.path for m in records if m.module_class is ModuleClass.CONNECTED_ALIVE}
     # Preserve the standalone detector contract for tiny unit fixtures with no
     # live module at all; a real repository with any live module uses the
     # explicit CONNECTED_ALIVE-only policy below.

@@ -10,6 +10,7 @@ import resource
 import shutil
 import tempfile
 import time
+from collections import Counter
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass, replace
 from fractions import Fraction
@@ -23,6 +24,7 @@ from forge.governance.runtime import infer_domains, load_skills, run_skills
 from forge.hypotheses import generate_hypotheses, write_hypotheses_manifest
 from forge.io import load_json
 from forge.severity import finding_family, severity_for
+from forge.sharding import deterministic_shards, validate_shards
 from forge.models import AgentScanResult, CoverageReport, Evidence, Finding, ModelRouting, TriageManifest, VerificationManifest
 from forge.metrics import collect_metrics
 from forge.contradictions import find_contradictions
@@ -140,6 +142,7 @@ class AuditResult:
     finding_records: tuple[Finding, ...]
     coverage: dict[str, Any]
     artifacts: dict[str, str]
+    status: str = "COMPLETE"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -150,6 +153,7 @@ class AuditResult:
             "finding_records": [asdict(item) for item in self.finding_records],
             "coverage": self.coverage,
             "artifacts": self.artifacts,
+            "status": self.status,
         }
 
 class Runtime:
@@ -257,7 +261,13 @@ class Runtime:
         self._phase_end(trace, cronos, "triage", triage_started)
         connected = triage_manifest.summary.get("CONNECTED_ALIVE", 0)
         limit = self.max_connected if max_connected is None else max_connected
-        if connected > limit: raise ValueError(f"scope guard: {connected} CONNECTED_ALIVE modules exceeds max_connected={limit}")
+        if limit < 1:
+            raise ValueError(f"scope guard: max_connected must be positive, got {limit}")
+        if connected > limit:
+            connected_paths = [item.path for item in triage_manifest.modules if item.module_class.value == "CONNECTED_ALIVE"]
+            if len(connected_paths) != connected:
+                raise ValueError(f"scope guard: triage manifest declares {connected} CONNECTED_ALIVE modules but does not provide matching module paths")
+            return self._audit_sharded(root, out, triage_manifest, limit, trace, cronos)
         web_degraded: list[str] = []
         web_started = self._phase_start(trace, cronos, "web_auditor")
         try:
@@ -296,7 +306,7 @@ class Runtime:
             security_result = AgentScanResult((), {"*": "agent_unavailable"}, mandatory_protocol("security_auditor", (message,), ()))
             self._event(trace, cronos, "agent_degraded", agent="security_auditor", error=message)
         try:
-            integrity_result = integrity_inspector.inspect(root)
+            integrity_result = integrity_inspector.inspect(root, connected_paths)
         except Exception as exc:
             message = f"integrity_inspector unavailable: {type(exc).__name__}: {exc}"
             degraded_reasons.append(message)
@@ -396,6 +406,83 @@ class Runtime:
         if self.cronos_db is not None:
             artifacts["cronos_db"] = str(self.cronos_db)
         return AuditResult(str(root), connected, len(findings), len(verification.discarded), tuple(findings), coverage.to_dict(), artifacts)
+
+    def _audit_sharded(self, root: Path, out: Path, triage_manifest: TriageManifest,
+                       max_connected: int, trace: RuntimeTrace, cronos=None) -> AuditResult:
+        """Run bounded sequential shard audits without fabricating a parent seal."""
+        connected_paths = [item.path for item in triage_manifest.modules if item.module_class.value == "CONNECTED_ALIVE"]
+        shards = deterministic_shards(connected_paths, max_connected)
+        validate_shards(shards, connected_paths, max_connected)
+        self._event(trace, cronos, "sharding_required", connected_modules=len(connected_paths), shard_count=len(shards), max_connected=max_connected)
+        shard_root = out / "shards"
+        records: list[dict[str, Any]] = []
+        findings: list[Finding] = []
+        discarded = 0
+        statuses: list[str] = []
+        discovered = discover_files(root, include_excluded=True)
+        for index, shard in enumerate(shards, 1):
+            shard_started = self._phase_start(trace, cronos, f"shard_{index:04d}")
+            selected = tuple(
+                item for item in triage_manifest.modules
+                if item.module_class.value != "CONNECTED_ALIVE" or item.path in shard
+            )
+            summary = dict(Counter(item.module_class.value for item in selected))
+            shard_manifest = replace(
+                triage_manifest,
+                modules=selected,
+                summary=summary,
+                limitations=tuple(triage_manifest.limitations) + (
+                    f"This is shard {index}/{len(shards)} of a deterministic {len(shards)}-shard audit; only its CONNECTED_ALIVE paths are in scope.",
+                ),
+            )
+            shard_output = shard_root / f"shard-{index:04d}"
+            shard_runtime = Runtime(
+                skills_root=self.skills_root,
+                max_connected=max_connected,
+                triage_override=lambda _repo, manifest=shard_manifest: manifest,
+                model_routing=self.model_routing,
+            )
+            try:
+                result = shard_runtime.audit(root, shard_output, max_connected=max_connected)
+                findings.extend(result.finding_records)
+                discarded += result.discarded
+                statuses.append(result.status)
+                records.append({
+                    "index": index,
+                    "paths": list(shard),
+                    "status": result.status,
+                    "findings": result.findings,
+                    "discarded": result.discarded,
+                    "artifacts": result.artifacts,
+                })
+            except Exception as exc:
+                statuses.append("BLOCKED")
+                records.append({"index": index, "paths": list(shard), "status": "BLOCKED", "error": f"{type(exc).__name__}: {exc}"})
+            self._phase_end(trace, cronos, f"shard_{index:04d}", shard_started)
+        status = "PARTIAL_SHARDED" if records and all(item.get("status") == "COMPLETE" for item in records) else "BLOCKED"
+        plan = {
+            "sharding_schema_version": "1.0",
+            "status": status,
+            "repository": str(root),
+            "max_connected": max_connected,
+            "connected_modules": len(connected_paths),
+            "shards": records,
+            "parent_seal": "NOT_GENERATED; each completed shard has an independent seal",
+        }
+        plan_path = out / "shards.json"
+        out.mkdir(parents=True, exist_ok=True)
+        plan_path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        analyzed = sum(item.get("coverage", {}).get("files_analyzed", 0) for item in records if item.get("status") == "COMPLETE")
+        coverage = {
+            "sharded": True,
+            "files_discovered": len(discovered),
+            "files_analyzed": analyzed,
+            "files_skipped": max(0, len(discovered) - analyzed),
+            "coverage_ratio": {"numerator": analyzed, "denominator": len(discovered) or 1},
+            "shard_count": len(shards),
+        }
+        artifacts = {"shards": str(plan_path)}
+        return AuditResult(str(root), len(connected_paths), len(findings), discarded, tuple(findings), coverage, artifacts, status)
 
     def audit_ref(self, repo: str | Path, ref: str, output_dir: str | Path,
                   max_connected: int | None = None, keep_checkout: bool = False) -> AuditResult:
