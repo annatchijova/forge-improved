@@ -39,12 +39,12 @@ def test_finalize_multi_agent_run_writes_one_report_trace_and_canonical_seal(tmp
             },
         }
         (agents / f"{role}.json").write_text(json.dumps(record))
-    (run / "agent-independence.json").write_text(json.dumps({"status": "INDEPENDENCE_VERIFIED"}))
     (run / "findings.json").write_text(json.dumps({"findings": [{"id": "H1", "statement": "external", "epistemic_status": "UNDETERMINED"}]}))
     native = seal_findings([{"agent": "native", "description": "native"}], {"schema_version": "native"})
     (run / "verification-manifest.sealed.json").write_text(json.dumps(native))
     result = finalize_multi_agent_run(run, ["coordinator", "reviewer"])
     assert result["status"] == "CANONICAL_FINDINGS_SEALED"
+    assert json.loads((run / "agent-independence.json").read_text())["status"] == "INDEPENDENCE_VERIFIED"
     assert verify_sealed(json.loads((run / "verification-manifest.canonical.sealed.json").read_text()))["ok"]
     assert json.loads((run / "report.json").read_text())["finding_set_digest"] == result["finding_set_digest"]
     trace = json.loads((run / "audit-trace.json").read_text())

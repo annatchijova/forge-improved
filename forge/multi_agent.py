@@ -46,10 +46,9 @@ def build_canonical_findings(external: list[dict[str, Any]], native: list[dict[s
 def finalize_multi_agent_run(run_dir: str | Path, required_agents: list[str], external_findings_path: str | Path | None = None, native_sealed_path: str | Path | None = None) -> dict[str, Any]:
     """Validate independence, canonicalize both layers, and seal the result."""
     root = Path(run_dir)
-    independence = load_json(root / "agent-independence.json", "agent independence artifact")
-    if independence.get("status") != "INDEPENDENCE_VERIFIED":
-        raise ValueError("multi-agent close requires INDEPENDENCE_VERIFIED")
     validated = load_and_validate(root / "agent-results", required_agents)
+    independence_path = root / "agent-independence.json"
+    independence_path.write_text(json.dumps(validated, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     external_path = Path(external_findings_path) if external_findings_path else root / "findings.json"
     native_path = Path(native_sealed_path) if native_sealed_path else root / "verification-manifest.sealed.json"
     native_sealed = load_json(native_path, f"native sealed findings {native_path}")
@@ -118,7 +117,7 @@ def finalize_multi_agent_run(run_dir: str | Path, required_agents: list[str], ex
     report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     report_json = root / "report.json"
     report_json.write_text(json.dumps({"finding_set_digest": finding_set_digest, "source_layers": canonical["source_layers"], "records": records, "status": "ABSTAINED"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return {"status": "CANONICAL_FINDINGS_SEALED", "finding_set_digest": finding_set_digest, "source_layers": canonical["source_layers"], "canonical": str(canonical_path), "sealed": str(sealed_path), "trace": str(trace_path), "report": str(report_path), "report_json": str(report_json)}
+    return {"status": "CANONICAL_FINDINGS_SEALED", "finding_set_digest": finding_set_digest, "source_layers": canonical["source_layers"], "independence": str(independence_path), "canonical": str(canonical_path), "sealed": str(sealed_path), "trace": str(trace_path), "report": str(report_path), "report_json": str(report_json)}
 
 
 __all__ = ("build_canonical_findings", "finalize_multi_agent_run")
