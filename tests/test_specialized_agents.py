@@ -166,6 +166,30 @@ def test_integrity_does_not_trust_forge_specific_payload_names(tmp_path):
     hits = inspect(tmp_path)
     assert [(item.family, item.path) for item in hits] == [("unversioned-serialization", "unrelated.py")]
 
+def test_integrity_recognizes_any_domain_prefixed_schema_version_key(tmp_path):
+    # Found via a self-audit: the codebase already has ~10 of these
+    # (findings_jsonl_schema_version, metrics_schema_version,
+    # sharding_schema_version, ...) - an exact-match allowlist silently
+    # misses every one it was not updated for. Recognized structurally
+    # (any key ending in "schema_version") instead, so a brand-new one
+    # like this made-up "widget_schema_version" needs no allowlist update.
+    write(tmp_path, "widget.py", "import json\ndef write_widget(out):\n    payload = {'widget_schema_version': '1.0', 'items': []}\n    out.write_text(json.dumps(payload))\n")
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
+def test_integrity_trusts_seal_findings_the_same_as_seal_manifest(tmp_path):
+    # seal_findings() is seal_manifest()'s own sibling (seal_manifest calls
+    # it internally) and produces the identical versioned structure -
+    # trusting one but not the other was an incomplete allowlist, found via
+    # a self-audit of forge/sealing.py itself.
+    write(tmp_path, "writer.py", (
+        "import json\n"
+        "def seal_findings(findings, metadata, audit_trace=None):\n"
+        "    return {'seal_version': '1', 'chain': findings}\n"
+        "def write(destination, findings, metadata):\n"
+        "    destination.write_text(json.dumps(seal_findings(findings, metadata)))\n"
+    ))
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
 def test_integrity_suppresses_decision_adjacent_float_for_ml_domain_paths(tmp_path):
     # Same code, same detector: whether it fires depends only on whether the
     # caller (runtime.py, via infer_domains) marked this path machine_learning.

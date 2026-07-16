@@ -26,8 +26,12 @@ def test_golden_corpus_has_three_positive_and_negative_cases_per_agent():
     #     Scoped to "webhook"-named routes specifically, since a blanket
     #     "no Depends()" rule would flag this project's own intentionally
     #     public checkout/cart endpoints.
+    # - integrity_inspector negative-6: seal_findings() (seal_manifest()'s
+    #   own sibling) and a brand-new "widget_schema_version" key, both found
+    #   via a self-audit of forge/sealing.py that FORGE's own versioning
+    #   allowlist did not recognize.
     expected_positives = {"integrity_inspector": 4, "security_auditor": 5, "web_auditor": 3}
-    expected_negatives = {"integrity_inspector": 5, "security_auditor": 5, "web_auditor": 3}
+    expected_negatives = {"integrity_inspector": 6, "security_auditor": 5, "web_auditor": 3}
     assert result["case_count"] == sum(expected_positives.values()) + sum(expected_negatives.values())
     for agent in {row["agent"] for row in result["cases"]}:
         cases = [row for row in result["cases"] if row["agent"] == agent]

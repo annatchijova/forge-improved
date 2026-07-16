@@ -165,7 +165,15 @@ Also pure AST scanning. Flags three families:
   completely undetected — the float never comes from a `float()` call, it
   comes from a SQLite `REAL` column and Python 3's `/` operator.
 * **unversioned-serialization** — a `json`/`pickle` dump whose payload is not
-  visibly a mapping containing `schema_version` or `version`
+  visibly a mapping containing a version key. That key is recognized
+  structurally (`== "version"` or `.endswith("schema_version")`), not by an
+  enumerated allowlist — found via a self-audit of `forge/sealing.py` itself,
+  which false-flagged its own correctly-versioned `write_sealed_findings()`
+  because the trusted-call allowlist had `seal_manifest` but not its sibling
+  `seal_findings`, and because the codebase's ~10 `<domain>_schema_version`
+  keys (`findings_jsonl_schema_version`, `metrics_schema_version`,
+  `sharding_schema_version`, ...) were only ever partially enumerated by
+  name — a new artifact type adds another one an exact-match set cannot see.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 

@@ -65,16 +65,36 @@ def _money_float_division_lines(tree: ast.AST) -> set[int]:
     return hits
 
 
+def _is_version_key(name: object) -> bool:
+    """Recognize the project-wide `<domain>_schema_version` naming
+    convention structurally instead of an enumerated allowlist.
+
+    The codebase has at least ten of these (schema_version,
+    findings_jsonl_schema_version, metrics_schema_version,
+    profile_schema_version, sharding_schema_version,
+    comparison_schema_version, hypotheses_schema_version,
+    benchmark_schema_version, precision_schema_version,
+    loop_schema_version, ...) - one per artifact type, and a new artifact
+    adds another. An exact-match set silently misses every one it was not
+    updated for, which is exactly the class of self-inflicted false
+    positive an enumerated list produces as the codebase grows.
+    """
+    return isinstance(name, str) and (name == "version" or name.endswith("schema_version"))
+
+
+_VERSIONING_TRUSTED_CALLS = {"seal_manifest", "seal_findings", "canonical_json"}
+
+
 def _serialization_has_version(call: ast.Call) -> bool:
     data = call.args[0] if call.args else None
     if isinstance(data, ast.Dict):
-        return any(isinstance(key, ast.Constant) and key.value in {"schema_version", "version"} for key in data.keys)
+        return any(isinstance(key, ast.Constant) and _is_version_key(key.value) for key in data.keys)
     if isinstance(data, ast.Call) and isinstance(data.func, ast.Attribute) and data.func.attr == "to_dict":
         return True
-    if isinstance(data, ast.Call) and isinstance(data.func, ast.Name) and data.func.id in {"seal_manifest", "canonical_json"}:
+    if isinstance(data, ast.Call) and isinstance(data.func, ast.Name) and data.func.id in _VERSIONING_TRUSTED_CALLS:
         return True
     if isinstance(data, ast.Call) and isinstance(data.func, ast.Name) and data.func.id == "dict":
-        return any(keyword.arg in {"schema_version", "version", "benchmark_schema_version"} for keyword in data.keywords)
+        return any(_is_version_key(keyword.arg) for keyword in data.keywords)
     return False
 
 
@@ -87,7 +107,7 @@ def _versioned_payload_names(tree: ast.AST) -> set[str]:
         value = node.value
         if not isinstance(value, ast.Dict):
             continue
-        if not any(isinstance(key, ast.Constant) and key.value in {"schema_version", "version", "benchmark_schema_version"}
+        if not any(isinstance(key, ast.Constant) and _is_version_key(key.value)
                    for key in value.keys):
             continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
