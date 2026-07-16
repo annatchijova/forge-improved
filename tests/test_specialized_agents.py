@@ -190,6 +190,24 @@ def test_integrity_trusts_seal_findings_the_same_as_seal_manifest(tmp_path):
     ))
     assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
 
+def test_integrity_trusts_json_dumps_inside_a_trusted_functions_own_body(tmp_path):
+    # forge/canonical.py::canonical_json() is the trusted call itself, not a
+    # caller of it - its own internal json.dumps(_typed(value), ...) has no
+    # literal version key (the versioning for this low-level hashing
+    # primitive lives one layer up, in CANONICALIZE_VERSION carried by
+    # whatever payload embeds the canonical_json output). Found via a
+    # self-audit of forge/canonical.py itself: the enclosing-function trust
+    # check (_enclosing_function) existed in this file already but was
+    # never actually wired into the unversioned-serialization check.
+    write(tmp_path, "canonical.py", (
+        "import json\n"
+        "def _typed(value):\n"
+        "    return {'type': 'str', 'value': str(value)}\n"
+        "def canonical_json(value):\n"
+        "    return json.dumps(_typed(value), sort_keys=True)\n"
+    ))
+    assert not [x for x in inspect(tmp_path) if x.family == "unversioned-serialization"]
+
 def test_integrity_suppresses_decision_adjacent_float_for_ml_domain_paths(tmp_path):
     # Same code, same detector: whether it fires depends only on whether the
     # caller (runtime.py, via infer_domains) marked this path machine_learning.

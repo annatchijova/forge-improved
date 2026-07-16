@@ -30,8 +30,12 @@ def test_golden_corpus_has_three_positive_and_negative_cases_per_agent():
     #   own sibling) and a brand-new "widget_schema_version" key, both found
     #   via a self-audit of forge/sealing.py that FORGE's own versioning
     #   allowlist did not recognize.
+    # - integrity_inspector negative-7: a json.dumps() call inside the body
+    #   of a trusted function itself (canonical_json), not a caller of it -
+    #   found via a self-audit of forge/canonical.py. _enclosing_function()
+    #   existed in this file already but was never wired into the check.
     expected_positives = {"integrity_inspector": 4, "security_auditor": 5, "web_auditor": 3}
-    expected_negatives = {"integrity_inspector": 6, "security_auditor": 5, "web_auditor": 3}
+    expected_negatives = {"integrity_inspector": 7, "security_auditor": 5, "web_auditor": 3}
     assert result["case_count"] == sum(expected_positives.values()) + sum(expected_negatives.values())
     for agent in {row["agent"] for row in result["cases"]}:
         cases = [row for row in result["cases"] if row["agent"] == agent]

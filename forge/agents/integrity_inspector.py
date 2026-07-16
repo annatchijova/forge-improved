@@ -184,7 +184,8 @@ def inspect(root: str | os.PathLike[str], eligible: set[str] | None = None, ml_d
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"dump", "dumps"} and isinstance(n.func.value, ast.Name) and n.func.value.id in {"json","pickle"}:
                 if (_is_internal_serialization(n, parents) or _is_presentation_serialization(n, parents)
                         or _serialization_has_version(n)
-                        or (isinstance(n.args[0], ast.Name) and n.args[0].id in versioned_payload_names)):
+                        or (isinstance(n.args[0], ast.Name) and n.args[0].id in versioned_payload_names)
+                        or _enclosing_function(n, parents) in _VERSIONING_TRUSTED_CALLS):
                     continue
                 out.append(IntegrityFinding("unversioned-serialization", rel, n.lineno, "unversioned serialization"))
         examinations[rel]="examined_with_findings" if any(x.path == rel for x in out) else "examined_clean"
