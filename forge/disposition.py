@@ -35,10 +35,10 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
                           contradiction_reasons: Iterable[str] = ()) -> AuditDisposition:
     """Return a global status without changing or suppressing findings.
 
-    ``non_python_not_analyzed`` is an intentional language boundary for the
-    current AST engine. It is disclosed in coverage, but does not itself make
-    a Python audit abstain. Other skipped categories represent a lost or
-    unverified source boundary and do trigger abstention.
+    Policy exclusions, intentionally unanalysed languages, and triage classes
+    outside CONNECTED_ALIVE are declared boundaries, not failed evidence.
+    Syntax errors and unreadable source remain blocking because Forge cannot
+    establish what the source contains.
     """
     degraded = tuple(degraded_reasons)
     contradictions = tuple(contradiction_reasons)
@@ -46,7 +46,7 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
     blocking = {
         key: tuple(value)
         for key, value in skipped.items()
-        if key != "non_python_not_analyzed" and value
+        if key in {"syntax_error", "binary_or_unreadable"} and value
     }
     unsupported_sources: dict[str, int] = {}
     for path in skipped.get("non_python_not_analyzed", ()):
@@ -82,7 +82,7 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
             "Review the contradiction and obtain discriminating evidence.",
             contradictions,
         )
-    if blocking or excluded_modules or unsupported_sources:
+    if blocking:
         return AuditDisposition(
             "ABSTAIN_INSUFFICIENT_SCOPE",
             "UNVERIFIED_SOURCE_BOUNDARY",
@@ -105,6 +105,17 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
             "A governance contract could not determine whether its checks applied.",
             "Resolve applicability and rerun before claiming completeness.",
             boundary,
+        )
+    if excluded_modules or unsupported_sources or skipped.get("excluded_by_policy"):
+        declared_boundary = boundary
+        if skipped.get("excluded_by_policy"):
+            declared_boundary += (f"policy_excluded_files: {len(skipped['excluded_by_policy'])} file(s)",)
+        return AuditDisposition(
+            "COMPLETE_WITHIN_DECLARED_SCOPE",
+            "DECLARED_SCOPE_BOUNDARY",
+            "The declared source scope was audited; excluded or unsupported material remains outside the engine boundary.",
+            "Review the declared boundaries before extending the audit scope.",
+            declared_boundary,
         )
     if findings:
         return AuditDisposition(

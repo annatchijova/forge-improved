@@ -62,6 +62,18 @@ def test_disposition_can_complete_with_findings_without_abstaining():
     result = determine_disposition(coverage=Coverage(), triage=Triage(), governance=Governance(), findings=[finding])
     assert result.status == "COMPLETE_WITH_FINDINGS"
 
+
+def test_disposition_completes_with_explicit_declared_boundary():
+    class Coverage:
+        skipped_reasons = {"non_python_not_analyzed": ("native.rs",)}
+    class Triage:
+        modules = [type("Module", (), {"path": "legacy.py", "module_class": "DEAD_WEIGHT"})()]
+    class Governance:
+        applicability = {}
+    result = determine_disposition(coverage=Coverage(), triage=Triage(), governance=Governance(), findings=[])
+    assert result.status == "COMPLETE_WITHIN_DECLARED_SCOPE"
+    assert result.reason_code == "DECLARED_SCOPE_BOUNDARY"
+
 def test_unavailable_specialized_agent_degrades_to_abstain(monkeypatch, tmp_path):
     put(tmp_path, "main.py", "x = 1\n")
 
@@ -98,12 +110,12 @@ def test_audit_seals_repository_snapshot_and_provenance(tmp_path):
     assert "AST" in finding["provenance"]
     assert "RUNTIME_NOT_EXECUTED" in finding["provenance"]
 
-def test_unsupported_source_language_is_actionable_abstention(tmp_path):
+def test_unsupported_source_language_with_undetermined_governance_still_abstains(tmp_path):
     put(tmp_path, "main.py", "x = 1\n")
     put(tmp_path, "native.rs", "fn main() {}\n")
     result = run_specialized_pipeline(tmp_path, tmp_path / "out")
     metrics = json.loads((tmp_path / "out/metrics.json").read_text())
-    assert metrics["audit_disposition"]["status"] == "ABSTAIN_INSUFFICIENT_SCOPE"
+    assert metrics["audit_disposition"]["status"] == "ABSTAIN_UNDETERMINED"
     assert "unsupported_source_language: Rust (1 file(s))" in metrics["audit_disposition"]["evidence_boundary"]
 
 def test_self_assessment_is_bounded_not_a_quality_score(tmp_path):

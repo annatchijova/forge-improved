@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import time
+import tomllib
 from fractions import Fraction
 from collections import Counter
 from pathlib import Path
@@ -144,6 +145,39 @@ def _caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[int, in
     return result
 
 
+def _entry_point_paths(root: Path, paths: Iterable[Path]) -> set[str]:
+    """Return source paths that are executable entry points by convention/config."""
+    candidates = list(paths)
+    entry_points = {
+        str(path.relative_to(root))
+        for path in candidates
+        if path.name in {"__main__.py", "main.py", "conftest.py"}
+        or any(part in {"bin", "scripts", "tests"} for part in path.relative_to(root).parts)
+    }
+    pyproject = root / "pyproject.toml"
+    if pyproject.is_file():
+        try:
+            data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+            scripts = data.get("project", {}).get("scripts", {})
+            for target in scripts.values():
+                module = str(target).split(":", 1)[0].replace(".", "/") + ".py"
+                if (root / module).is_file():
+                    entry_points.add(module)
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, AttributeError):
+            pass
+    setup_py = root / "setup.py"
+    if setup_py.is_file():
+        try:
+            text = setup_py.read_text(encoding="utf-8", errors="replace")
+            for module in re.findall(r"[\"']([A-Za-z_][\w.]*)\s*:[^\"']+[\"']", text):
+                relative = module.replace(".", "/") + ".py"
+                if (root / relative).is_file():
+                    entry_points.add(relative)
+        except OSError:
+            pass
+    return entry_points
+
+
 def triage(root: str | os.PathLike[str]) -> TriageManifest:
     base = Path(root).resolve()
     files = [p for p in _files(base) if p.suffix.lower() in LANG_EXT]
@@ -151,6 +185,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
     git_ok = _git_available(base)
     git_epochs, git_limitation = _git_epochs(base) if git_ok else ({}, "Git history unavailable; temporal classification is conservative.")
     now = int(time.time())
+    entry_point_paths = _entry_point_paths(base, files)
     records: list[ModuleRecord] = []
     seen_hashes: dict[str, str] = {}
     duplicate_paths: set[str] = set()
@@ -170,7 +205,7 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
         age_days = (now - epoch) / 86400 if epoch else None
         if rel in duplicate_paths:
             cls = ModuleClass.DUPLICATE
-        elif caller_count > 0 or import_count > 0 or p.name in {"__main__.py", "main.py"}:
+        elif caller_count > 0 or import_count > 0 or rel in entry_point_paths:
             cls = ModuleClass.CONNECTED_ALIVE
         elif keywords:
             cls = ModuleClass.FOSSIL_HIGH_RISK
@@ -179,6 +214,8 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
         else:
             cls = ModuleClass.DEAD_WEIGHT
         ev = [_evidence("caller_graph", rel, f"{caller_count} caller(s), {import_count} import reference(s)"), _evidence("content", rel, f"decision keywords: {list(keywords)}")]
+        if rel in entry_point_paths:
+            ev.append(_evidence("entry_point", rel, "recognized executable, test, script, or configured console entry point"))
         if epoch is not None: ev.append(_evidence("git_log", rel, f"last logic-touch epoch {epoch}"))
         records.append(ModuleRecord(rel, LANG_EXT[p.suffix.lower()], cls, epoch, caller_count, import_count, keywords, tuple(ev)))
     summary = Counter(r.module_class.value for r in records)
