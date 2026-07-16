@@ -1,0 +1,22 @@
+{
+  "ast_verified_families": [
+    "subprocess",
+    "parser",
+    "float comparison",
+    "eval/exec"
+  ],
+  "coverage_ratio": {
+    "denominator": 5,
+    "numerator": 2
+  },
+  "files_analyzed": 2,
+  "files_discovered": 5,
+  "files_skipped": 3,
+  "skipped_reasons": {
+    "non_python_not_analyzed": [
+      "README.md",
+      "products.csv",
+      "requirements.txt"
+    ]
+  }
+}
