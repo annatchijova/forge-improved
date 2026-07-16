@@ -158,6 +158,23 @@ Outputs:
 * JSON artifacts (triage, hypotheses, findings, coverage, metrics, trace)
 * SHA-256 sealed verification manifest
 
+### Which report should I use?
+
+An audit writes one evidence set and several views over it. The views do not
+recompute findings; choose the one that matches the reader and the question.
+
+| Open this | Use it for |
+|---|---|
+| `forge-report.html` | The interactive dashboard: best first view for a demo, a broad review, or a reader new to FORGE. |
+| `forge-report-summary.html` | A fast, shareable status view when someone needs the result and boundaries without the full audit detail. |
+| `forge-report-standard.html` | The normal daily-review report: overview, severity, grouped related findings, source locations, reproduction commands, discarded hypotheses, and coverage. |
+| `forge-report-extended.html` | A forensic deep dive: use when reviewing reasoning chains, governance contracts, and the audit trace. |
+| `verification-manifest.sealed.json` | Machine-readable evidence for MCP, automation, or independent verification — not the first file a human reviewer should open. |
+
+For an everyday engineering workflow, start with **standard**. Use the
+interactive dashboard to orient a new reviewer, and use **extended** only
+when the evidence needs to be examined in depth.
+
 Details on why artifacts are split rather than nested into one blob, and on
 what the seal does and does not prove, in [`docs/artifacts.md`](docs/artifacts.md).
 
