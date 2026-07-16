@@ -39,6 +39,27 @@ def test_summary_renderer_escapes_script_text(tmp_path):
     assert "&lt;script&gt;" in html
 
 
+def test_tiered_report_has_review_overview_groups_duplicates_and_exposes_reproduction(tmp_path):
+    duplicate = Finding(
+        "OBSERVED", "CODE FACT", "payments.py", "money stored as floating point",
+        (Evidence("source", "payments.py:17", "total REAL"),), "Integrity check.",
+        "integrity_inspector", "OBSERVED", "HIGH",
+    )
+    manifest = VerificationManifest("2.0", "0.1.0", "1.0", "/workspace/payments", 0, (duplicate, duplicate), ())
+    sealed = tmp_path / "sealed.json"; write_sealed_manifest(manifest, sealed)
+    (tmp_path / "coverage-report.json").write_text(json.dumps({"files_analyzed": 3, "files_discovered": 5}))
+
+    report = render_tiered_report(sealed, "standard", tmp_path / "standard.html").read_text()
+
+    assert "Review overview" in report
+    assert "Sealed records" in report and "Distinct review items" in report
+    assert "3 analyzed / 5 discovered" in report
+    assert "severity-badge severity-high" in report
+    assert "Grouped 2 related sealed records for review." in report
+    assert "Review actions" in report and "forge audit /workspace/payments --output forge-run" in report
+    assert "href='#overview'" in report and "href='#findings'" in report
+
+
 def test_tiered_report_marks_partial_disposition_non_green(tmp_path):
     manifest = VerificationManifest("2.0", "0.1.0", "1.0", str(tmp_path), 0, (), ())
     sealed = tmp_path / "sealed.json"
