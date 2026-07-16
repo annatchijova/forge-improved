@@ -9,7 +9,30 @@ from pathlib import Path
 from typing import Any
 import tempfile
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError:
+    class FastMCP:  # type: ignore[no-redef]
+        """Fallback when the optional 'mcp' dependency is not installed.
+
+        See forge.mcp_server for the rationale: .tool() must stay an
+        identity decorator so this module's plain functions remain
+        importable and testable without the 'mcp' package.
+        """
+
+        def __init__(self, name: str) -> None:
+            self._name = name
+
+        def tool(self):
+            def _identity(func):
+                return func
+            return _identity
+
+        def run(self) -> None:
+            raise RuntimeError(
+                "The optional 'mcp' dependency is not installed. "
+                "Install forge[mcp] to run the MCP server."
+            )
 
 from forge.loop import run_loop
 

@@ -11,7 +11,33 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError:
+    class FastMCP:  # type: ignore[no-redef]
+        """Fallback when the optional 'mcp' dependency is not installed.
+
+        The module docstring promises the @mcp.tool()-decorated functions
+        stay ordinary, independently importable Python functions; that
+        promise must hold even without the 'mcp' package. .tool() is an
+        identity decorator here, so every tool function is still callable
+        directly. Only starting the actual MCP server needs the real
+        dependency.
+        """
+
+        def __init__(self, name: str) -> None:
+            self._name = name
+
+        def tool(self):
+            def _identity(func):
+                return func
+            return _identity
+
+        def run(self) -> None:
+            raise RuntimeError(
+                "The optional 'mcp' dependency is not installed. "
+                "Install forge[mcp] to run the MCP server."
+            )
 
 from forge.runtime import Runtime
 from forge.models import ModelRouting
