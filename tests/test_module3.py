@@ -117,6 +117,21 @@ def test_math_isclose_phrase_inside_string_is_not_a_hypothesis():
     assert hypotheses == []
 
 
+def test_zero_argument_eval_method_call_is_not_a_hypothesis():
+    # model.eval() is PyTorch's evaluation-mode convention (no argument, no
+    # code execution), not a call to the eval()/exec() builtins - which
+    # always take at least one argument (eval() with none is a SyntaxError).
+    hypotheses, _ = _candidates("fixture.py", ("model.eval()\n",), "Python")
+    assert not [h for h in hypotheses if "dynamic evaluation" in h.description]
+
+
+def test_real_eval_call_on_an_object_is_still_a_hypothesis():
+    # Only the zero-argument shape is excluded; something.eval(expr) still
+    # crosses a data-to-code boundary and must still be flagged.
+    hypotheses, _ = _candidates("fixture.py", ("sandbox.eval(user_expr)\n",), "Python")
+    assert [h for h in hypotheses if "dynamic evaluation" in h.description]
+
+
 def test_risk_shaped_strings_do_not_create_regex_hypotheses():
     source = (
         'note = "subprocess.run(cmd)"\n',

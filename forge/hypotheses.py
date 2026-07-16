@@ -128,7 +128,13 @@ def _candidates(module_path: str, source: tuple[str, ...], language: str) -> lis
             candidates.append((f"The decision comparison `{stripped}` at {module_path}:{number} uses a binary float threshold, so rounding at the boundary may flip the result.", number, f"Run inputs immediately below, exactly at, and above the threshold using exact decimal values; stable, documented boundary behavior falsifies the hypothesis."))
         if re.search(r"\bmath\.isclose\s*\(", matching_stripped):
             candidates.append((f"The tolerance call `{stripped}` at {module_path}:{number} governs a float decision and must expose an explicit tolerance policy.", number, f"Vary values within and outside the stated tolerance; a documented, stable boundary falsifies this hypothesis."))
-        if re.search(r"\b(eval|exec)\s*\(", matching_stripped):
+        # (?!\)) excludes a zero-argument call: eval()/exec() with no
+        # argument is a SyntaxError in real Python, so any genuine
+        # data-to-code call always has at least one argument. This is what
+        # excludes conventionally-named but unrelated zero-arg methods like
+        # PyTorch's model.eval() (evaluation mode, no argument, no code
+        # execution) without also excluding a real `something.eval(expr)`.
+        if re.search(r"\b(eval|exec)\s*\(\s*(?!\))", matching_stripped):
             candidates.append((f"The dynamic evaluation `{stripped}` at {module_path}:{number} may execute data as code instead of treating it as data.", number, f"Supply a payload that would create a harmless sentinel file; absence of the sentinel and explicit rejection falsify the hypothesis."))
     hypotheses = [Hypothesis(module_path, rank, desc, (line,), test) for rank, (desc, line, test) in enumerate(candidates[:5], 1)]
     omitted = len(candidates) - len(hypotheses)
