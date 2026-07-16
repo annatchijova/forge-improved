@@ -15,7 +15,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable
 
-from forge.agents import archaeologist, bug_investigator, integrity_inspector, report_composer, security_auditor
+from forge.agents import archaeologist, bug_investigator, integrity_inspector, report_composer, security_auditor, web_auditor
 from forge.detector.stack import SKIP_DIRS, discover_files, write_manifest
 from forge.evidence_package import build_repository_profile, write_markdown_report, write_repository_profile
 from forge.governance.runtime import infer_domains, load_skills, run_skills
@@ -34,15 +34,19 @@ from forge.verification import verify_hypotheses, write_verification_manifest
 from forge.git_refs import archive_ref, changed_files, resolve_ref
 from forge.attestation import attest_manifest, verify_manifest_attestation
 
-def _coverage(root: Path, families=(), discovered=None) -> CoverageReport:
+def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> CoverageReport:
     discovered = discovered if discovered is not None else discover_files(root, include_excluded=True)
     skipped: dict[str, list[str]] = {"excluded_by_policy": [], "syntax_error": [], "binary_or_unreadable": [], "non_python_not_analyzed": []}
     analyzed = 0
+    analyzed_paths = set(analyzed_paths)
     for path in discovered:
         rel = str(path.relative_to(root))
         if any(part in SKIP_DIRS for part in path.relative_to(root).parts): skipped["excluded_by_policy"].append(rel); continue
         try: source = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError): skipped["binary_or_unreadable"].append(rel); continue
+        if rel in analyzed_paths:
+            analyzed += 1
+            continue
         if path.suffix != ".py": skipped["non_python_not_analyzed"].append(rel); continue
         try: ast.parse(source)
         except SyntaxError: skipped["syntax_error"].append(rel); continue
@@ -193,7 +197,16 @@ class Runtime:
         connected = triage_manifest.summary.get("CONNECTED_ALIVE", 0)
         limit = self.max_connected if max_connected is None else max_connected
         if connected > limit: raise ValueError(f"scope guard: {connected} CONNECTED_ALIVE modules exceeds max_connected={limit}")
-        coverage = _coverage(root, discovered=discovered)
+        web_degraded: list[str] = []
+        try:
+            web_result, web_analyzed_paths = web_auditor.audit(root)
+        except Exception as exc:
+            message = f"web_auditor unavailable: {type(exc).__name__}: {exc}"
+            web_degraded.append(message)
+            web_result, web_analyzed_paths = AgentScanResult((), {}), ()
+            self._event(trace, cronos, "agent_degraded", agent="web_auditor", error=message)
+        self._event(trace, cronos, "agent_completed", agent="web_auditor", findings=len(web_result.findings), examinations=web_result.examinations)
+        coverage = _coverage(root, discovered=discovered, analyzed_paths=web_analyzed_paths)
         self._event(trace, cronos, "coverage_collected", discovered=coverage.files_discovered, analyzed=coverage.files_analyzed, skipped=coverage.files_skipped, skipped_reasons=coverage.skipped_reasons)
         governance = run_skills(triage_manifest, self.skills_root)
         self._event(trace, cronos, "domain_hypotheses_formed", hypotheses=governance.to_dict()["domain_hypotheses"])
@@ -202,7 +215,7 @@ class Runtime:
         bug = bug_investigator.investigate(triage_manifest, induce=True)
         self._event(trace, cronos, "hypotheses_generated", count=len(bug.hypotheses), modules=list(bug.manifest.audited_modules))
         self._event(trace, cronos, "hypotheses_verified", discarded=len(bug.verification.discarded), findings=len(bug.verification.findings))
-        degraded_reasons: list[str] = []
+        degraded_reasons: list[str] = list(web_degraded)
         try:
             security_result = security_auditor.audit(root)
         except Exception as exc:
@@ -222,6 +235,7 @@ class Runtime:
         findings = [_with_severity(Finding(f.category, f.epistemic_level, f.module_path, f.description, f.evidence, f.reasoning, "bug_investigator", f.outcome)) for f in bug.verification.findings]
         findings += [_with_severity(_agent_finding("security_auditor", item), family=item.family) for item in security_result.findings]
         findings += [_with_severity(_agent_finding("integrity_inspector", item), family=item.family) for item in integrity_result.findings]
+        findings += [_with_severity(_agent_finding("web_auditor", item), family=item.family) for item in web_result.findings]
         findings += [_with_severity(item) for item in governance.findings]
         findings = _attach_provenance(findings)
         contradictions = find_contradictions(findings, bug.verification.discarded)
@@ -252,6 +266,7 @@ class Runtime:
             "bug_investigator": {"hypotheses_generated": len(bug.hypotheses), "discarded": len(verification.discarded), "survived": len([f for f in findings if f.agent == "bug_investigator"]), "examinations": {m.path: bug_status(m) for m in triage_manifest.modules}},
             "security_auditor": {"findings_per_family": {family: sum(item.family == family for item in security_result.findings) for family in ("hardcoded-credential", "unsafe-deserialization", "path-traversal")}, "examinations": security_result.examinations},
             "integrity_inspector": {"findings_per_family": {family: sum(item.family == family for item in integrity_result.findings) for family in ("decision-adjacent-float", "unversioned-serialization")}, "examinations": integrity_result.examinations},
+            "web_auditor": {"findings_per_family": {family: sum(item.family == family for item in web_result.findings) for family in ("dynamic-evaluation", "subprocess", "parser-boundary", "path-traversal")}, "examinations": web_result.examinations},
             "governance_skills": {"loaded": [item["name"] for item in self.list_available_skills()], "findings": len(governance.findings), "applicability_counts": {state: sum(state in values.values() for values in governance.applicability.values()) for state in ("APPLICABLE", "NOT_APPLICABLE", "UNDETERMINED")}},
         }
         metrics = collect_metrics(root=root, discovered=discovered, triage=triage_manifest, coverage=coverage, governance=governance, findings=findings, discarded=verification.discarded, trace=trace, skills=self.list_available_skills(), hypothesis_limitations=bug.manifest.limitations, degraded_reasons=degraded_reasons, contradiction_records=contradictions, repository_snapshot_sha256=repository_snapshot_sha256)

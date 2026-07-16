@@ -59,3 +59,12 @@ def test_red_team_fixture_is_not_silently_accepted_after_parser_failure():
         "Python",
     )
     assert hypotheses
+
+
+def test_web_language_scope_is_not_counted_as_unanalyzed_when_scanned(tmp_path):
+    (tmp_path / "main.py").write_text("import frontend\n")
+    (tmp_path / "frontend.ts").write_text("export const value = 1;\n")
+    result = Runtime().audit(tmp_path, tmp_path / "out")
+    coverage = result.coverage
+    assert "frontend.ts" not in coverage["skipped_reasons"].get("non_python_not_analyzed", ())
+    assert coverage["files_analyzed"] == 2

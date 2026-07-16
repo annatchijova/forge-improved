@@ -160,7 +160,7 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
         limitations.append(f"{len(bug_findings)} hypothesis/hypotheses survived structural verification without dynamic induction; they remain plausible hypotheses, not confirmed defects.")
     # Preserve ordering while avoiding repeated limitation text from multiple layers.
     limitations = list(dict.fromkeys(limitations))
-    specialized_total = 4
+    specialized_total = 5
     unavailable_agents = sum(" unavailable:" in item for item in degraded_reasons)
     self_assessment = {
         "coverage": quality["repository_coverage"],

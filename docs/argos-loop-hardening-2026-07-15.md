@@ -25,23 +25,32 @@
   the integrity agent retains its existing `CONNECTED_ALIVE` contract. The
   scope expansion is therefore explicit and agent-specific rather than an
   accidental broadening of every detector.
+- A bounded `web_auditor` now analyzes readable JavaScript/TypeScript files for
+  high-signal dynamic evaluation, process execution, parser boundaries, and
+  filesystem-path patterns. String literals and comments are masked before
+  matching, and the agent reports source observations rather than claiming
+  exploitability.
+- The coverage report counts a JavaScript/TypeScript file as analyzed only when
+  `web_auditor` actually read it. JSON, CSS, binary assets, and other
+  unsupported formats remain explicitly skipped and continue to contribute to
+  the abstention boundary.
 
 ## Re-audit result
 
 Against ARGOS commit `3415ec32f8561663edfb2d3dd5c005b7ee43b66f`:
 
 ```text
-FORGE tests: 137 passed
+FORGE tests: 141 passed
 Red-team gate: passed
 ARGOS findings: 0
-Discarded hypotheses: 1
-Coverage: 23/70 (32.9%)
+Discarded hypotheses: 0
+Coverage: 40/70 (57.1%)
 Disposition: ABSTAIN_INSUFFICIENT_SCOPE
 ```
 
-The discarded hypothesis is the Gemini JSON parser candidate. FORGE now
-recognizes its explicit exception boundary and does not report it as a
-finding.
+The previous Gemini parser candidate remains suppressed by the explicit
+exception-boundary check. The cross-language pass adds 17 analyzed
+JavaScript/TypeScript files without creating a finding.
 
 The coverage abstention remains intentional. ARGOS still contains 15
 unsupported TypeScript files, 2 unsupported JavaScript files, 13 binary

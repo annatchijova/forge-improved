@@ -55,6 +55,7 @@ module 1 itself.
 | `abduction` | derive concrete pattern-based candidates | `HypothesesManifest` |
 | `adversarial_verification` | inspect AST structure and benign explanations | `VerificationManifest` |
 | `numeric_ml_review` | review floats, exact arithmetic, models, data, thresholds and boundaries | bounded annotations; no invented severity |
+| `web_auditor` | scan readable JavaScript/TypeScript source for bounded high-signal code boundaries | source observations only; no exploitability without induction |
 | `sealing` | canonicalize and chain findings | sealed verification manifest |
 | `reporting` | expose findings, discarded candidates, clean modules and scope limits | self-contained HTML |
 

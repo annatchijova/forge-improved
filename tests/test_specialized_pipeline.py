@@ -111,7 +111,7 @@ def test_self_assessment_is_bounded_not_a_quality_score(tmp_path):
     run_specialized_pipeline(tmp_path, tmp_path / "out")
     metrics = json.loads((tmp_path / "out/metrics.json").read_text())
     assessment = metrics["self_assessment"]
-    assert assessment["specialized_agents"] == {"available": 4, "total": 4}
+    assert assessment["specialized_agents"] == {"available": 5, "total": 5}
     assert assessment["confidence_boundary"] == "scope-limited"
     assert "quality score" in assessment["note"]
 
