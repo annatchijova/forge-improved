@@ -1,5 +1,6 @@
 from forge.agents.security_auditor import audit as security_audit
 from forge.agents.web_auditor import audit as web_audit
+from forge.agents.integrity_inspector import inspect as integrity_inspect
 from forge.models import Evidence, Finding
 from forge.runtime import _deduplicate_findings
 from forge.severity import severity_for
@@ -75,3 +76,25 @@ def test_dedup_identity_collapses_variable_names_but_preserves_occurrences():
     result = _deduplicate_findings([first, second])
     assert len(result) == 1
     assert result[0].occurrences == ("app.py:7", "app.py:7")
+
+
+def test_money_as_float_covers_literals_division_and_sql_dialects_without_decimal_fp(tmp_path):
+    _write(tmp_path, "money.py", """\
+def compute(price_cents, count):
+    average_price = price_cents / count
+    total = 12.50
+    return average_price + total
+
+connection.execute("CREATE TABLE ledger (total DOUBLE, fee NUMERIC, name TEXT)")
+""")
+    _write(tmp_path, "exact.py", """\
+from decimal import Decimal
+def compute(price_cents, count):
+    total = Decimal("12.50")
+    return total
+connection.execute("CREATE TABLE ledger (total DECIMAL, name TEXT)")
+""")
+    findings = integrity_inspect(tmp_path).findings
+    assert sorted((item.path, item.line) for item in findings if item.family == "money-as-float") == [
+        ("money.py", 2), ("money.py", 3), ("money.py", 6), ("money.py", 6),
+    ]

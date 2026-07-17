@@ -49,8 +49,8 @@ def test_golden_corpus_has_ledger_regressions_and_initial_global_floor():
 
 def test_family_view_is_retained_as_an_aggregate_over_exact_findings():
     result = run_precision("tests/corpus")
-    assert result["by_family"]["money-as-float"]["true_positive"] == 1
-    assert result["by_finding_family"]["money-as-float"]["true_positive"] == 2
+    assert result["by_family"]["money-as-float"]["true_positive"] == 2
+    assert result["by_finding_family"]["money-as-float"]["true_positive"] == 5
 
 
 def test_precision_cli_enforces_global_precision_and_recall_gates(monkeypatch):
