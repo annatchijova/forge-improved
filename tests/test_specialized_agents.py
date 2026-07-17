@@ -35,6 +35,31 @@ def test_security_ignores_getenv_default_for_non_credential_name(tmp_path):
     write(tmp_path, "app.py", "import os\nTIMEOUT = os.getenv('REQUEST_TIMEOUT', '30')\n")
     assert not [x for x in audit(tmp_path) if x.family == "hardcoded-credential"]
 
+
+def test_security_detects_credential_literals_in_extended_assignment_targets(tmp_path):
+    write(tmp_path, "bad.py", (
+        "def configure(config):\n"
+        "    config['password'] = 'hunter2'\n"
+        "    self.api_key = 'sk-live'\n"
+        "    return {'token': 'tok-live'}\n"
+    ))
+    findings = [item for item in audit(tmp_path) if item.family == "hardcoded-credential"]
+    assert [(item.path, item.line) for item in findings] == [
+        ("bad.py", 2), ("bad.py", 3), ("bad.py", 4),
+    ]
+
+
+def test_security_ignores_extended_placeholder_and_environment_credential_targets(tmp_path):
+    write(tmp_path, "safe.py", (
+        "import os\n"
+        "def configure(config):\n"
+        "    config['password'] = os.getenv('PASSWORD')\n"
+        "    self.api_key = ''\n"
+        "    self.token = 'changeme'\n"
+        "    return {'password': '', 'api_key': 'your-key-here'}\n"
+    ))
+    assert not [item for item in audit(tmp_path) if item.family == "hardcoded-credential"]
+
 def test_security_flags_unverified_webhook_route(tmp_path):
     write(tmp_path, "app.py", (
         "from fastapi import FastAPI\n"

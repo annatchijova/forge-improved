@@ -1,11 +1,11 @@
 {
   "recall_variants_schema_version": "1.0",
-  "recall_variant_global": {"detected": 16, "total": 36, "recall": 0.444444},
+  "recall_variant_global": {"detected": 19, "total": 36, "recall": 0.527778},
   "recall_variant_by_family": {
     "command-injection": {"detected": 0, "total": 3, "recall": 0.0},
     "decision-adjacent-float": {"detected": 2, "total": 3, "recall": 0.666667},
     "dynamic-evaluation": {"detected": 3, "total": 4, "recall": 0.75},
-    "hardcoded-credential": {"detected": 0, "total": 4, "recall": 0.0},
+    "hardcoded-credential": {"detected": 3, "total": 4, "recall": 0.75},
     "parser-boundary": {"detected": 2, "total": 3, "recall": 0.666667},
     "path-traversal": {"detected": 1, "total": 7, "recall": 0.142857},
     "sql-injection": {"detected": 2, "total": 4, "recall": 0.5},
@@ -19,9 +19,6 @@
     {"case": "variant-path-fstring", "family": "path-traversal", "disposition": "close_gap"},
     {"case": "variant-path-pathlib", "family": "path-traversal", "disposition": "undecided"},
     {"case": "variant-path-keyword", "family": "path-traversal", "disposition": "close_gap"},
-    {"case": "variant-credential-subscript", "family": "hardcoded-credential", "disposition": "close_gap"},
-    {"case": "variant-credential-attribute", "family": "hardcoded-credential", "disposition": "close_gap"},
-    {"case": "variant-credential-dict", "family": "hardcoded-credential", "disposition": "undecided"},
     {"case": "variant-sql-format", "family": "sql-injection", "disposition": "close_gap"},
     {"case": "variant-sql-alias", "family": "sql-injection", "disposition": "close_gap"},
     {"case": "variant-command-os-system", "family": "command-injection", "disposition": "close_gap"},

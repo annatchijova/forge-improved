@@ -23,13 +23,38 @@ _SQL_EXEC_METHODS = {"execute", "executemany", "executescript"}
 def _is_getenv_call(node):
     return isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == "os" and node.func.attr == "getenv"
 
+def _credential_target_name(target: ast.AST) -> str | None:
+    if isinstance(target, ast.Name):
+        return target.id
+    if isinstance(target, ast.Attribute):
+        return target.attr
+    if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Constant) and isinstance(target.slice.value, str):
+        return target.slice.value
+    return None
+
+
+def _is_non_placeholder_credential_literal(value: ast.AST) -> bool:
+    return (
+        isinstance(value, ast.Constant) and isinstance(value.value, str)
+        and bool(value.value) and not _PLACEHOLDER.match(value.value)
+    )
+
+
 def _assigned(tree):
     for n in ast.walk(tree):
         targets = n.targets if isinstance(n, ast.Assign) else [n.target] if isinstance(n, ast.AnnAssign) else []
         value = getattr(n, "value", None)
         for target in targets:
-            if isinstance(target, ast.Name) and _CRED.search(target.id) and isinstance(value, ast.Constant) and isinstance(value.value, str) and value.value and not _PLACEHOLDER.match(value.value):
-                yield SecurityFinding("hardcoded-credential", "", n.lineno, f"non-empty credential-like string assigned to {target.id}")
+            name = _credential_target_name(target)
+            if name and _CRED.search(name) and _is_non_placeholder_credential_literal(value):
+                yield SecurityFinding("hardcoded-credential", "", n.lineno, f"non-empty credential-like string assigned to {name}")
+        if isinstance(n, ast.Dict):
+            for key, value in zip(n.keys, n.values):
+                if (
+                    isinstance(key, ast.Constant) and isinstance(key.value, str)
+                    and _CRED.search(key.value) and _is_non_placeholder_credential_literal(value)
+                ):
+                    yield SecurityFinding("hardcoded-credential", "", n.lineno, f"non-empty credential-like string stored under {key.value!r}")
 
 def _getenv_default_credential(tree):
     """os.getenv(name, default) where default is a hardcoded credential.
