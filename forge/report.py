@@ -144,7 +144,7 @@ def _finding_card(finding: dict[str, Any], hypotheses: list[dict[str, Any]], roo
     searchable = " ".join(str(finding.get(key, "")) for key in ("module_path", "description", "reasoning", "agent", "epistemic_level", "severity"))
     return f"""<article class=\"finding severity-card-{_e(severity.lower())}\" data-agent=\"{_e(agent)}\" data-severity=\"{_e(severity)}\" data-epistemic=\"{_e(epistemic)}\" data-search=\"{_e(searchable.lower())}\">
       <p><strong>Agent:</strong> {_e(finding.get('agent', 'bug_investigator'))}</p>
-      <div><span class=\"badge severity-{_e(str(finding.get('severity', 'MEDIUM')).lower())}\">Severity: {_e(finding.get('severity', 'MEDIUM'))}</span> <span class=\"badge\">{_e(finding.get('epistemic_level', ''))}</span> <span class=\"ref\">{_e(source_ref)}</span></div>
+      <div><span class=\"badge severity-{_e(str(finding.get('severity', 'MEDIUM')).lower())}\">Severity: {_e(finding.get('severity', 'MEDIUM'))}</span> <span class=\"badge\"><strong>Lead status:</strong> {_e(finding.get('epistemic_level', 'UNSPECIFIED'))}</span> <span class=\"ref\">{_e(source_ref)}</span></div>
       <p><strong>Description (inference):</strong> {_e(finding.get('description', ''))}</p>
       <p><strong>Source observation:</strong> <code>{_e(source.get('detail', ''))}</code></p>
       <p><strong>Reasoning:</strong> {_e(finding.get('reasoning', ''))}</p>
@@ -291,6 +291,9 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
     severity_counts = metrics.get("findings", {}).get("by_severity", {})
     if severity_counts:
         quality_rows.append(("Findings by severity", _e(severity_counts)))
+    epistemic_counts = metrics.get("findings", {}).get("by_epistemic_level", {})
+    if epistemic_counts:
+        quality_rows.append(("Lead status breakdown", _e(epistemic_counts)))
     verification_metrics = metrics.get("agents", {}).get("verification", {})
     if verification_metrics:
         quality_rows.append(("Structural verification", _e({key: verification_metrics.get(key) for key in ("checks_passed", "checks_failed", "checks_unresolved") if key in verification_metrics})))
