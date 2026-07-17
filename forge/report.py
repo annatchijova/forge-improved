@@ -242,10 +242,13 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
     coverage_section_html = ""
     if coverage_summary:
         coverage_data, ratio_text = coverage_summary
+        detector_scope = int(coverage_data.get("connected_alive_modules", 0) or 0)
+        scope_denominator = int(coverage_data.get("eligible_source_files", 0) or coverage_data.get("files_analyzed", 0) or 0)
+        scope_percent = (100 * detector_scope / scope_denominator) if scope_denominator else 0
         coverage_section_html = (
             f'<section id="coverage"><h2>Coverage</h2>'
             f'<p class="section-lede">Semantic coverage means modules that received detector attention, not only files that parsed.</p>'
-            f'<div class="coverage-hero"><strong>{_e(ratio_text)}</strong><span>{_e(coverage_data.get("files_analyzed", 0))} parsed · {_e(coverage_data.get("connected_alive_modules", 0))} in detector scope · {_e(coverage_data.get("detector_scope_excluded_modules", 0))} outside detector scope · {_e(coverage_data.get("files_skipped", 0))} skipped · {_e(coverage_data.get("files_discovered", 0))} discovered</span></div>'
+            f'<div class="coverage-hero"><div><strong>Source coverage</strong><b>{_e(ratio_text)}</b><span>eligible source files parsed</span></div><div><strong>Detector scope</strong><b>{_e(f"{detector_scope}/{scope_denominator} ({scope_percent:.1f}%)")}</b><span>CONNECTED_ALIVE modules receiving detector attention</span></div><small>{_e(coverage_data.get("detector_scope_excluded_modules", 0))} modules outside detector scope · {_e(coverage_data.get("files_skipped", 0))} files skipped · {_e(coverage_data.get("files_discovered", 0))} discovered. File and module counts are different measures.</small></div>'
             f'<p>Language coverage: {_e(coverage_data.get("language_coverage", {}))}</p>'
             f'<p>Skipped reasons: {_e(coverage_data.get("skipped_reasons", {}))}</p></section>'
         )
@@ -313,7 +316,7 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
 <section id="dashboard" class="dashboard">
   <div class="dashboard-heading"><div><p class="eyebrow">AUDIT PULSE</p><h2>Repository intelligence</h2><p class="section-lede">A visual readout of the sealed run: scope, evidence, findings, governance and reproducibility.</p></div><span class="dashboard-status {disposition_tone}">{_e(disposition_status + ' · ' + integrity_text)}</span></div>
   <div class="dashboard-grid">
-    <div class="coverage-dial" style="--coverage:{(100 * (coverage_summary[0].get('coverage_ratio', {}).get('numerator', 0) / (coverage_summary[0].get('coverage_ratio', {}).get('denominator', 1) or 1))) if coverage_summary else 0:.2f}%"><div><strong>{_e(coverage_summary[1].split(' ')[0] if coverage_summary else '—')}</strong><span>coverage</span></div></div>
+    <div class="coverage-dial" style="--coverage:{(100 * (coverage_summary[0].get('connected_alive_modules', 0) / (coverage_summary[0].get('eligible_source_files', 1) or 1))) if coverage_summary else 0:.2f}%"><div><strong>{_e(f"{coverage_summary[0].get('connected_alive_modules', 0)}/{coverage_summary[0].get('eligible_source_files', 0)}" if coverage_summary else '—')}</strong><span>detector scope</span></div></div>
     <div class="dashboard-panel"><h3>Findings by agent</h3>{_bar_rows(findings_metrics.get('by_agent', {}))}</div>
     <div class="dashboard-panel"><h3>Severity profile</h3>{_bar_rows(findings_metrics.get('by_severity', {}))}</div>
     <div class="dashboard-panel"><h3>Governance skills</h3><div class="mini-stat-grid"><div><strong>{_e(skill_runtime.get('skills_activated', 0))}</strong><span>activated</span></div><div><strong>{_e(skill_runtime.get('skills_not_applicable', 0))}</strong><span>not applicable</span></div><div><strong>{_e(skill_runtime.get('undetermined_skills', 0))}</strong><span>undetermined</span></div></div></div>
@@ -365,8 +368,8 @@ header.masthead .summary-grid{{ display:grid; grid-template-columns:repeat(4,min
 .stat-label{{ color:var(--ink-muted); font:11px var(--mono); letter-spacing:.04em; text-transform:uppercase; margin-top:3px; }}
 .stat-tile.risk{{ border-top:4px solid var(--fail); }} .stat-tile.caution{{ border-top:4px solid #CDBB78; }}
 .stat-tile.safe{{ border-top:4px solid var(--ok); }} .stat-tile.neutral{{ border-top:4px solid var(--accent); }} .stat-tile.muted{{ border-top:4px solid var(--ink-faint); }}
-.coverage-hero{{ display:flex; align-items:baseline; gap:14px; padding:16px; background:var(--bg-sunken); border-left:5px solid var(--accent); border-radius:3px; }}
-.coverage-hero strong{{ font:600 27px var(--serif); }} .coverage-hero span{{ color:var(--ink-muted); font-size:13px; }}
+.coverage-hero{{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:16px; background:var(--bg-sunken); border-left:5px solid var(--accent); border-radius:3px; }}
+.coverage-hero div{{ background:#fff;border:1px solid var(--rule);padding:12px;border-radius:3px }}.coverage-hero strong,.coverage-hero b,.coverage-hero span{{ display:block }}.coverage-hero strong{{ color:var(--ink-muted);font:11px var(--mono);text-transform:uppercase;letter-spacing:.05em }}.coverage-hero b{{ font:600 24px var(--serif);margin:3px 0 }} .coverage-hero span,.coverage-hero small{{ color:var(--ink-muted);font-size:12px }}.coverage-hero small{{ grid-column:1/-1 }}
 section h2{{ font-family:var(--serif); font-size:20px; font-weight:600; margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--rule); }}
 #findings h2{{ color:var(--accent); }}
 #discarded h2{{ color:#8A6A2E; }}
@@ -416,7 +419,7 @@ table.data-table td:first-child{{ font-family:var(--mono); font-size:12.5px; whi
 .metric-strip{{ display:grid; grid-template-columns:repeat(5,1fr); gap:1px; margin-top:16px; border:1px solid var(--rule); background:var(--rule); }} .metric-strip div{{ background:#fff; padding:13px 15px; }} .metric-strip strong{{ font:600 22px var(--serif); }}
 .metric-strip .cost-tile{{ background:#FFF4E9; border-top:4px solid #D89A70; }}
 .metrics-details{{ margin-top:16px; border-top:1px solid var(--rule); padding-top:13px; }} .metrics-details summary{{ cursor:pointer; color:var(--accent); font:12px var(--mono); }} .detail-grid{{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }} .detail-grid h3{{ font-size:14px; }} .detail-grid pre{{ max-height:260px; overflow:auto; }} .empty-state{{ color:var(--ink-muted); font-size:13px; }}
-@media(max-width:900px){{ .dashboard-grid{{ grid-template-columns:1fr 1fr; }} .coverage-dial{{ grid-column:span 2; }} }} @media(max-width:620px){{ .dashboard-heading{{ display:block; }} .dashboard-status{{ display:inline-block; margin:8px 0 16px; }} .dashboard-grid,.detail-grid{{ grid-template-columns:1fr; }} .coverage-dial{{ grid-column:auto; }} .metric-strip{{ grid-template-columns:repeat(2,1fr); }} }}
+@media(max-width:900px){{ .dashboard-grid{{ grid-template-columns:1fr 1fr; }} .coverage-dial{{ grid-column:span 2; }} }} @media(max-width:620px){{ .dashboard-heading{{ display:block; }} .dashboard-status{{ display:inline-block; margin:8px 0 16px; }} .dashboard-grid,.detail-grid,.coverage-hero{{ grid-template-columns:1fr; }} .coverage-dial{{ grid-column:auto; }} .metric-strip{{ grid-template-columns:repeat(2,1fr); }} }}
 </style></head><body>
 <div class=\"wrap\">
 <header class=\"masthead\">

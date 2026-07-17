@@ -34,7 +34,7 @@ def test_real_report_qualifies_a_clean_run_by_source_and_detector_scope(tmp_path
         seal = report.split("<section id='seal'>", 1)[1].split("</section>", 1)[0]
         assert "complete_no_findings" in report
         assert "declared source scope and detector scope" in seal
-        assert "parsed /" in seal and "eligible source" in seal and "detector scope" in seal and "discovered" in seal
+        assert "parsed;" in seal and "eligible files" in seal and "detector scope" in seal and "discovered" in seal
         assert "detector scope" in report
         assert "general business logic" in report
         assert "business authorization" in report

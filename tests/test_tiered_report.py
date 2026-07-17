@@ -53,7 +53,7 @@ def test_tiered_report_has_review_overview_groups_duplicates_and_exposes_reprodu
 
     assert "Review overview" in report
     assert "Sealed records" in report and "Distinct review items" in report
-    assert "3 parsed / 0 in detector scope / 0 outside detector scope" in report
+    assert "source 3/5 parsed · detector scope 0/5 CONNECTED_ALIVE" in report
     assert "severity-badge severity-high" in report
     assert "Grouped 2 related sealed records for review." in report
     assert "Review actions" in report and "forge audit /workspace/payments --output forge-run" in report

@@ -99,7 +99,9 @@ def _overview_html(manifest: dict[str, Any], coverage: dict[str, Any] | None, fi
         highest = next((severity for severity in SEVERITY_ORDER if counts[severity]), "NONE")
         if coverage:
             eligible = coverage.get("eligible_source_files", coverage.get("files_discovered", 0))
-            scope = f"{coverage.get('files_analyzed', 0)} parsed / {coverage.get('connected_alive_modules', 0)} in detector scope / {coverage.get('detector_scope_excluded_modules', 0)} outside detector scope"
+            parsed = coverage.get("files_analyzed", 0)
+            connected = coverage.get("connected_alive_modules", 0)
+            scope = f"source {parsed}/{eligible} parsed · detector scope {connected}/{eligible} CONNECTED_ALIVE"
         else:
             scope = "Unavailable"
         cards = [("Repository", str(manifest.get("root", "unknown"))), ("Generated", _generated_at(manifest.get("generated_at_epoch"))), ("Sealed records", str(len(findings))), ("Distinct review items", str(len(display_groups))), ("Highest severity", highest), ("Scope", scope)]
@@ -158,11 +160,10 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
     coverage = _sidecar(source, "coverage-report.json")
     eligible_source = coverage.get("eligible_source_files", coverage.get("files_discovered", 0)) if coverage else 0
     source_scope = (
-        f"Source coverage: {coverage.get('files_analyzed', 0)} parsed / "
-        f"{eligible_source} eligible source; detector scope: "
-        f"{coverage.get('connected_alive_modules', 0)} CONNECTED_ALIVE, "
-        f"{coverage.get('detector_scope_excluded_modules', 0)} outside detector scope; "
-        f"discovery accounting: {coverage.get('files_discovered', 0)} discovered"
+        f"Source coverage: {coverage.get('files_analyzed', 0)}/{eligible_source} eligible files parsed; "
+        f"detector scope: {coverage.get('connected_alive_modules', 0)}/{eligible_source} CONNECTED_ALIVE modules; "
+        f"{coverage.get('detector_scope_excluded_modules', 0)} modules outside detector scope; "
+        f"discovery accounting: {coverage.get('files_discovered', 0)} discovered. File and module counts are different measures."
         if coverage else "Source coverage: unavailable"
     )
     status_tone = _status_tone(disposition_status)
