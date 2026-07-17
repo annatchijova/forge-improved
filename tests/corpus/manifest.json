@@ -17,7 +17,7 @@
     {"name": "security-path-late-barrier", "agent": "security_auditor", "path": "security/fp-late-barrier", "expected_findings": [{"family": "path-traversal", "path": "main.py", "line": 4}]},
     {"name": "security-sql-injection-positive", "agent": "security_auditor", "path": "security/sql-injection-positive", "expected_findings": [{"family": "sql-injection", "path": "main.py", "line": 3}]},
     {"name": "security-sql-injection-negative", "agent": "security_auditor", "path": "security/sql-injection-negative", "expected_findings": []},
-    {"name": "security-command-injection-positive", "agent": "security_auditor", "path": "security/command-injection-positive", "expected_findings": [{"family": "command-injection", "path": "main.py", "line": 4}]},
+    {"name": "security-command-injection-positive", "agent": "security_auditor", "path": "security/command-injection-positive", "expected_findings": [{"family": "command-injection", "path": "main.py", "line": 5}]},
     {"name": "security-command-injection-negative", "agent": "security_auditor", "path": "security/command-injection-negative", "expected_findings": []},
 
     {"name": "integrity-positive-1", "agent": "integrity_inspector", "path": "integrity/positive-1", "expected_findings": [{"family": "decision-adjacent-float", "path": "main.py", "line": 4}, {"family": "unversioned-serialization", "path": "main.py", "line": 5}]},
@@ -54,6 +54,17 @@
     {"name": "bug-parser-named-handler", "agent": "bug_investigator", "path": "bug/parser-named-handler", "expected_findings": []},
     {"name": "bug-eval-literal-benign", "agent": "bug_investigator", "path": "bug/eval-literal-benign", "expected_findings": []},
     {"name": "bug-eval-dangerous-literal", "agent": "bug_investigator", "path": "bug/eval-dangerous-literal", "expected_findings": [{"family": "dynamic-evaluation", "path": "main.py", "line": 2}]},
-    {"name": "fp-004-named-error-contract", "agent": "bug_investigator", "path": "ledger/fp-004", "regression_of": "FP-004", "expected_findings": []}
+    {"name": "fp-004-named-error-contract", "agent": "bug_investigator", "path": "ledger/fp-004", "regression_of": "FP-004", "expected_findings": []},
+
+    {"name": "skill-honest-degradation-positive", "agent": "governance_skills", "path": "skills/honest-degradation-positive", "expected_findings": [{"family": "honest-degradation", "path": "main.py", "line": 4}]},
+    {"name": "skill-honest-degradation-negative", "agent": "governance_skills", "path": "skills/honest-degradation-negative", "expected_findings": []},
+    {"name": "skill-deterministic-core-positive", "agent": "governance_skills", "path": "skills/deterministic-core-positive", "expected_findings": [{"family": "deterministic-core", "path": "main.py", "line": 5}]},
+    {"name": "skill-deterministic-core-negative", "agent": "governance_skills", "path": "skills/deterministic-core-negative", "expected_findings": []},
+    {"name": "skill-atomic-state-mutation-positive", "agent": "governance_skills", "path": "skills/atomic-state-mutation-positive", "expected_findings": [{"family": "atomic-state-mutation", "path": "main.py", "line": 2}]},
+    {"name": "skill-atomic-state-mutation-negative", "agent": "governance_skills", "path": "skills/atomic-state-mutation-negative", "expected_findings": []},
+    {"name": "skill-sql-aggregation-positive", "agent": "governance_skills", "path": "skills/sql-aggregation-positive", "expected_findings": [{"family": "sql-aggregation-not-materialization", "path": "main.py", "line": 3}]},
+    {"name": "skill-sql-aggregation-negative", "agent": "governance_skills", "path": "skills/sql-aggregation-negative", "expected_findings": []},
+    {"name": "skill-tamper-chain-positive", "agent": "governance_skills", "path": "skills/tamper-evident-audit-chain-positive", "expected_findings": [{"family": "tamper-evident-audit-chain", "path": "main.py", "line": 2}]},
+    {"name": "skill-tamper-chain-negative", "agent": "governance_skills", "path": "skills/tamper-evident-audit-chain-negative", "expected_findings": []}
   ]
 }

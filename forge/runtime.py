@@ -240,7 +240,7 @@ class Runtime:
         if skill_name is None: return result
         known = {item["name"] for item in self.list_available_skills()}
         if skill_name not in known: raise ValueError(f"unknown skill: {skill_name}")
-        return type(result)(tuple(f for f in result.findings if f.agent == skill_name), result.hypotheses, {path: {skill_name: states.get(skill_name, "NOT_APPLICABLE")} for path, states in result.applicability.items()}, result.limitations)
+        return type(result)(tuple(f for f in result.findings if f.agent == skill_name), result.hypotheses, {path: {skill_name: states.get(skill_name, "NOT_APPLICABLE")} for path, states in result.applicability.items()}, result.limitations, (skill_name,))
 
     def audit(self, repo: str | Path, output_dir: str | Path, max_connected: int | None = None,
               ref_context: dict[str, Any] | None = None) -> AuditResult:
@@ -348,6 +348,7 @@ class Runtime:
         findings += [_with_severity(item) for item in governance.findings]
         findings = _attach_provenance(_deduplicate_findings(findings))
         from forge.agents import patch_reviewer, recommendation_agent, report_composer
+        from forge.agent_protocol import apply_skill_run
         protocols = {
             "archaeologist": triage_manifest.protocol or mandatory_protocol(
                 "archaeologist",
@@ -362,6 +363,7 @@ class Runtime:
             "recommendation_agent": recommendation_agent.protocol(),
             "report_composer": report_composer.protocol(),
         }
+        protocols = {agent: apply_skill_run(protocol, governance) for agent, protocol in protocols.items()}
         validate_protocols(protocols)
         self._event(
             trace, cronos, "agent_protocols_validated",

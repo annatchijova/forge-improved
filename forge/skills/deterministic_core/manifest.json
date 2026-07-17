@@ -1,0 +1,7 @@
+{
+  "name": "deterministic-core",
+  "version": "1.0",
+  "entrypoint": "contract.py",
+  "class_name": "DeterministicCoreSkill",
+  "skill_document": "skills-gpt/deterministic-core.md"
+}

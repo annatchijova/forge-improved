@@ -11,6 +11,7 @@ import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
+from forge.governance.runtime import SkillRun
 
 
 ADI_STAGES = ("abduction", "deduction", "induction")
@@ -24,6 +25,18 @@ AGENT_NAMES = (
     "security_auditor",
     "web_auditor",
 )
+
+SKILL_STATUSES = frozenset({"APPLIED", "NOT_APPLICABLE", "UNDETERMINED", "PROCESS_LEVEL", "LOADED_ONLY", "ERROR"})
+# These catalogue entries govern how an audit is conducted or reported, not a
+# property of one target module.  They deliberately have no fake module-level
+# evaluator; a future run-level contract will own them.
+PROCESS_LEVEL_SKILLS = frozenset({
+    "abductive-engineering", "audit-before-patch", "claim-provenance-discipline",
+    "codebase-health-assessment", "daubert-defensible-writing", "diagnosing-bugs",
+    "git-discipline", "llm-out-of-the-loop", "red-team-auditing",
+    "reverse-engineering", "secure-by-construction", "software-archaeology",
+    "surgical-patcher",
+})
 
 
 @dataclass(frozen=True)
@@ -98,6 +111,7 @@ def mandatory_protocol(
     skills_root: str | Path | None = None,
     induction_status: str = "UNDETERMINED",
     induction_reason: str = "No language-specific induction harness was registered for this observation.",
+    skill_run: SkillRun | None = None,
 ) -> AgentProtocol:
     """Build the required protocol ledger for every agent invocation."""
     obs = tuple(item for item in observations if item.strip())
@@ -113,13 +127,62 @@ def mandatory_protocol(
         SkillApplication(
             name=name,
             source=source,
-            status="LOADED_ONLY",
-            evidence=(f"{agent} received the mandatory policy catalog entry {name} before producing its result.",),
-            limitation="Policy text is loaded and recorded; semantic enforcement requires an executable checker for this skill.",
+            status="PROCESS_LEVEL" if name in PROCESS_LEVEL_SKILLS else "LOADED_ONLY",
+            evidence=(
+                "This policy governs run-level process and reporting; no module-level contract is claimed."
+                if name in PROCESS_LEVEL_SKILLS
+                else f"{agent} received the mandatory policy catalog entry {name} before producing its result."
+            ,),
+            limitation=(
+                "Run-level enforcement is an explicit future contract, not a fabricated module scan."
+                if name in PROCESS_LEVEL_SKILLS
+                else "Policy text is loaded and recorded; semantic enforcement requires an executable checker for this skill."
+            ),
         )
         for name, source, _text in skills_catalog(skills_root)
     )
-    return AgentProtocol(agent, adi, applications, tuple(scope))
+    protocol = AgentProtocol(agent, adi, applications, tuple(scope))
+    return apply_skill_run(protocol, skill_run) if skill_run is not None else protocol
+
+
+def apply_skill_run(protocol: AgentProtocol, skill_run: SkillRun | None) -> AgentProtocol:
+    """Project native executable-skill results into one agent's ledger.
+
+    The projection is intentionally evidence-backed: an executable contract is
+    APPLIED only when the native runtime classified at least one module in this
+    agent's scope as applicable (which is the point at which ``evaluate`` ran).
+    """
+    if skill_run is None:
+        return protocol
+    scope = set(protocol.scope)
+    executable = set(skill_run.executable_skills)
+    findings_by_skill: dict[str, list[str]] = {}
+    for finding in skill_run.findings:
+        if finding.module_path in scope:
+            findings_by_skill.setdefault(finding.agent, []).extend(item.source for item in finding.evidence)
+    rewritten: list[SkillApplication] = []
+    for item in protocol.skills:
+        if item.name in PROCESS_LEVEL_SKILLS:
+            rewritten.append(SkillApplication(item.name, item.source, "PROCESS_LEVEL", ("This policy governs run-level process and reporting; no module-level contract is claimed.",), "Run-level enforcement is an explicit future contract, not a fabricated module scan."))
+            continue
+        if item.name not in executable:
+            rewritten.append(item)
+            continue
+        states = [by_skill.get(item.name) for path, by_skill in skill_run.applicability.items() if path in scope]
+        states = [state for state in states if state is not None]
+        if "APPLICABLE" in states:
+            evidence = tuple(sorted(set(findings_by_skill.get(item.name, ()))))
+            if not evidence:
+                evidence = (f"Native contract {item.name} evaluated applicable modules with no protocol gap.",)
+            rewritten.append(SkillApplication(item.name, item.source, "APPLIED", evidence, "Static contract evidence is structural; aliases and cross-module flow remain limited by the contract."))
+        elif "ERROR" in states:
+            notes = tuple(note for note in skill_run.limitations if item.name in note) or (f"Native contract {item.name} returned ERROR.",)
+            rewritten.append(SkillApplication(item.name, item.source, "ERROR", notes, "The executable checker failed; no application claim is made."))
+        elif "UNDETERMINED" in states or not states:
+            rewritten.append(SkillApplication(item.name, item.source, "UNDETERMINED", (f"Native contract {item.name} could not establish applicability in this scope.",), "Ambiguous source is not promoted to applicability."))
+        else:
+            rewritten.append(SkillApplication(item.name, item.source, "NOT_APPLICABLE", (f"Native contract {item.name} was not applicable in this scope.",), "No matching structural signal was found."))
+    return AgentProtocol(protocol.agent, protocol.adi, tuple(rewritten), protocol.scope)
 
 
 def validate_protocols(protocols: dict[str, AgentProtocol]) -> None:
@@ -133,3 +196,8 @@ def validate_protocols(protocols: dict[str, AgentProtocol]) -> None:
         missing = expected_skills - actual
         if missing:
             raise ValueError(f"{agent} protocol missing skills: {sorted(missing)}")
+        for item in protocol.skills:
+            if item.status not in SKILL_STATUSES:
+                raise ValueError(f"{agent} protocol has invalid skill status for {item.name}: {item.status}")
+            if item.status == "APPLIED" and not tuple(value for value in item.evidence if value.strip()):
+                raise ValueError(f"{agent} protocol claims APPLIED for {item.name} without evidence")

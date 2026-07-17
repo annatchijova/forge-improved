@@ -14,8 +14,8 @@ incorrecta equivale a un FP y un FN. `forge.precision` mantiene `by_family`
 como vista agregada y emite `by_finding_family` y `global` como métricas
 exactas.
 
-El corpus contiene FP-001 a FP-004, los cuatro agentes y casos positivos y
-negativos para las familias ampliadas. Gates:
+El corpus contiene FP-001 a FP-004, los cuatro agentes, el runtime de skills
+ejecutables y casos positivos y negativos para las familias ampliadas. Gates:
 
 ```bash
 python3 -m forge.precision --corpus tests/corpus \
@@ -81,5 +81,5 @@ python3 -m forge.precision --corpus tests/corpus \
   --min-precision 0.95 --min-recall 0.90
 ```
 
-El cierre pasó con 266 tests. Los commits incluyen coautoría de Terra (Codex /
+El cierre pasó con 275 tests. Los commits incluyen coautoría de Terra (Codex /
 ChatGPT 5.6).

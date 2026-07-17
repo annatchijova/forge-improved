@@ -85,3 +85,12 @@ def test_validation_writes_mandatory_closing_artifact(tmp_path):
     summary = write_validation_artifact(results_dir, ROLES)
     assert summary["status"] == "INDEPENDENCE_VERIFIED"
     assert (results_dir / "agent-independence.json").exists()
+
+
+def test_independence_rejects_free_applied_claim_for_native_not_applicable_skill():
+    from forge.governance.runtime import SkillRun
+
+    records = {role: with_skills(work(role)) for role in ROLES}
+    native = SkillRun((), (), {"main.py": {"validate-at-the-boundary": "NOT_APPLICABLE"}}, (), ("validate-at-the-boundary",))
+    with pytest.raises(AgentIndependenceError, match="NOT_APPLICABLE"):
+        validate_independent_results(records, ROLES, native_skill_run=native)

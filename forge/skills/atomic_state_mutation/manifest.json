@@ -1,0 +1,7 @@
+{
+  "name": "atomic-state-mutation",
+  "version": "1.0",
+  "entrypoint": "contract.py",
+  "class_name": "AtomicStateMutationSkill",
+  "skill_document": "skills-gpt/atomic-state-mutation.md"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "tamper-evident-audit-chain",
+  "version": "1.0",
+  "entrypoint": "contract.py",
+  "class_name": "TamperEvidentAuditChainSkill",
+  "skill_document": "skills-gpt/tamper-evident-audit-chain.md"
+}

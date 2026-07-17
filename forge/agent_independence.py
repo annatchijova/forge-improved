@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from forge.agent_protocol import skills_catalog
+from forge.governance.runtime import SkillRun
 
 
 PROTOCOL_ONLY_KEYS = {"requested_role", "native_forge_role", "adi", "scope", "skills"}
@@ -67,7 +68,7 @@ def _validate_adi(agent: str, value: Any) -> None:
         raise AgentIndependenceError(f"{agent} A-D-I stages are incomplete by hypothesis: {incomplete}")
 
 
-def _validate_skills(agent: str, value: Any) -> None:
+def _validate_skills(agent: str, value: Any, native_skill_run: SkillRun | None = None) -> None:
     if not isinstance(value, list):
         raise AgentIndependenceError(f"{agent} skills ledger is not a list")
     expected = {name for name, _source, _text in skills_catalog()}
@@ -92,11 +93,23 @@ def _validate_skills(agent: str, value: Any) -> None:
     extra = sorted(set(actual) - expected)
     if missing or extra:
         raise AgentIndependenceError(f"{agent} skills catalog mismatch; missing={missing}, extra={extra}")
+    if native_skill_run is None:
+        return
+    executable = set(native_skill_run.executable_skills)
+    for name, item in actual.items():
+        if name not in executable or item.get("result") != "APPLIED":
+            continue
+        states = [by_skill.get(name) for by_skill in native_skill_run.applicability.values() if name in by_skill]
+        if states and all(state == "NOT_APPLICABLE" for state in states):
+            raise AgentIndependenceError(
+                f"{agent} claims executable skill {name} APPLIED, but native runtime found it NOT_APPLICABLE in every module"
+            )
 
 
 def validate_independent_results(
     results: dict[str, dict[str, Any]],
     required_agents: Iterable[str],
+    native_skill_run: SkillRun | None = None,
 ) -> dict[str, Any]:
     """Validate external agent results and return an audit-ready summary.
 
@@ -128,7 +141,7 @@ def validate_independent_results(
         if not _text_items(work.get("decision")):
             raise AgentIndependenceError(f"{agent} has no decision")
         _validate_adi(agent, work.get("adi"))
-        _validate_skills(agent, record.get("skills"))
+        _validate_skills(agent, record.get("skills"), native_skill_run)
         fingerprints[agent] = _fingerprint(work)
     duplicates: dict[str, list[str]] = {}
     for agent, digest in fingerprints.items():

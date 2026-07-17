@@ -162,9 +162,22 @@ FORGE's core owns discovery, read-only context, applicability recording, typed
 evidence, sealing, and reporting; a skill owns its domain-specific methodology.
 Domain classification is an evidence-backed hypothesis per module, not a
 repository-wide fact, and `UNDETERMINED` is retained when evidence cannot
-justify applicability. Only the `validate-at-the-boundary` skill is currently
-migrated as a complete reference contract; the remaining markdown skills are
-not yet executable plugins and must not be represented as active checks.
+justify applicability. `validate-at-the-boundary` remains the reference
+contract. On 2026-07-17, five Class-A structural obligations were migrated
+into executable plugins: `honest-degradation`, `deterministic-core`,
+`atomic-state-mutation`, `sql-aggregation-not-materialization`, and
+`tamper-evident-audit-chain`. Each has source-linked manifest provenance,
+conservative applicability, explicit FP guards and positive/negative corpus
+cases. Their findings use `PROTOCOL_GAP`, never `CONFIRMED BY INDUCTION`: a
+structural observation is not a runtime proof.
+
+The protocol ledger now receives the native `SkillRun`: executable statuses
+are `APPLIED`, `NOT_APPLICABLE`, `UNDETERMINED`, or `ERROR` with evidence for
+every applied claim. Markdown-only entries remain `LOADED_ONLY`. Process
+disciplines are intentionally `PROCESS_LEVEL`, not falsely represented as a
+per-module scan; their future contract will evaluate audit-run artifacts.
+The external-agent validator rejects an `APPLIED` executable claim that
+contradicts a native all-`NOT_APPLICABLE` result for the same scope.
 
 ## Runtime audit trail
 

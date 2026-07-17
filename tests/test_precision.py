@@ -6,11 +6,12 @@ import forge.precision as precision
 from forge.precision import _scores, run_precision
 
 
-def test_golden_corpus_declares_exact_findings_and_all_four_agents():
+def test_golden_corpus_declares_exact_findings_all_detector_agents_and_governance_skills():
     manifest = json.loads(open("tests/corpus/manifest.json", encoding="utf-8").read())
     assert manifest["precision_schema_version"] == "2.0"
     assert {case["agent"] for case in manifest["cases"]} == {
         "integrity_inspector", "security_auditor", "web_auditor", "bug_investigator",
+        "governance_skills",
     }
     assert all("expected_findings" in case for case in manifest["cases"])
     for case in manifest["cases"]:

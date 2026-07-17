@@ -1,0 +1,7 @@
+{
+  "name": "sql-aggregation-not-materialization",
+  "version": "1.0",
+  "entrypoint": "contract.py",
+  "class_name": "SqlAggregationNotMaterializationSkill",
+  "skill_document": "skills-gpt/sql-aggregation-not-materialization.md"
+}

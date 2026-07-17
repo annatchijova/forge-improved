@@ -1,0 +1,7 @@
+{
+  "name": "honest-degradation",
+  "version": "1.0",
+  "entrypoint": "contract.py",
+  "class_name": "HonestDegradationSkill",
+  "skill_document": "skills-gpt/honest-degradation.md"
+}

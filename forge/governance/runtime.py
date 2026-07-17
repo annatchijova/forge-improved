@@ -27,12 +27,14 @@ class SkillRun:
     hypotheses: tuple[ModuleDomainHypothesis, ...]
     applicability: dict[str, dict[str, str]]
     limitations: tuple[str, ...]
+    executable_skills: tuple[str, ...] = ()
     def to_dict(self):
         return {
             "domain_hypotheses": [{"module_path": h.module_path, "domains": h.domains, "confidence": {"numerator": h.confidence.numerator, "denominator": h.confidence.denominator}, "evidence": [e.__dict__ for e in h.evidence], "alternatives": h.alternatives} for h in self.hypotheses],
             "applicability": self.applicability,
             "findings": [f.__dict__ | {"evidence": [e.__dict__ for e in f.evidence]} for f in self.findings],
             "limitations": self.limitations,
+            "executable_skills": list(self.executable_skills),
         }
 
 def default_skills_root() -> Path:
@@ -82,6 +84,12 @@ def infer_domains(triage: TriageManifest) -> tuple[ModuleDomainHypothesis, ...]:
             domains.append("input_boundary"); evidence.append(Evidence("source_pattern", module.path, "input or parser boundary call"))
         if re.search(r"\b(?:hashlib|cryptography|hmac)\b", source):
             domains.append("cryptographic"); evidence.append(Evidence("source_pattern", module.path, "cryptographic library reference"))
+        if re.search(r"\b(?:json\.(?:dump|dumps|load|loads)|pickle|sqlite3|\.execute\s*\()", source):
+            domains.append("serialization_or_persistence"); evidence.append(Evidence("source_pattern", module.path, "serialization or persistence operation"))
+        if re.search(r"\b(?:ledger|audit(?:_log)?|append_only|prev_hash|entry_hash)\b", source, re.IGNORECASE):
+            domains.append("audit_or_ledger"); evidence.append(Evidence("source_pattern", module.path, "audit or ledger vocabulary"))
+        if re.search(r"\b(?:hashlib|canonical(?:_json|ize)?|seal(?:ed|ing)?|json\.dumps)\b", source, re.IGNORECASE):
+            domains.append("determinism_sensitive"); evidence.append(Evidence("source_pattern", module.path, "canonicalization, sealing, or hash operation"))
         unique=tuple(sorted(set(domains)))
         confidence=Fraction(min(len(evidence), 3), 3) if evidence else Fraction(0, 1)
         out.append(ModuleDomainHypothesis(module.path, unique, confidence, tuple(evidence), ("mixed_or_unknown",) if len(unique) != 1 else ()))
@@ -108,4 +116,4 @@ def run_skills(triage: TriageManifest, skills_root: str | Path | None = None) ->
                 # whole governance run for every other module and skill.
                 applicability[module.path][skill.contract.name]="ERROR"
                 limitations.append(f"Skill {skill.contract.name} failed on {module.path}: {exc}")
-    return SkillRun(tuple(findings), hypotheses, applicability, tuple(limitations))
+    return SkillRun(tuple(findings), hypotheses, applicability, tuple(limitations), tuple(skill.contract.name for skill in skills))

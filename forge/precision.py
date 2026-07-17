@@ -15,7 +15,7 @@ from forge.agents.integrity_inspector import inspect as inspect_integrity
 from forge.agents.security_auditor import audit as audit_security
 from forge.agents.web_auditor import audit as audit_web
 from forge.detector.stack import triage
-from forge.governance.runtime import infer_domains
+from forge.governance.runtime import infer_domains, run_skills
 from forge.hypotheses import generate_hypotheses
 from forge.verification import verify_hypotheses
 
@@ -61,6 +61,16 @@ def _findings(agent: str, root: Path) -> set[FindingIdentity]:
             if not separator or not line.isdecimal():
                 raise ValueError(f"bug-investigator finding has no source line: {source!r}")
             findings.add((_bug_investigator_family(finding.description), finding.module_path, int(line)))
+        return findings
+    if agent == "governance_skills":
+        result = run_skills(triage(root))
+        findings: set[FindingIdentity] = set()
+        for finding in result.findings:
+            source = next((item.source for item in finding.evidence if item.kind == "source"), "")
+            _path, separator, line = source.rpartition(":")
+            if not separator or not line.isdecimal():
+                raise ValueError(f"governance-skill finding has no source line: {source!r}")
+            findings.add((finding.agent, finding.module_path, int(line)))
         return findings
     raise ValueError(f"unsupported golden-corpus agent: {agent}")
 
