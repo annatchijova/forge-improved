@@ -24,6 +24,26 @@ hypotheses, or proving what was actually inspected.
 
 FORGE addresses that gap.
 
+## The problem FORGE solves
+
+Most repository reviews still begin with a prompt such as: “ChatGPT, find
+bugs,” or “Codex, audit this repository.” The result is usually a list.
+
+But a list rarely answers the questions a reviewer needs to trust it:
+
+- Which parts of the repository were inspected?
+- What remained outside the audit scope?
+- Which hypotheses were discarded, and why?
+- What evidence supports each finding?
+- What could not be determined?
+- Which agent performed each responsibility?
+- Can the audit be reproduced exactly?
+
+FORGE proposes a different answer. It is not a bug finder; it is a governed
+audit runtime. It makes scope, evidence, discarded hypotheses, limitations,
+role boundaries, and reproducible sealed artifacts part of the audit result
+rather than optional commentary around a list of findings.
+
 > FORGE behaves like a forensic engineering team.
 
 ```
