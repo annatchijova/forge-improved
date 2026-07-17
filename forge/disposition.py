@@ -29,10 +29,22 @@ class AuditDisposition:
         return asdict(self)
 
 
+def unattested_external_disposition(reasons: Iterable[str]) -> AuditDisposition:
+    """Return the shared abstention for preserved, unvouched external findings."""
+    return AuditDisposition(
+        "ABSTAIN_UNATTESTED_EXTERNAL",
+        "UNATTESTED_EXTERNAL_FINDINGS",
+        "External findings were preserved, but their analytical provenance was not attested by FORGE.",
+        "Review and explicitly operator-attest the external layer before relying on it as an audit result.",
+        tuple(reasons),
+    )
+
+
 def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
                           findings: Iterable[Any],
                           degraded_reasons: Iterable[str] = (),
-                          contradiction_reasons: Iterable[str] = ()) -> AuditDisposition:
+                          contradiction_reasons: Iterable[str] = (),
+                          unattested_external_reasons: Iterable[str] = ()) -> AuditDisposition:
     """Return a global status without changing or suppressing findings.
 
     Policy exclusions, intentionally unanalysed languages, and triage classes
@@ -42,6 +54,7 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
     """
     degraded = tuple(degraded_reasons)
     contradictions = tuple(contradiction_reasons)
+    unattested_external = tuple(unattested_external_reasons)
     skipped = coverage.skipped_reasons
     blocking = {
         key: tuple(value)
@@ -89,6 +102,8 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
             "Review the contradiction and obtain discriminating evidence.",
             contradictions,
         )
+    if unattested_external:
+        return unattested_external_disposition(unattested_external)
     if blocking:
         return AuditDisposition(
             "ABSTAIN_INSUFFICIENT_SCOPE",
@@ -153,4 +168,4 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
     )
 
 
-__all__ = ("AuditDisposition", "determine_disposition")
+__all__ = ("AuditDisposition", "determine_disposition", "unattested_external_disposition")

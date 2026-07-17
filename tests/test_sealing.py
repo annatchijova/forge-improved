@@ -1,5 +1,9 @@
 import copy
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 from forge.models import Evidence, Finding, VerificationManifest
 from forge.sealing import seal_manifest, verify_sealed, write_findings_jsonl
@@ -50,6 +54,63 @@ def test_optional_hmac_authentication_covers_the_complete_artifact(monkeypatch):
     verified = verify_sealed(sealed)
     assert verified["ok"] is False
     assert "authentication tag mismatch" in verified["issues"]
+
+
+def test_source_attestation_is_visible_without_turning_ephemeral_seals_into_false_failures(monkeypatch):
+    monkeypatch.delenv("FORGE_ATTESTATION_KEY", raising=False)
+    sealed = seal_manifest(_manifest())
+    verified = verify_sealed(sealed)
+    assert verified["ok"] is True
+    assert verified["attestation_status"] == "EPHEMERAL_UNVERIFIABLE"
+    assert verified["attestation_ok"] is None
+
+    absent = copy.deepcopy(sealed)
+    absent.pop("source_attestation")
+    absent.pop("source_attestation_mode")
+    absent_verified = verify_sealed(absent)
+    assert absent_verified["ok"] is True
+    assert absent_verified["attestation_status"] == "NOT_PRESENT"
+
+
+def test_persistent_source_attestation_verifies_cross_process_and_fails_when_tampered(monkeypatch):
+    key = "test-only-persistent-attestation-key"
+    monkeypatch.setenv("FORGE_ATTESTATION_KEY", key)
+    script = """\
+import json
+from forge.models import Evidence, Finding, VerificationManifest
+from forge.sealing import seal_manifest
+finding = Finding("INFERRED", "PLAUSIBLE HYPOTHESIS", "main.py", "finding", (Evidence("source", "main.py:1", "x"),), "reason")
+print(json.dumps(seal_manifest(VerificationManifest("1.0", "0.1.0", "1.0", ".", 0, (finding,), (), ()))))
+"""
+    environment = dict(os.environ)
+    environment["FORGE_ATTESTATION_KEY"] = key
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    sealed = json.loads(completed.stdout)
+    verified = verify_sealed(sealed)
+    assert verified["ok"] is True
+    assert verified["attestation_status"] == "VERIFIED"
+    assert verified["attestation_ok"] is True
+    assert seal_manifest(_manifest())["source_attestation"] == seal_manifest(_manifest())["source_attestation"]
+
+    monkeypatch.delenv("FORGE_ATTESTATION_KEY")
+    unavailable = verify_sealed(sealed)
+    assert unavailable["ok"] is True
+    assert unavailable["attestation_status"] == "KEY_UNAVAILABLE"
+    monkeypatch.setenv("FORGE_ATTESTATION_KEY", key)
+
+    tampered = copy.deepcopy(sealed)
+    tampered["source_attestation"] = "forged"
+    failed = verify_sealed(tampered)
+    assert failed["ok"] is False
+    assert failed["attestation_status"] == "FAILED"
+    assert "source attestation mismatch" in failed["issues"]
 
 
 def test_signed_artifact_fails_closed_when_authentication_key_is_unavailable(monkeypatch):

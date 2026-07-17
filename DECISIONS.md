@@ -349,7 +349,7 @@ claim must never be serialized as a positive or clean result. `ABSTAIN` is a
 first-class audit disposition, not an error path and not a synonym for “zero
 findings”.
 
-The disposition contract is implemented in `forge/disposition.py` and has five
+The disposition contract is implemented in `forge/disposition.py` and has six
 states:
 
 - `COMPLETE_NO_FINDINGS` — the declared source scope was verified and no
@@ -363,6 +363,8 @@ states:
   interpretation could not be resolved;
 - `ABSTAIN_DEGRADED` — a specialized agent was unavailable, while the
   remaining agents' evidence was preserved.
+- `ABSTAIN_UNATTESTED_EXTERNAL` — external findings were preserved, but FORGE
+  cannot attest their analytical provenance.
 
 This is deliberately non-destructive. Findings, discarded hypotheses, skipped
 paths, contradictions, and limitations remain available for review even when
@@ -377,6 +379,26 @@ the global disposition abstains. In particular:
 4. A failed Security or Integrity agent produces `ABSTAIN_DEGRADED`, never a
    zero-finding success.
 5. Every abstention carries an evidence boundary and a required next action.
+
+## H1 provenance closure (2026-07-18)
+
+H1 showed that a canonical multi-agent seal could contain raw external
+`findings.json` content while a consumer saw only a successful hash-chain
+verification. The chain proved post-assembly integrity, but the presentation
+could be read as if it also proved that the external content came from a real
+FORGE audit.
+
+The fix separates the two claims. `FORGE_ATTESTATION_KEY` provides a persistent
+runtime assembly attestation, surfaced by `verify_sealed()` as
+`attestation_status`; the process-local fallback is explicitly
+`EPHEMERAL_UNVERIFIABLE`. The finalizer never auto-attests external findings.
+It labels them `UNATTESTED`, preserves them for review, and returns
+`ABSTAIN_UNATTESTED_EXTERNAL`. A human operator may explicitly attest an
+external findings envelope with the configured key, changing that layer to
+`OPERATOR_ATTESTED`; this is a deliberate act of review, not evidence that
+Codex itself ran a native audit. `NOT_PRESENT`, `KEY_UNAVAILABLE`, and
+`EPHEMERAL_UNVERIFIABLE` are visible evidence limits and do not masquerade as a
+valid attestation; only `FAILED` makes the seal itself fail verification.
 
 The same boundary is reflected in the self-assessment metrics. A qualitative
 confidence boundary is reported instead of an invented numeric score. This

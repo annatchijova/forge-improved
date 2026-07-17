@@ -146,6 +146,9 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
     disposition_status = metrics.get("audit_disposition", {}).get("status") or ("VERIFIED" if verification.get("ok") else "FAILED")
     status_tone = _status_tone(disposition_status)
     root = str(manifest.get("root", "."))
+    attestation_text = "Assembly attestation: " + str(verification.get("attestation_status", "NOT_PRESENT"))
+    external_provenance = manifest.get("analytic_provenance", {}).get("codex_external")
+    provenance_text = "External analytical provenance: " + str(external_provenance) if external_provenance else ""
     findings_html = "".join(_finding_html(finding, mode == "extended", root, count, locations) for finding, count, locations in display_groups) or "<p>No surviving findings in this artifact.</p>" if verification["ok"] else "<p>Finding records are withheld because this artifact failed verification. Inspect the raw artifact only in a controlled forensic workflow.</p>"
 
     navigation = ["overview", "seal", "findings", "narrated-summary", "limitations"]
@@ -157,7 +160,7 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
 
     sections = [
         _overview_html(manifest, _sidecar(source, "coverage-report.json"), display_findings, display_groups, verification["ok"]),
-        "<section id='seal'><h2>Seal status</h2><p class='status-" + status_tone + "'>" + html.escape(str(disposition_status)) + " · " + html.escape(seal_text) + "</p></section>",
+        "<section id='seal'><h2>Seal status</h2><p class='status-" + status_tone + "'>" + html.escape(str(disposition_status)) + " · " + html.escape(seal_text) + "<br>" + html.escape(attestation_text) + ("<br>" + html.escape(provenance_text) if provenance_text else "") + "</p></section>",
         "<section id='findings'><h2>Findings</h2>" + findings_html + "</section>",
         "<section id='narrated-summary' class='narrated-summary'><p class='prose-label'>💬 Narrated summary (not verified)</p><h2>Reader-oriented summary</h2><p>" + html.escape(narration.narrative) + "</p><p>This deterministic prose is derived after verification from the sealed finding set only. It is not evidence, is not sealed, and cannot change a finding, severity, disposition, or audit decision.</p>" + ("<ul>" + "".join("<li>" + html.escape(issue) + "</li>" for issue in narration.verification_issues) + "</ul>" if narration.verification_issues else "") + "</section>",
         "<section id='limitations'><h2>Limitations</h2><ul>" + "".join(f"<li>{html.escape(str(item))}</li>" for item in sealed.get("limitations", [])) + "</ul></section>",

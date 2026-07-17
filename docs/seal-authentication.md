@@ -54,3 +54,27 @@ For a third-party, public-verification workflow, use a signature scheme with a
 separate private signing key and public verification key. The current HMAC mode
 is intentionally a pragmatic local/MCP protection against complete artifact
 replacement.
+
+## Runtime assembly attestation
+
+`FORGE_ATTESTATION_KEY` is distinct from `FORGE_SEAL_HMAC_KEY`. It creates a
+`source_attestation` over the assembled sealed artifact and lets a later process
+with the same key report `attestation_status: VERIFIED` from `verify_sealed()`.
+The key is never serialized.
+
+```bash
+export FORGE_ATTESTATION_KEY="$(openssl rand -hex 32)"
+```
+
+Without that setting FORGE uses one process-local fallback key and reports
+`EPHEMERAL_UNVERIFIABLE`, not a false cross-process verification. A missing
+persistent key is reported as `KEY_UNAVAILABLE`; a present but invalid tag is
+`FAILED` and makes seal verification fail.
+
+Assembly attestation is not analytical provenance. In a canonical multi-agent
+artifact, native findings are labeled `FORGE_NATIVE`; Codex/external findings
+are `UNATTESTED` unless a human operator explicitly signs the external findings
+envelope with `FORGE_ATTESTATION_KEY`. FORGE never auto-attests external
+content. An `UNATTESTED` external layer yields
+`ABSTAIN_UNATTESTED_EXTERNAL` even when the canonical artifact's own assembly
+attestation verifies.

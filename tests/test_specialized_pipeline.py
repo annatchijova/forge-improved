@@ -154,6 +154,22 @@ def test_undetermined_governance_applicability_does_not_abstain_even_at_high_pro
     assert result.status == "COMPLETE_WITHIN_DECLARED_SCOPE"
     assert "skill_applicability: 999 undetermined result(s)" in result.evidence_boundary
 
+
+def test_unattested_external_findings_have_a_distinct_abstention_disposition():
+    class Coverage:
+        skipped_reasons = {}
+    class Triage:
+        modules = []
+    class Governance:
+        applicability = {}
+    result = determine_disposition(
+        coverage=Coverage(), triage=Triage(), governance=Governance(), findings=[],
+        unattested_external_reasons=("codex_external analytical provenance is UNATTESTED",),
+    )
+    assert result.status == "ABSTAIN_UNATTESTED_EXTERNAL"
+    assert result.reason_code == "UNATTESTED_EXTERNAL_FINDINGS"
+    assert result.evidence_boundary == ("codex_external analytical provenance is UNATTESTED",)
+
 def test_audit_seals_repository_snapshot_and_provenance(tmp_path):
     put(tmp_path, "main.py", "def run(value):\n    return eval(value)\n")
     run_specialized_pipeline(tmp_path, tmp_path / "out")

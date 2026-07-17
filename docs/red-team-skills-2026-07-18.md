@@ -6,8 +6,8 @@ Fecha: 2026-07-18.
 
 | ID | Resultado | Nivel | Acción |
 | --- | --- | --- | --- |
-| H1 | Confirmado por inducción | CONFIRMED BY INDUCTION | Recomendar cierre de puerta lateral; no parchear durante el audit. |
-| H1.b | Confirmado | CODE FACT | Exponer atestación al verificar sello. |
+| H1 | Confirmado por inducción y remediado | CONFIRMED BY INDUCTION | Capa externa `UNATTESTED` con abstención; ensamblado atestado por separado. |
+| H1.b | Confirmado y remediado | CODE FACT | `verify_sealed()` expone el estado de atestación. |
 | H2 | Falsificado para fixture propuesto | FALSIFIED | Regresión unitaria para callers mixtos. |
 | H3 | Confirmado y remediado | CODE FACT | La identidad conserva la columna AST del sink; regresión para dos sinks en una línea. |
 | H4 | Confirmado y remediado | CODE FACT | ERROR conserva la limitación y fuerza `ABSTAIN_DEGRADED` con causa específica. |
@@ -24,11 +24,15 @@ Fecha: 2026-07-18.
 
 **Inducción.** Un run temporal con dos work products independientes válidos, el sello nativo atestado de `forge-results/results/phylo-codex` y un finding externo `H1` fabricado devolvió `CANONICAL_FINDINGS_SEALED`. El finding quedó en `canonical-findings.json`; el sello canónico devolvió `ok=True`, `linkage_ok=True`, `integrity_ok=True` y no tenía `source_attestation`.
 
-**Resultado.** `CONFIRMED BY INDUCTION`: se puede sellar una cadena canónica válida que contiene contenido externo no atestado. Recomendación, no patch de este audit: exigir/verificar procedencia externa o marcarla como no atestada, adjuntar atestación al manifiesto canónico y devolver su estado desde `verify_sealed()`.
+**Resultado.** `CONFIRMED BY INDUCTION`: se podía sellar una cadena canónica válida que contenía contenido externo no atestado.
+
+**Remediación.** El finalizador nunca auto-atesta contenido externo. Cada record Codex queda como `analytic_provenance: UNATTESTED` salvo que un operador humano lo ateste explícitamente con `FORGE_ATTESTATION_KEY`; la presencia de records no atestados devuelve `ABSTAIN_UNATTESTED_EXTERNAL`. El sello canónico sí recibe una atestación de ensamblado separada: prueba qué artefacto ensambló FORGE, no que el finding externo provino de un audit nativo. La regresión `test_finalize_multi_agent_run_labels_fabricated_external_findings_and_abstains` mantiene ambas afirmaciones separadas.
 
 ## H1.b — lectura de atestación
 
-Sobre el sello nativo atestado de Phylo, se eliminaron y sustituyeron en memoria los valores de `manifest.source_attestation`. En ambos casos `verify_sealed()` devolvió `ok=True` sin issues. Es una `CODE FACT`: la atestación actual es compuerta de re-sellado en `Runtime.seal_results`, no garantía observable por todo consumidor de `verify_sealed`.
+En el commit auditado, sobre el sello nativo atestado de Phylo se eliminaron y sustituyeron en memoria los valores de `manifest.source_attestation`. En ambos casos `verify_sealed()` devolvió `ok=True` sin issues. Fue una `CODE FACT`: la atestación era una compuerta de re-sellado en `Runtime.seal_results`, no una garantía observable por todo consumidor de `verify_sealed`.
+
+**Remediación.** Los sellos nuevos incluyen `source_attestation` y `source_attestation_mode` de ensamblado; `verify_sealed()` devuelve `attestation_status` y `attestation_ok` junto con la integridad del chain. `VERIFIED` requiere la misma `FORGE_ATTESTATION_KEY` persistente entre procesos. `NOT_PRESENT`, `KEY_UNAVAILABLE` y `EPHEMERAL_UNVERIFIABLE` siguen siendo límites explícitos sin convertir un camino de abstención en un falso fallo; un tag presente pero inválido da `FAILED` y hace fallar la verificación. Las regresiones de `tests/test_sealing.py` cubren esos estados y la verificación cross-process.
 
 ## H2 — callers mixtos de helper privado
 

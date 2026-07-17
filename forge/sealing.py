@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from forge.canonical import CANONICALIZE_VERSION, canonical_json
+from forge.attestation import attest_manifest, attestation_mode, verify_manifest_attestation
 from forge.io import load_json
 from forge.models import VerificationManifest
 
@@ -74,6 +75,10 @@ def seal_findings(findings: list[dict[str, Any]], metadata: dict[str, Any] | Non
             "A full-access attacker can forge a consistent replacement chain from scratch.",
         ],
     }
+    # This attests the assembly of this exact sealed artifact. It does not
+    # attest the analytical provenance of every source layer inside it.
+    sealed["source_attestation_mode"] = attestation_mode()
+    sealed["source_attestation"] = attest_manifest(sealed)
     key = _configured_authentication_key()
     if key is not None:
         sealed["authentication"] = {"scheme": "HMAC-SHA256", "tag": _authentication_tag(sealed, key)}
@@ -87,6 +92,8 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
     integrity_ok = True
     authentication_ok: bool | None = None
     authentication_status = "NOT_CONFIGURED"
+    attestation_ok: bool | None = None
+    attestation_status = "NOT_PRESENT"
     issues: list[str] = []
     chain = data.get("chain", [])
     # This is informational only: an attacker can edit it after truncating.
@@ -132,12 +139,33 @@ def verify_sealed(data: dict[str, Any]) -> dict[str, Any]:
                 authentication_status = "VERIFIED" if authentication_ok else "FAILED"
                 if not authentication_ok:
                     issues.append("authentication tag mismatch")
+    source_attestation = data.get("source_attestation")
+    source_mode = data.get("source_attestation_mode")
+    if source_attestation is not None:
+        if source_mode == "EPHEMERAL":
+            attestation_status = "EPHEMERAL_UNVERIFIABLE"
+        elif source_mode == "PERSISTENT":
+            if attestation_mode() != "PERSISTENT":
+                attestation_status = "KEY_UNAVAILABLE"
+            elif verify_manifest_attestation(data):
+                attestation_ok = True
+                attestation_status = "VERIFIED"
+            else:
+                attestation_ok = False
+                attestation_status = "FAILED"
+                issues.append("source attestation mismatch")
+        else:
+            attestation_ok = False
+            attestation_status = "FAILED"
+            issues.append("unsupported source attestation mode")
     return {
-        "ok": linkage_ok and integrity_ok and authentication_ok is not False,
+        "ok": linkage_ok and integrity_ok and authentication_ok is not False and attestation_ok is not False,
         "linkage_ok": linkage_ok,
         "integrity_ok": integrity_ok,
         "authentication_ok": authentication_ok,
         "authentication_status": authentication_status,
+        "attestation_ok": attestation_ok,
+        "attestation_status": attestation_status,
         "issues": issues,
     }
 

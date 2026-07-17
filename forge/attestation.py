@@ -3,12 +3,26 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 import secrets
 from typing import Any
 
 from forge.canonical import canonical_json
 
-_KEY = secrets.token_bytes(32)
+_EPHEMERAL_KEY = secrets.token_bytes(32)
+
+
+def _resolve_key() -> tuple[bytes, str]:
+    """Return the configured cross-process key or this process's fallback key."""
+    configured = os.environ.get("FORGE_ATTESTATION_KEY")
+    if configured:
+        return configured.encode("utf-8"), "PERSISTENT"
+    return _EPHEMERAL_KEY, "EPHEMERAL"
+
+
+def attestation_mode() -> str:
+    """Expose whether an attestation can be verified outside this process."""
+    return _resolve_key()[1]
 
 
 def _payload(manifest: dict[str, Any]) -> bytes:
@@ -19,7 +33,8 @@ def _payload(manifest: dict[str, Any]) -> bytes:
 
 def attest_manifest(manifest: dict[str, Any]) -> str:
     """Create an in-process token proving Runtime generated this manifest."""
-    return hmac.new(_KEY, _payload(manifest), hashlib.sha256).hexdigest()
+    key, _ = _resolve_key()
+    return hmac.new(key, _payload(manifest), hashlib.sha256).hexdigest()
 
 
 def verify_manifest_attestation(manifest: dict[str, Any]) -> bool:
@@ -28,4 +43,3 @@ def verify_manifest_attestation(manifest: dict[str, Any]) -> bool:
         return False
     expected = attest_manifest(manifest)
     return hmac.compare_digest(token, expected)
-

@@ -1,6 +1,6 @@
 import json
 from forge.models import Evidence, Finding, VerificationManifest
-from forge.sealing import write_sealed_manifest
+from forge.sealing import seal_findings, write_sealed_manifest
 from forge.tiered_report import render_tiered_report, rendered_finding_bytes
 
 def test_all_tiers_preserve_identical_sealed_findings_and_outcomes(tmp_path):
@@ -79,6 +79,19 @@ def test_tiered_report_identifies_an_authenticated_chain(tmp_path, monkeypatch):
     sealed = tmp_path / "sealed.json"; write_sealed_manifest(manifest, sealed)
     report = render_tiered_report(sealed, "summary", tmp_path / "summary.html").read_text()
     assert "Authenticated chain verified" in report
+
+
+def test_tiered_report_separates_assembly_attestation_from_external_provenance(tmp_path, monkeypatch):
+    monkeypatch.setenv("FORGE_ATTESTATION_KEY", "test-only-persistent-attestation-key")
+    sealed = seal_findings(
+        [{"record_id": "codex_external:H1", "analytic_provenance": "UNATTESTED", "finding": {"statement": "external"}}],
+        {"analytic_provenance": {"codex_external": "UNATTESTED"}},
+    )
+    source = tmp_path / "sealed.json"
+    source.write_text(json.dumps(sealed))
+    report = render_tiered_report(source, "summary", tmp_path / "summary.html").read_text()
+    assert "Assembly attestation: VERIFIED" in report
+    assert "External analytical provenance: UNATTESTED" in report
 
 def test_invalid_finding_outcome_is_rejected():
     import pytest

@@ -231,11 +231,16 @@ audit disposition is deterministic and separate from the findings themselves:
 | `ABSTAIN_INSUFFICIENT_SCOPE` | Source files were skipped, unreadable, syntactically invalid, outside scope, or in an unsupported language | Complete the scope and rerun |
 | `ABSTAIN_UNDETERMINED` | Independent evidence paths contradict each other | Resolve the contradiction and rerun |
 | `ABSTAIN_DEGRADED` | A specialized agent was unavailable but partial evidence was preserved | Restore the agent and rerun |
+| `ABSTAIN_UNATTESTED_EXTERNAL` | External findings were preserved but FORGE cannot attest their analytical provenance | Review and explicitly operator-attest the external layer before relying on it as an audit result |
 
 `ABSTAIN` does not erase findings. It says that FORGE refuses to generalize
 from the inspected portion to the repository as a whole. A sealed report
 proves artifact integrity; it does not prove complete coverage or analytical
-correctness. See [`docs/vigia-inspired-governance.md`](docs/vigia-inspired-governance.md)
+correctness. In a multi-agent closeout, assembly attestation and each layer's
+analytical provenance are separate claims: an attested canonical artifact can
+still contain an explicitly `UNATTESTED` external layer and must abstain. See
+[`docs/seal-authentication.md`](docs/seal-authentication.md) and
+[`docs/vigia-inspired-governance.md`](docs/vigia-inspired-governance.md)
 for the design rationale and [`DECISIONS.md`](DECISIONS.md) for the contract.
 
 ---
