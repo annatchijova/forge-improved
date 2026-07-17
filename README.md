@@ -108,6 +108,37 @@ Full writeup and all three run artifacts (JSON + HTML) in
 
 ---
 
+## Real-world evidence: a finding is a starting point, not a verdict
+
+FORGE does not claim universal truth, nor does a sealed finding become a
+confirmed defect merely because it was emitted. Its job is to make the lead
+reproducible: preserve the exact source location, scope, mechanism, and limits
+so a reviewer can test what the detector could not decide.
+
+Two read-only audits of [VIGÍA](https://github.com/annatchijova/vigia-intent-analysis)
+show why that boundary is useful:
+
+- In the first run, a contextual FORGE false positive was not discarded as
+  noise. Reviewing its surrounding mechanism led to a separate, complex,
+  reachable defect. That defect was independently verified, fixed, committed,
+  and pushed in VIGÍA. FORGE's original signal remains a lead, not a
+  retroactively rewritten "true positive".
+- In the later breadth audit, the executable `honest-degradation` skill exposed
+  several silent-evidence-loss paths. One induced experiment demonstrated a
+  live decision flip: normalization silently erased a malformed artifact's
+  temporal assertion, turning a `SUSPICION` result into `NOISE` without a
+  coverage marker. Other candidates were classified honestly as false
+  positives, component-level gaps, or still-unresolved reachability questions.
+
+That is the intended workflow: deterministic detection narrows the search;
+human or agent adjudication traces callers and executes bounded experiments;
+only then are defects fixed in the target repository. Full provenance,
+including false positives and current limits, is in the
+[`VIGÍA breadth-audit record`](docs/vigia-honest-degradation-breadth-2026-07-17.md)
+and the [real-repository case studies](docs/real-repository-case-studies.md).
+
+---
+
 ## 30-second architecture
 
 ```

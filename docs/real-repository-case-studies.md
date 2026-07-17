@@ -56,10 +56,13 @@ preserved the initial evidence and did not silently rewrite its verdict.
 The subsequent read-only breadth audit of the executable
 `honest-degradation` skill is recorded in
 [`vigia-honest-degradation-breadth-2026-07-17.md`](vigia-honest-degradation-breadth-2026-07-17.md).
-It separates a corpus-backed false positive, a registry timeout represented as
-clean zero, a partial-attestation defect reached through a dead duplicate, and
-the live pattern that FORGE still missed. That document is deliberately more
-precise than a finding count.
+It is a second, distinct demonstration of the workflow. The audit contains
+false positives that strengthened FORGE's corpus, a registry timeout represented
+as clean zero, a partial-attestation defect first reached through a dead
+duplicate, and an induced live decision flip caused by silent normalization of
+CAIE-bound evidence. It also records the cases that remain only component-level
+or unresolved. That is deliberate: FORGE prepares a falsifiable investigation;
+it does not replace adjudication with a claim of universal truth.
 
 ## What these runs demonstrate
 
