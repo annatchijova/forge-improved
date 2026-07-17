@@ -586,7 +586,7 @@ class Runtime:
 
     def seal_results(self, verification_path: str | Path, destination: str | Path | None = None) -> Path:
         data = load_json(verification_path, f"verification manifest {verification_path}")
-        findings = tuple(Finding(item["category"], item["epistemic_level"], item["module_path"], item["description"], tuple(Evidence(e["kind"], e["source"], e["detail"], e.get("role", "primary")) for e in item["evidence"]), item["reasoning"], item.get("agent", "bug_investigator"), item.get("outcome", "OBSERVED"), item.get("severity", "MEDIUM"), tuple(item.get("provenance", ()))) for item in data.get("findings", []))
+        findings = tuple(Finding(item["category"], item["epistemic_level"], item["module_path"], item["description"], tuple(Evidence(e["kind"], e["source"], e["detail"], e.get("role", "primary")) for e in item["evidence"]), item["reasoning"], item.get("agent", "bug_investigator"), item.get("outcome", "OBSERVED"), item.get("severity", "MEDIUM"), tuple(item.get("provenance", ())), item.get("controllability", "UNDETERMINED"), item.get("exploitability", "NOT_ASSESSED"), tuple(item.get("occurrences", ()))) for item in data.get("findings", []))
         if not verify_manifest_attestation(data):
             raise ValueError("verification manifest lacks a valid FORGE source attestation")
         manifest = VerificationManifest(data["schema_version"], data["forge_version"], data["hypotheses_schema_version"], data["root"], data["generated_at_epoch"], findings, tuple(data.get("discarded", [])), tuple(data.get("ast_verified_families", [])), tuple(data.get("ast_unverified_families", [])), tuple(data.get("induction", [])), data.get("repository_snapshot_sha256"), data.get("source_attestation"))
