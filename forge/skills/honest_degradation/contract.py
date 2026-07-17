@@ -9,14 +9,14 @@ from forge.skills._common import call_name, live_python, parse, source_finding
 
 _VISIBILITY_TOKENS = (
     "abstain", "degraded", "discard", "dropped", "error", "failed", "failure",
-    "invalid", "limitation", "non_utf8", "skipped", "unanalyzed", "unanalysed",
+    "invalid", "limitation", "non_utf8", "skipped", "unanalyzed", "unanalysed", "unparsed",
     "unreadable", "warn", "warning",
 )
 _VISIBILITY_FUNCTIONS = (
     "abstain", "mark_degraded", "mark_unanalyzed", "mark_unanalysed",
     "record_drop", "record_error", "record_failure", "record_skip", "unanalyzed",
 )
-_ERROR_ACCUMULATORS = ("errors", "failures", "drops", "dropped", "discarded", "skipped", "limitations")
+_ERROR_ACCUMULATORS = ("errors", "failures", "drops", "dropped", "discarded", "skipped", "unparsed", "limitations")
 _STAGE_TOKENS = (
     "artifact", "bundle", "caie", "engine", "metadata", "profile", "result",
     "signal", "stage", "timeline",
@@ -86,6 +86,11 @@ def _has_visibility_action(body: list[ast.stmt]) -> bool:
                     return True
                 value = node.value
                 if value is not None and _contains_token(value, _VISIBILITY_TOKENS):
+                    return True
+            if isinstance(node, ast.AugAssign):
+                # A counter such as ``unparsed += 1`` is a structural F7
+                # marker: it makes partial analysis observable in the result.
+                if _contains_token(node.target, _VISIBILITY_TOKENS):
                     return True
             if isinstance(node, ast.Call):
                 name = call_name(node).lower()

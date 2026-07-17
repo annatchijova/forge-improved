@@ -13,6 +13,7 @@ regression test. It is not silently deleted from history.
 | FP-005 | Recall-gap consolidation | `{"password": "Enter your password"}` | A direct dict label is structurally indistinguishable from a passphrase under a credential-shaped key | No suppression rule: a label heuristic would hide real passphrases | `variant-credential-dict` remains a positive secret regression | Accepted limitation |
 | FP-006 | Command-injection canonical corpus | `subprocess.run(["convert", f"--name={name}"])` without `shell=True` | An argv element was confused with shell interpretation | Require a string command plus literal `shell=True`, or `os.system`/`os.popen` | `command_extended_benign` and revised command positive | Resolved |
 | FP-007 | VIGÍA breadth audit | `_to_signal_safe` returning `_unanalyzed_signal(...)` while recording `self._signal_drops` | The skill missed direct returned `*_unanalyzed_*` markers and `*_drops` ledgers | Recognize explicit unanalyzed return markers and drop ledgers as F7 visibility | `variant-honest-degradation-returned-unanalyzed` (`regression_of: B-089`) | Resolved |
+| FP-008 | VIGÍA breadth audit | Prefetch loop increments `unparsed` then returns `unparsed_files` | The skill did not recognize `AugAssign` output-visible parse counters as structural visibility | Recognize `unparsed += 1` and equivalent visible counters | `variant-honest-degradation-loop-unparsed-counter` | Resolved |
 
 ## Entry contract
 

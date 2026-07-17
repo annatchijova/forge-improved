@@ -109,10 +109,39 @@ artifact count/marker; it was not implemented during this FORGE audit.
 | `SiftOrchestrator._safe_engine` | Contextual FP | Later F7 handling materializes missing-engine state for input artifacts. |
 | `AdversarialNLP._export_pdf` | Contextual FP | Optional report export; it does not alter analysis or verdict. |
 
-Only the `_to_signal_safe` F7 false positive has been added to FORGE's
-precision corpus so far. The other contextual adjudications are retained here
-as evidence; they must receive focused regression fixtures before being claimed
-as corpus coverage.
+The `_to_signal_safe` F7 case and the Prefetch `unparsed_files` counter have
+been added to FORGE's precision corpus. The other contextual adjudications are
+retained here as evidence; they must receive focused regression fixtures before
+being claimed as corpus coverage.
+
+## Loop-`continue` cohort: scope-aware adjudication
+
+The 12 loop-drop candidates were reviewed by what happens to the discarded
+item after the handler, not by the presence of `continue` alone. Their current
+classification is deliberately split:
+
+| Bucket | Candidates | Status |
+|---|---|---|
+| Structural gap in the function | `forensic_adapter`, two disk-timeline paths, EVTX parser, three Volatility parsers, registry key parser | The item is omitted from a returned forensic collection without a count or marker. These are CODE FACT coverage gaps; their final VIGÍA severity still requires path-specific induction. |
+| Decision-adjacent structural gap | `vigia_scorer._vigia_score` CAIE artifact skip | A malformed artifact is skipped from live CAIE before fracture calculation. It is a serious candidate, but it is **not P1** until induction proves a sealed decision can change. |
+| FP corrected in FORGE | `PrefetchAnalyzer.analyze_directory` | The handler increments `unparsed`; the returned `PrefetchAnalysisResult` exposes `unparsed_files`. This is visible F7 degradation, not a silent drop. FP-008 adds an `AugAssign` counter regression. |
+| FP: outside the intra-function decision boundary | `paired_review._prior_trust_mean`, MCP `list_processes` | These are best-effort / terminal analysis outputs with no verdict authority. Their caller or user-facing boundary supplies the relevant context, which a local handler rule cannot infer. |
+
+This cohort does **not** justify a single “precision on VIGÍA” percentage yet:
+several items remain structural gaps whose behavioral consequence has not been
+induced, and terminal/caller-handled paths are a different category from a
+misread local handler. Future reporting will keep three counts separate:
+confirmed or structurally supported gaps, corpus-correctable false positives,
+and false positives caused by the declared intra-function scope boundary.
+
+The two terminal false positives do not justify an ad-hoc caller analysis.
+They are recorded as a contract limitation: the executable skill is direct AST
+only and does not resolve downstream callers, post-handler F7 materialization,
+or a function's verdict authority. Likewise, `_try_body_touches_stage` is not
+the appropriate refinement for this cohort: loop-drop findings take a separate
+branch, and adding a stage-name gate there would suppress evidence-producing
+parsers such as disk, EVTX, memory, and registry analysis. The safer improvement
+was the explicit local F7 counter recognition used by Prefetch.
 
 ## Next work, deliberately bounded
 

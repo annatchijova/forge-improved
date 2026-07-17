@@ -100,6 +100,20 @@ def build_signals(rows):
     assert _skill_findings(result, "honest-degradation") == []
 
     result = _run(tmp_path, """\
+def analyze_records(rows):
+    findings = []
+    unparsed = 0
+    for row in rows:
+        try:
+            findings.append(parse_record(row))
+        except ValueError:
+            unparsed += 1
+            continue
+    return {"findings": findings, "unparsed_files": unparsed}
+""")
+    assert _skill_findings(result, "honest-degradation") == []
+
+    result = _run(tmp_path, """\
 def build_signals(rows):
     signals = []
     errors = []
