@@ -149,6 +149,33 @@ concurrency, type, or resource-lifetime bugs were searched. The gate is at
 least 0.90 recall per represented family and zero benign-twin hits; see
 `docs/seeded-recall-corpus.md`.
 
+## Codex session record and recall interpretation (2026-07-18)
+
+The initial seeded recall result is intentionally classified as a **floor**,
+not as family-wide coverage. The positive fixtures were derived from the
+detector contracts and therefore exercise canonical shapes. A 1.0 result proves
+that those contractual shapes emit their expected exact identities; it does
+not prove that realistic variants in neglected repositories are recognized.
+The session record is preserved in `docs/codex-session-2026-07-18.md`.
+
+The next measurement layer is a variants corpus. Misses such as a tainted
+`open(user_path + suffix)`, a one-hop alias before `open`, a subscript target
+holding a credential, or a non-literal `eval` are recorded as recall gaps and
+backlog items. They must not be rewritten into canonical fixtures merely to
+retain a green gate. This distinction is the same epistemic discipline used
+for H1: a passing integrity check is not proof of analytical provenance, and a
+passing canonical recall case is not proof of broad bug-class coverage.
+
+Before variants, the out-of-scope safeguard must be checked at the rendered
+report boundary. A real report over an out-of-scope fixture may say
+`COMPLETE_NO_FINDINGS` only with the declared-scope qualifier; it must never
+say or imply “no bugs.” The runner's `coverage_statement` is an intermediate
+assertion, not a substitute for testing report language.
+
+This pause records Codex's role as implementer, experimenter, and recorder,
+not as an authority that can certify repository correctness. Every resulting
+claim remains tied to a fixture, detector output, disposition, and commit.
+
 Induction supports parser, eval/exec, subprocess, float-threshold and SQL
 injection harnesses
 inside a spawned, resource-limited worker. The worker blocks network, actual
