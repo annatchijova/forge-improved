@@ -76,7 +76,9 @@ def is_oversized_file(path: Path, limit: int = MAX_AUDIT_FILE_BYTES) -> bool:
     try:
         return path.stat().st_size > limit
     except OSError:
-        return True
+        # Accessibility is not a size classification.  Let the reader report
+        # the distinct ``unreadable_file`` boundary.
+        return False
 
 
 def is_binary_file(path: Path, sample_size: int = 8192) -> bool:
@@ -92,7 +94,9 @@ def is_binary_file(path: Path, sample_size: int = 8192) -> bool:
         with path.open("rb") as handle:
             sample = handle.read(sample_size)
     except OSError:
-        return True
+        # Accessibility is not a binary-content signal.  The later text read
+        # records this as ``unreadable_file`` rather than disguising it.
+        return False
     if not sample:
         return False
     return b"\x00" in sample

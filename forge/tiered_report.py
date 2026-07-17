@@ -97,7 +97,11 @@ def _overview_html(manifest: dict[str, Any], coverage: dict[str, Any] | None, fi
     else:
         counts = Counter(_severity(finding) for finding in findings)
         highest = next((severity for severity in SEVERITY_ORDER if counts[severity]), "NONE")
-        scope = f"{coverage.get('files_analyzed', 0)} analyzed / {coverage.get('files_discovered', 0)} discovered" if coverage else "Unavailable"
+        if coverage:
+            eligible = coverage.get("eligible_source_files", coverage.get("files_discovered", 0))
+            scope = f"{coverage.get('files_analyzed', 0)} analyzed / {eligible} eligible source"
+        else:
+            scope = "Unavailable"
         cards = [("Repository", str(manifest.get("root", "unknown"))), ("Generated", _generated_at(manifest.get("generated_at_epoch"))), ("Sealed records", str(len(findings))), ("Distinct review items", str(len(display_groups))), ("Highest severity", highest), ("Scope", scope)]
     return "<section id='overview' class='overview'><p class='section-kicker'>Review overview</p><h2>What this audit recorded</h2><div class='overview-grid'>" + "".join("<div class='overview-card'><span>" + html.escape(label) + "</span><strong>" + html.escape(value) + "</strong></div>" for label, value in cards) + "</div></section>"
 
@@ -147,9 +151,11 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
     disposition_status = metrics.get("audit_disposition", {}).get("status") or ("VERIFIED" if verification.get("ok") else "FAILED")
     disposition_reason = str(metrics.get("audit_disposition", {}).get("reason", ""))
     coverage = _sidecar(source, "coverage-report.json")
+    eligible_source = coverage.get("eligible_source_files", coverage.get("files_discovered", 0)) if coverage else 0
     source_scope = (
         f"Source coverage: {coverage.get('files_analyzed', 0)} analyzed / "
-        f"{coverage.get('files_discovered', 0)} discovered"
+        f"{eligible_source} eligible source; "
+        f"discovery accounting: {coverage.get('files_discovered', 0)} discovered"
         if coverage else "Source coverage: unavailable"
     )
     status_tone = _status_tone(disposition_status)

@@ -479,6 +479,17 @@ to binary scope because an arbitrary sample boundary split a valid character.
 Every exclusion remains visible with a cause that tells a reviewer whether to
 extend scope, repair access, or treat the file as genuine binary content.
 
+The coverage headline is bounded by `eligible_source_files`, not every
+filesystem object found below a root. `coverage_ratio` is analyzed built-in
+source types divided by eligible built-in source types. `discovery_ratio`
+retains analyzed/discovered arithmetic only as context; it may include
+intentionally excluded VCS objects, images, documentation, and unsupported
+languages and is never a source-coverage claim.
+
+An I/O failure is likewise never evidence of binary content or file size:
+binary and oversized predicates leave an inaccessible path for the reader to
+report as `unreadable_file`.
+
 ## Corvus drip-feed boundary (2026-07-17)
 
 The Corvus/CRONOS red team also demonstrated a drip-feed manipulation pattern:

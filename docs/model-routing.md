@@ -63,7 +63,7 @@ run artifacts:
 ```text
 run: <run id>
 repository: <name>
-files/modules: <analyzed>/<discovered>
+source coverage: <analyzed>/<eligible source>; discovery accounting: <analyzed>/<discovered>
 credits_before: <balance>
 credits_after: <balance>
 credits_consumed: <difference>

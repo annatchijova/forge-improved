@@ -54,6 +54,7 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         "non_python_not_analyzed": [],
     }
     analyzed = 0
+    eligible_source_files = 0
     language_coverage: dict[str, dict[str, int]] = {}
     language_names = {".py": "Python", ".js": "JavaScript/TypeScript", ".jsx": "JavaScript/TypeScript", ".ts": "JavaScript/TypeScript", ".tsx": "JavaScript/TypeScript"}
     def account(path: Path, state: str) -> None:
@@ -66,6 +67,10 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         if reason:
             skipped[reason].append(rel)
             continue
+        if path.suffix.lower() in language_names:
+            # Semantic coverage excludes VCS objects, images, prose, and
+            # unsupported languages merely because discovery can enumerate them.
+            eligible_source_files += 1
         try:
             source = path.read_text(encoding="utf-8")
         except OSError:
@@ -80,7 +85,17 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         except SyntaxError: skipped["syntax_error"].append(rel); account(path, "abstained"); continue
         analyzed += 1; account(path, "analyzed")
     compact = {key: tuple(sorted(value)) for key, value in skipped.items() if value}
-    return CoverageReport(len(discovered), analyzed, sum(map(len, compact.values())), compact, tuple(families), Fraction(analyzed, len(discovered) or 1), dict(sorted(language_coverage.items())))
+    return CoverageReport(
+        files_discovered=len(discovered),
+        files_analyzed=analyzed,
+        eligible_source_files=eligible_source_files,
+        files_skipped=sum(map(len, compact.values())),
+        skipped_reasons=compact,
+        ast_verified_families=tuple(families),
+        coverage_ratio=Fraction(analyzed, eligible_source_files or 1),
+        discovery_ratio=Fraction(analyzed, len(discovered) or 1),
+        language_coverage=dict(sorted(language_coverage.items())),
+    )
 
 def _agent_finding(agent: str, item) -> Finding:
     detail = item.description
@@ -394,7 +409,17 @@ class Runtime:
         self._phase_end(trace, cronos, "canonicalization", canonical_started)
         verification = VerificationManifest("2.0", "0.1.0", bug.verification.hypotheses_schema_version, str(root), int(time.time()), tuple(findings), bug.verification.discarded, bug.verification.ast_verified_families, bug.verification.ast_unverified_families, bug.verification.induction, repository_snapshot_sha256)
         verification = replace(verification, source_attestation=attest_manifest(verification.to_dict()))
-        coverage = CoverageReport(coverage.files_discovered, coverage.files_analyzed, coverage.files_skipped, coverage.skipped_reasons, verification.ast_verified_families, coverage.coverage_ratio, coverage.language_coverage)
+        coverage = CoverageReport(
+            files_discovered=coverage.files_discovered,
+            files_analyzed=coverage.files_analyzed,
+            eligible_source_files=coverage.eligible_source_files,
+            files_skipped=coverage.files_skipped,
+            skipped_reasons=coverage.skipped_reasons,
+            ast_verified_families=verification.ast_verified_families,
+            coverage_ratio=coverage.coverage_ratio,
+            discovery_ratio=coverage.discovery_ratio,
+            language_coverage=coverage.language_coverage,
+        )
         triage_path, hypotheses_path = out / "triage-manifest.json", out / "hypotheses-manifest.json"
         verification_path, sealed_path, coverage_path = out / "verification-manifest.json", out / "verification-manifest.sealed.json", out / "coverage-report.json"
         skills_path, metrics_path, report_path = out / "skills-runtime.json", out / "metrics.json", out / "forge-report.html"

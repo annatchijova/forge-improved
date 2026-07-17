@@ -1,5 +1,6 @@
 import json
 from fractions import Fraction
+from pathlib import Path
 from forge import Runtime
 from forge.detector.stack import is_binary_file
 from forge.orchestrator import run_specialized_pipeline
@@ -23,7 +24,7 @@ def test_specialized_pipeline_merges_seals_and_attributes_all_agents(tmp_path):
     assert json.loads((tmp_path / "out/verification-manifest.sealed.json").read_text())
     report = (tmp_path / "out/forge-report.html").read_text()
     assert "Coverage" in report and "security_auditor" in report and "integrity_inspector" in report
-    assert result["coverage"]["coverage_ratio"] == {"numerator": 1, "denominator": 1}
+    assert result["coverage"]["coverage_ratio"] == {"numerator": 4, "denominator": 4}
     assert (tmp_path / "out/skills-runtime.json").is_file()
 
 def test_coverage_surfaces_policy_exclusions(tmp_path):
@@ -67,6 +68,34 @@ def test_binary_and_non_utf8_boundaries_remain_distinct(tmp_path):
     assert "binary.py" in coverage["skipped_reasons"]["binary_file"]
     assert "legacy.py" in coverage["skipped_reasons"]["non_utf8_text"]
     assert coverage["files_analyzed"] == 1
+
+
+def test_binary_predicate_does_not_relabel_an_io_failure(monkeypatch, tmp_path):
+    path = tmp_path / "unreadable.py"
+    path.write_text("value = 1\n", encoding="utf-8")
+
+    def inaccessible(*_args, **_kwargs):
+        raise OSError("simulated permission failure")
+
+    monkeypatch.setattr(Path, "open", inaccessible)
+    assert is_binary_file(path) is False
+
+
+def test_source_coverage_excludes_non_source_discovery_noise(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "main.py").write_text("value = 1\n", encoding="utf-8")
+    (repo / "broken.py").write_text("def broken(:\n", encoding="utf-8")
+    (repo / "README.md").write_text("documentation\n", encoding="utf-8")
+    (repo / "image.bin").write_bytes(b"\x00binary")
+    (repo / ".git").mkdir()
+    (repo / ".git" / "object").write_bytes(b"metadata")
+
+    coverage = Runtime().audit(repo, tmp_path / "out").coverage
+    assert coverage["files_discovered"] == 5
+    assert coverage["eligible_source_files"] == 2
+    assert coverage["coverage_ratio"] == {"numerator": 1, "denominator": 2}
+    assert coverage["discovery_ratio"] == {"numerator": 1, "denominator": 5}
 
 def test_coverage_counts_syntax_errors(tmp_path):
     put(tmp_path, "main.py", "x = 1\n")

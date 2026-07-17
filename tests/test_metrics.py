@@ -25,8 +25,10 @@ def test_metrics_are_layered_and_mark_uncollected_values_honestly(tmp_path):
 
     assert metrics["repository"]["files_discovered"] == 3
     assert metrics["repository"]["files_by_language"]["Python"] == 2
-    assert metrics["scope"]["coverage"] == {"numerator": 2, "denominator": 3}
-    assert metrics["quality"]["repository_coverage"] == {"covered": 2, "total": 3}
+    assert metrics["scope"]["coverage"] == {"numerator": 2, "denominator": 2}
+    assert metrics["scope"]["discovery_accounting"] == {"numerator": 2, "denominator": 3}
+    assert metrics["quality"]["repository_coverage"] == {"covered": 2, "total": 2}
+    assert metrics["quality"]["discovery_accounting"] == {"covered": 2, "total": 3}
     assert metrics["reproducibility"]["seed_used"] is None
     assert metrics["audit_trail"]["runtime_events"] > 0
     assert metrics["honest_degradation"]["limitations"]

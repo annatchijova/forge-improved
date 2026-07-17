@@ -130,10 +130,12 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
     }
     scope = {
         "files_analyzed": coverage.files_analyzed,
+        "eligible_source_files": coverage.eligible_source_files,
         "files_skipped": coverage.files_skipped,
         "modules_excluded": len(triage.modules) - analyzed_modules,
         "out_of_scope_modules": [item.path for item in triage.modules if item.module_class.value != ModuleClass.CONNECTED_ALIVE.value],
         "coverage": coverage.to_dict()["coverage_ratio"],
+        "discovery_accounting": coverage.to_dict()["discovery_ratio"],
         "lines_analyzed": sum(totals[index][0] for index, path in enumerate(files) if path.suffix.lower() == ".py" and str(path.relative_to(root)) not in skipped),
         "functions_analyzed": sum(structure[0] for path, structure in python_entries if str(path.relative_to(root)) not in skipped),
         "asts_built": coverage.files_analyzed,
@@ -164,7 +166,7 @@ def collect_metrics(*, root: Path, discovered: list[Path], triage: Any, coverage
     reproducibility = {"runtime_deterministic": None, "seed_used": None, "environment": {"python": sys.version.split()[0], "os": platform.platform()}, "forge_version": "0.1.0", "runtime_fingerprint": RUNTIME_FINGERPRINT, "runtime_process_imported_at_epoch": PROCESS_IMPORTED_AT_EPOCH, "skill_versions": {item["name"]: item["version"] for item in skills}, "schema_versions": {"triage": triage.schema_version}, "repository_snapshot_sha256": repository_snapshot_sha256, "artifact_hashes": None, "seal_verified": None}
     finding_metrics["finding_digest"] = finding_digest
     executable_count = len(skills)
-    quality = {"repository_coverage": _ratio(coverage.files_analyzed, coverage.files_discovered), "module_coverage": _ratio(analyzed_modules, len(triage.modules)), "contract_coverage": _ratio(applicability["APPLICABLE"], sum(applicability.values()) or 1), "contract_coverage_note": f"{executable_count} executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.", "evidence_completeness": None, "evidence_completeness_note": "Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.", "verification_coverage": None, "verification_coverage_note": "Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons."}
+    quality = {"repository_coverage": _ratio(coverage.files_analyzed, coverage.eligible_source_files), "discovery_accounting": _ratio(coverage.files_analyzed, coverage.files_discovered), "module_coverage": _ratio(analyzed_modules, len(triage.modules)), "contract_coverage": _ratio(applicability["APPLICABLE"], sum(applicability.values()) or 1), "contract_coverage_note": f"{executable_count} executable skill(s) loaded; this ratio measures applicability observations for executable skills only, not the documented skills catalog.", "evidence_completeness": None, "evidence_completeness_note": "Requires an explicit obligation ledger mapping each executed contract obligation to satisfied or missing Evidence items.", "verification_coverage": None, "verification_coverage_note": "Requires a count of planned checks versus checks actually executed, including skipped checks and their reasons."}
     degraded_reasons = tuple(degraded_reasons)
     contradiction_reasons = tuple(item.description for item in contradiction_records)
     disposition = determine_disposition(coverage=coverage, triage=triage, governance=governance, findings=findings, degraded_reasons=degraded_reasons, contradiction_reasons=contradiction_reasons)

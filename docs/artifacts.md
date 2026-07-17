@@ -43,7 +43,9 @@ Quality Metrics table — not a rounded PR-deck summary:
 
 ```
 files_discovered ................. every file under the audited root
-files_analyzed .................... .py files that parsed cleanly
+files_analyzed .................... eligible source files reached by a built-in analyzer
+eligible_source_files ............ built-in source types after policy/binary/size
+                                     exclusions; semantic coverage denominator
 files_skipped ...................... files_discovered - files_analyzed
 skipped_reasons
   excluded_by_policy ............... policy directory or ignored file name
@@ -55,7 +57,8 @@ skipped_reasons
   syntax_error ....................... .py file that failed ast.parse
   non_python_not_analyzed ........... readable, not excluded, not .py
 
-coverage_ratio ..................... files_analyzed / files_discovered
+coverage_ratio ..................... files_analyzed / eligible_source_files
+discovery_ratio .................... files_analyzed / files_discovered
 
 audited_modules .................... modules read for hypothesis generation
 findings (surviving) ............... entries in the sealed chain
@@ -65,6 +68,11 @@ out of scope .......................... not CONNECTED_ALIVE this run
 
 chain_integrity ...................... OK / BROKEN (+ issues)
 ```
+
+`coverage_ratio` is the reader-facing source-coverage claim. `discovery_ratio`
+is filesystem-accounting context only: it includes deliberately excluded VCS
+objects, images, prose, and unsupported languages, so it is not semantic source
+coverage.
 
 Every discovered file lands in exactly one bucket — `files_analyzed` or one
 `skipped_reasons` entry — never both, never neither. That arithmetic

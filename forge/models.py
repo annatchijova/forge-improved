@@ -93,15 +93,21 @@ class EvaluationContext:
 class CoverageReport:
     files_discovered: int
     files_analyzed: int
+    eligible_source_files: int
     files_skipped: int
     skipped_reasons: dict[str, tuple[str, ...]]
     ast_verified_families: tuple[str, ...] = ()
     coverage_ratio: Fraction = field(default_factory=lambda: Fraction(0, 1))
+    discovery_ratio: Fraction = field(default_factory=lambda: Fraction(0, 1))
     language_coverage: dict[str, dict[str, int]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
-        data["coverage_ratio"] = {"numerator": self.coverage_ratio.numerator, "denominator": self.coverage_ratio.denominator}
+        # Fractions keep internal arithmetic exact, but their normalized
+        # numerator/denominator lose the audit counts (33/33 becomes 1/1).
+        # Coverage is a count claim, so preserve its original denominators.
+        data["coverage_ratio"] = {"numerator": self.files_analyzed, "denominator": self.eligible_source_files}
+        data["discovery_ratio"] = {"numerator": self.files_analyzed, "denominator": self.files_discovered}
         return data
 
 @dataclass(frozen=True)
