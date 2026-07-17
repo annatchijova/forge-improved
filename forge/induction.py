@@ -1,9 +1,10 @@
-"""Conservative, time-bounded execution for parser hypotheses.
+"""Conservative, time-bounded execution for parser and eval/exec hypotheses.
 
 Induction is deliberately narrower than arbitrary fuzzing.  It only invokes a
-module-level function for parser hypotheses, in a spawned child process, with
-synthetic malformed text.  Other hypothesis families remain AST-only until a
-family-specific harness exists.
+module-level function in a spawned child process. Parser hypotheses receive
+synthetic malformed text; eval/exec hypotheses receive a sentinel payload
+that may write only inside the child sandbox. Other hypothesis families remain
+AST-only until a family-specific harness exists.
 """
 from __future__ import annotations
 
@@ -189,7 +190,11 @@ def _apply_worker_sandbox(sandbox: Path) -> None:
     socket.socket = denied
 
 
-def _invoke_worker(root: str, module_path: str, function_name: str, target_line: int, queue: Any) -> None:
+_EVAL_SENTINEL_NAME = "forge-eval-induction-sentinel.txt"
+_EVAL_SENTINEL_PAYLOAD = f"open({_EVAL_SENTINEL_NAME!r}, 'w').write('confirmed')"
+
+
+def _invoke_worker(root: str, module_path: str, function_name: str, target_line: int, family: str, queue: Any) -> None:
     try:
         root_path = Path(root)
         with tempfile.TemporaryDirectory(prefix="forge-induction-") as sandbox:
@@ -218,7 +223,7 @@ def _invoke_worker(root: str, module_path: str, function_name: str, target_line:
                     return
             function = getattr(module, function_name)
             signature = inspect.signature(function)
-            args: list[str] = []
+            args: list[Any] = []
             for parameter in signature.parameters.values():
                 if parameter.kind in (parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD):
                     continue
@@ -226,8 +231,14 @@ def _invoke_worker(root: str, module_path: str, function_name: str, target_line:
                     continue
                 if parameter.default is not parameter.empty and parameter.kind is not parameter.KEYWORD_ONLY:
                     continue
-                args.append(_synthetic_value(parameter.name, parameter.annotation))
+                value = _synthetic_value(parameter.name, parameter.annotation)
+                if family == "eval/exec" and isinstance(value, str):
+                    value = _EVAL_SENTINEL_PAYLOAD
+                args.append(value)
             result = function(*args)
+            if family == "eval/exec":
+                queue.put(("eval-sentinel", (Path(_EVAL_SENTINEL_NAME)).is_file()))
+                return
             queue.put(("returned", type(result).__name__))
     except BaseException as exc:  # child boundary: never leak target exceptions to the audit process
         target_file = str((Path(root) / module_path).resolve())
@@ -239,8 +250,13 @@ def _invoke_worker(root: str, module_path: str, function_name: str, target_line:
 
 
 def induce_hypothesis(root: str | Path, module_path: str, line: int, description: str) -> InductionResult:
-    family = "parser" if "parser call" in description.lower() else "unsupported"
-    if family != "parser":
+    if "parser call" in description.lower():
+        family = "parser"
+    elif "dynamic evaluation" in description.lower():
+        family = "eval/exec"
+    else:
+        family = "unsupported"
+    if family not in {"parser", "eval/exec"}:
         return InductionResult("UNDETERMINED", family, "No executable harness is registered for this hypothesis family.", "AST-only verification")
     path = (Path(root) / module_path).resolve()
     root_path = Path(root).resolve()
@@ -269,7 +285,7 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
 
     context = multiprocessing.get_context("spawn")
     queue = context.Queue()
-    process = context.Process(target=_invoke_worker, args=(str(root_path), module_path, function_name, line, queue))
+    process = context.Process(target=_invoke_worker, args=(str(root_path), module_path, function_name, line, family, queue))
     process.start()
     process.join(INDUCTION_TIMEOUT_SECONDS)
     if process.is_alive():
@@ -282,6 +298,10 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
         return InductionResult("UNDETERMINED", family, f"Child exited without a result (exitcode={process.exitcode}).", f"{module_path}:{line}")
     if result[0] == "import-error":
         return InductionResult("UNDETERMINED", family, f"Target module could not be loaded in its package context: {result[1]}: {result[2]}", f"{module_path}:{line}")
+    if result[0] == "eval-sentinel":
+        if result[1]:
+            return InductionResult("CONFIRMED BY INDUCTION", family, "Isolated eval/exec payload created the in-sandbox sentinel.", f"{module_path}:{line}: {_EVAL_SENTINEL_NAME}")
+        return InductionResult("FALSIFIED", family, "Isolated eval/exec payload returned without creating the in-sandbox sentinel.", f"{module_path}:{line}: sentinel absent")
     if result[0] == "exception":
         error_name, detail = result[1], result[2]
         at_hypothesized_call = bool(result[3]) if len(result) > 3 else False
@@ -289,6 +309,8 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
         evidence = f"{module_path}:{line}: {error_name}: {detail}"
         if frame_detail:
             evidence += f" [target frames: {frame_detail}]"
+        if error_name == "PermissionError" and "FORGE induction sandbox" in detail:
+            return InductionResult("UNDETERMINED", family, "Induction was blocked by the sandbox policy rather than the target's own boundary.", evidence)
         if not at_hypothesized_call:
             return InductionResult("ERROR_PATH_REACHABLE", family, f"Malformed input reached an opaque {error_name}, but the exception did not originate at the hypothesized parser call.", evidence)
         if error_name in _NAMED_BOUNDARY_ERRORS:

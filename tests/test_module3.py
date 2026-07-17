@@ -99,6 +99,14 @@ def test_eval_literal_with_dangerous_content_is_not_discarded(tmp_path):
     )
     assert not result.discarded
 
+
+def test_eval_induction_confirms_only_when_its_in_sandbox_sentinel_executes(tmp_path):
+    (tmp_path / "main.py").write_text("def run(expr):\n    return eval(expr)\n")
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)), induce=True)
+    assert result.findings[0].epistemic_level == "CONFIRMED BY INDUCTION"
+    assert result.induction[0]["family"] == "eval/exec"
+    assert "sentinel" in result.induction[0]["detail"]
+
 def test_float_tolerance_is_benign_exact_float_remains_candidate(tmp_path):
     (tmp_path / "main.py").write_text("import math\ndef score(x):\n    return math.isclose(x, 1.0, abs_tol=0.01)\n")
     result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))

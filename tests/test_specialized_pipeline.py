@@ -133,7 +133,7 @@ def test_audit_seals_repository_snapshot_and_provenance(tmp_path):
     assert len(sealed["manifest"]["repository_snapshot_sha256"]) == 64
     finding = sealed["chain"][0]["finding"]
     assert "AST" in finding["provenance"]
-    assert "RUNTIME_NOT_EXECUTED" in finding["provenance"]
+    assert "REPRODUCED" in finding["provenance"]
 
 def test_unsupported_source_language_and_undetermined_governance_are_a_declared_boundary_not_abstain(tmp_path):
     # An unsupported source language (native.rs) and an UNDETERMINED skill
