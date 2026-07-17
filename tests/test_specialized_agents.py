@@ -1,6 +1,9 @@
+import ast
 import json
 from fractions import Fraction
+from pathlib import Path
 
+import forge.agents.security_auditor as security_auditor
 from forge.agents.archaeologist import assess
 from forge.agents.security_auditor import audit
 from forge.agents.integrity_inspector import inspect
@@ -161,6 +164,51 @@ def test_security_tracks_unsafe_path_expressions_aliases_and_keywords(tmp_path):
     findings = [item for item in audit(tmp_path) if item.family == "path-traversal"]
     assert [(item.path, item.line) for item in findings] == [
         ("bad.py", 2), ("bad.py", 5), ("bad.py", 7), ("bad.py", 9),
+    ]
+
+
+def test_security_distinguishes_path_values_from_lookup_keys(tmp_path):
+    write(tmp_path, "paths.py", (
+        "config = {}\n"
+        "def lookup(user_path):\n"
+        "    return open(config.get(user_path))\n"
+        "def indexed(user_path):\n"
+        "    return open(config[user_path])\n"
+        "def slice_path(user_path):\n"
+        "    return open(user_path[1:])\n"
+        "def mapping_path(user_path):\n"
+        "    return open(user_path.get('path'))\n"
+    ))
+    findings = [item for item in audit(tmp_path) if item.family == "path-traversal"]
+    assert [(item.path, item.line) for item in findings] == [
+        ("paths.py", 7), ("paths.py", 9),
+    ]
+
+
+def test_security_builds_path_flow_once_per_function(tmp_path, monkeypatch):
+    calls = 0
+    original = security_auditor._path_flow_at_calls
+
+    def measured(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(security_auditor, "_path_flow_at_calls", measured)
+    write(tmp_path, "paths.py", "def read(path):\n" + "\n".join(
+        f"    open(path + {suffix!r})" for suffix in range(20)
+    ))
+    audit(tmp_path)
+    assert calls == 1
+
+
+def test_security_path_flow_has_no_float_decision_sentinel():
+    tree = ast.parse((Path(__file__).parents[1] / "forge" / "agents" / "security_auditor.py").read_text())
+    functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "_path_flow_at_calls"]
+    assert len(functions) == 1
+    assert not [
+        call for call in ast.walk(functions[0])
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == "float"
     ]
 
 

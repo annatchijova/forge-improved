@@ -108,6 +108,14 @@ FORGE now covers unmodeled bug classes or every spelling of these families. The
 specific fixtures, retained boundaries, and verification commands are in
 [`recall-gap-closure-lot-1.md`](recall-gap-closure-lot-1.md).
 
+Before the next injection-focused lot, path-flow was consolidated: snapshots
+are computed once per function, lookup-key positions are distinguished from
+path-bearing containers, and the float sentinel used in a security decision
+was removed. The key-position benign twin is paired with positive slice and
+container forms so the precision fix cannot silently become a path-traversal
+false negative. A directed AST test, rather than the narrower return-oriented
+Integrity Inspector, guards this deterministic-core invariant.
+
 ## Reproducibility and checkpoints
 
 The relevant checkpoints are:

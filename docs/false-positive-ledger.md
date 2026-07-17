@@ -10,6 +10,7 @@ regression test. It is not silently deleted from history.
 | FP-002 | FORGE self-audit | `json.dumps(payload)` in benchmark | Versioned inline dict was assigned to a name the detector did not follow | Track named versioned payloads | `test_integrity_recognizes_versioned_named_payload` | Resolved |
 | FP-003 | FORGE self-audit | JSON embedded in HTML dashboard | Presentation serialization was confused with persisted artifact serialization | Exclude presentation-only serialization | `test_integrity_ignores_json_embedded_in_presentation_html` | Resolved |
 | FP-004 | FORGE self-audit | Missing local `try/except` around report rendering | Explicit boundary error was classified as opaque failure | Preserve named error contract; refine classification | Existing incomplete-run error tests | Classified as detector FP |
+| FP-005 | Recall-gap consolidation | `{"password": "Enter your password"}` | A direct dict label is structurally indistinguishable from a passphrase under a credential-shaped key | No suppression rule: a label heuristic would hide real passphrases | `variant-credential-dict` remains a positive secret regression | Accepted limitation |
 
 ## Entry contract
 

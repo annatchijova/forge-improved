@@ -26,9 +26,10 @@ def test_mining_has_no_security_signal_for_benign_examined_cases():
 
 def test_mine_ledger_reads_the_real_ledger_and_tags_the_ledger_agent():
     bundle = mine_ledger("docs/false-positive-ledger.md")
-    assert len(bundle.clusters) == 4
+    assert len(bundle.clusters) == 5
     assert all(cluster.agent == LEDGER_AGENT for cluster in bundle.clusters)
     assert any(entry.module_path == "FP-001" for cluster in bundle.clusters for entry in cluster.examples)
+    assert any(entry.module_path == "FP-005" for cluster in bundle.clusters for entry in cluster.examples)
 
 
 def test_mine_ledger_ignores_unrelated_tables(tmp_path):

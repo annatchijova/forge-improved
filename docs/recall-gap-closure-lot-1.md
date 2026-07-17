@@ -50,6 +50,32 @@ identities; this is checked alongside the complete precision corpus.
 These are visible in `tests/corpus/recall-variants-baseline.json`, not removed
 from the measurement merely because they remain unsupported.
 
+## Post-lot consolidation
+
+Before reusing local path flow for more injection families, the path mechanism
+received a focused consolidation pass:
+
+- Flow snapshots are now built once per function and queried at each call,
+  instead of walking the function and converging aliases for every sink. Source
+  order still prevents a later sanitizer from protecting an earlier `open()`.
+- A parameter used only as a mapping key or subscript index of an external
+  container is not treated as the path value: `open(config.get(user_path))`
+  and `open(config[user_path])` are benign twins. The symmetric positives
+  `open(user_path[1:])` and `open(user_path.get("path"))` remain findings,
+  because the parameter is then the path-bearing container.
+- The former `float("inf")` decision sentinel was removed. A directed AST
+  self-audit guards the path-flow implementation against reintroducing a
+  `float()` call there. This is stronger evidence for this path than relying
+  on the Integrity Inspector, whose current float detector is intentionally
+  scoped to float calls that reach a return.
+
+The credential dict pattern has a different result. A UI label such as
+`{"password": "Enter your password"}` is structurally indistinguishable from
+a passphrase under the current direct-AST rule. It is recorded as accepted
+limitation FP-005 in [`false-positive-ledger.md`](false-positive-ledger.md),
+not suppressed by a sentence-like-string heuristic that would create a silent
+false negative for real passphrases.
+
 ## Evidence and reproduction
 
 The commits are `f42fa6a` (deserialization), `a85c285` (credentials), and

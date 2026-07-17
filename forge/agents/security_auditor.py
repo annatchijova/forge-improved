@@ -283,55 +283,60 @@ def _function_parameter_names(function: ast.FunctionDef | ast.AsyncFunctionDef) 
     return {argument.arg for argument in (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)}
 
 
-def _path_unsafe_sources(
+def _path_flow_at_calls(
     function: ast.FunctionDef | ast.AsyncFunctionDef,
-    sink_line: int,
-    barriers: dict[str, int],
+    calls: tuple[ast.Call, ...],
     enclosing_function,
-) -> dict[str, set[str]]:
-    """Map local aliases to their unsafe parameter origins at one sink.
+) -> dict[ast.Call, dict[str, set[str]]]:
+    """Compute local path origins once, then snapshot them at each call.
 
-    This is deliberately intra-procedural and flow-insensitive only within
-    assignments preceding the sink.  A later sanitizer does not retroactively
-    protect an earlier open(), while a sanitizer before the sink removes that
-    name from the unsafe set.
+    Assignments and validation/sanitizer barriers are processed in source
+    order.  That preserves the important property that a sanitizer cannot
+    protect an earlier sink, without rebuilding an AST walk and a fixpoint for
+    every call in a large function.
     """
-    unsafe = {
-        name: {name}
-        for name in _function_parameter_names(function)
-        if barriers.get(name, float("inf")) >= sink_line
-    }
+    unsafe = {name: {name} for name in _function_parameter_names(function)}
     assignments = sorted(
         (
             node for node in ast.walk(function)
-            if isinstance(node, (ast.Assign, ast.AnnAssign))
-            and enclosing_function(node) is function and node.lineno < sink_line
+            if isinstance(node, (ast.Assign, ast.AnnAssign)) and enclosing_function(node) is function
         ),
         key=lambda node: (node.lineno, node.col_offset),
     )
-    changed = True
-    while changed:
-        changed = False
-        for node in assignments:
-            if _is_path_sanitizer(node.value):
-                continue
-            origins = set().union(*(
-                unsafe.get(name.id, set())
-                for name in ast.walk(node.value)
-                if isinstance(name, ast.Name)
-            ))
-            if not origins:
-                continue
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+    barriers = sorted(
+        _path_barrier_names(function).items(), key=lambda item: (item[1], item[0])
+    )
+    snapshots: dict[ast.Call, dict[str, set[str]]] = {}
+    assignment_index = barrier_index = 0
+
+    for call in sorted(calls, key=lambda node: (node.lineno, node.col_offset)):
+        call_position = (call.lineno, call.col_offset)
+        while assignment_index < len(assignments):
+            assignment = assignments[assignment_index]
+            if (assignment.lineno, assignment.col_offset) > call_position:
+                break
+            assignment_index += 1
+            targets = assignment.targets if isinstance(assignment, ast.Assign) else [assignment.target]
+            if _is_path_sanitizer(assignment.value):
+                origins: set[str] = set()
+            else:
+                origins = set().union(*(
+                    unsafe.get(name.id, set())
+                    for name in ast.walk(assignment.value)
+                    if isinstance(name, ast.Name)
+                ))
             for target in targets:
                 for name in _assignment_target_names(target):
-                    if barriers.get(name, float("inf")) < sink_line:
-                        continue
-                    existing = unsafe.setdefault(name, set())
-                    before = len(existing)
-                    existing.update(origins)
-                    changed = changed or len(existing) != before
-    return unsafe
+                    if origins:
+                        unsafe[name] = set(origins)
+                    else:
+                        unsafe.pop(name, None)
+        while barrier_index < len(barriers) and barriers[barrier_index][1] <= call.lineno:
+            name, _line = barriers[barrier_index]
+            unsafe.pop(name, None)
+            barrier_index += 1
+        snapshots[call] = {name: set(origins) for name, origins in unsafe.items()}
+    return snapshots
 
 
 def _unsafe_origins_in_path_expression(argument: ast.AST, unsafe: dict[str, set[str]]) -> set[str]:
@@ -340,6 +345,18 @@ def _unsafe_origins_in_path_expression(argument: ast.AST, unsafe: dict[str, set[
     for node in ast.walk(argument):
         if _is_path_sanitizer(node):
             protected.update(ast.walk(node))
+        # A value used only as a mapping key/index is not itself the path that
+        # reaches the sink: `open(config.get(user_path))` opens the configured
+        # value, while `open(user_path.get("name"))` still exposes user_path as
+        # the container and remains observable below.
+        if isinstance(node, ast.Subscript):
+            protected.update(ast.walk(node.slice))
+        elif (
+            isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"get", "pop"}
+        ):
+            for key in (*node.args, *(keyword.value for keyword in node.keywords)):
+                protected.update(ast.walk(key))
     origins: set[str] = set()
     for node in ast.walk(argument):
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node not in protected:
@@ -388,12 +405,14 @@ def _paths(tree):
         return None
 
     for function in (node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))):
-        barriers = _path_barrier_names(function)
-        for node in ast.walk(function):
-            if enclosing_function(node) is not function or not isinstance(node, ast.Call):
-                continue
+        calls = tuple(
+            node for node in ast.walk(function)
+            if enclosing_function(node) is function and isinstance(node, ast.Call)
+        )
+        flows = _path_flow_at_calls(function, calls, enclosing_function)
+        for node in calls:
             arguments = (*node.args, *(keyword.value for keyword in node.keywords))
-            unsafe = _path_unsafe_sources(function, node.lineno, barriers, enclosing_function)
+            unsafe = flows[node]
             origins = set().union(*(
                 _unsafe_origins_in_path_expression(argument, unsafe) for argument in arguments
             ))

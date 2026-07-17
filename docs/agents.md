@@ -127,7 +127,9 @@ conservative, named benign criteria (see `DECISIONS.md`):
   reaching `os.path.*` or `open()` through a direct expression, positional
   argument, or keyword argument without a visible composed
   `normpath`/`realpath`/`basename`/`resolve` barrier. `pathlib` sinks are not
-  covered by this family yet.
+  covered by this family yet. A parameter used solely as an external mapping
+  key/index is not itself treated as the path value; a parameter used as the
+  mapping container remains observable.
 * **unverified-webhook** — a state-mutating route (`@app.post`/`put`/`patch`/
   `delete`) whose path is named like a webhook, with no FastAPI
   `Depends(...)` parameter and no signature/HMAC verification anywhere in
