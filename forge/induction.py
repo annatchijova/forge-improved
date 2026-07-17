@@ -198,6 +198,25 @@ _EVAL_SENTINEL_PAYLOAD = f"open({_EVAL_SENTINEL_NAME!r}, 'w').write('confirmed')
 _SUBPROCESS_PROBE_PAYLOAD = "forge-induction; harmless-metacharacter"
 
 
+def _sql_probe_name(tree: ast.AST, line: int) -> str | None:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and node.lineno == line and isinstance(node.func, ast.Attribute) and node.func.attr in {"execute", "executemany", "executescript"} and isinstance(node.func.value, ast.Name):
+            return node.func.value.id
+    return None
+
+
+class _SqlProbe:
+    def __init__(self) -> None:
+        self.calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def execute(self, *args: Any, **kwargs: Any):
+        self.calls.append((args, kwargs))
+        return self
+
+    executemany = execute
+    executescript = execute
+
+
 def _float_probe_plan(tree: ast.AST, line: int) -> dict[str, Any] | None:
     """Build an exact-decimal differential probe for `float(x) <op> N`."""
     comparison = next((node for node in ast.walk(tree) if isinstance(node, ast.Compare) and node.lineno == line), None)
@@ -261,7 +280,7 @@ def _install_subprocess_probe() -> list[tuple[tuple[Any, ...], dict[str, Any]]]:
     return calls
 
 
-def _invoke_worker(root: str, module_path: str, function_name: str, target_line: int, family: str, float_plan: dict[str, Any] | None, queue: Any) -> None:
+def _invoke_worker(root: str, module_path: str, function_name: str, target_line: int, family: str, float_plan: dict[str, Any] | None, sql_name: str | None, queue: Any) -> None:
     try:
         root_path = Path(root)
         with tempfile.TemporaryDirectory(prefix="forge-induction-") as sandbox:
@@ -290,6 +309,9 @@ def _invoke_worker(root: str, module_path: str, function_name: str, target_line:
                     return
             function = getattr(module, function_name)
             subprocess_calls = _install_subprocess_probe() if family == "subprocess" else []
+            sql_probe = _SqlProbe() if family == "sql-injection" else None
+            if sql_probe is not None and sql_name:
+                setattr(module, sql_name, sql_probe)
             signature = inspect.signature(function)
             args: list[Any] = []
             for parameter in signature.parameters.values():
@@ -328,6 +350,9 @@ def _invoke_worker(root: str, module_path: str, function_name: str, target_line:
             if family == "subprocess":
                 queue.put(("subprocess-probe", bool(subprocess_calls)))
                 return
+            if family == "sql-injection":
+                queue.put(("sql-probe", bool(sql_probe and sql_probe.calls)))
+                return
             queue.put(("returned", type(result).__name__))
     except BaseException as exc:  # child boundary: never leak target exceptions to the audit process
         target_file = str((Path(root) / module_path).resolve())
@@ -357,9 +382,11 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
         family = "subprocess"
     elif "float threshold" in description.lower() or "tolerance call" in description.lower():
         family = "float-threshold"
+    elif "sql execution call" in description.lower():
+        family = "sql-injection"
     else:
         family = "unsupported"
-    if family not in {"parser", "eval/exec", "subprocess", "float-threshold"}:
+    if family not in {"parser", "eval/exec", "subprocess", "float-threshold", "sql-injection"}:
         return InductionResult("UNDETERMINED", family, "No executable harness is registered for this hypothesis family.", "AST-only verification")
     path = (Path(root) / module_path).resolve()
     root_path = Path(root).resolve()
@@ -391,7 +418,10 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
 
     context = multiprocessing.get_context("spawn")
     queue = context.Queue()
-    process = context.Process(target=_invoke_worker, args=(str(root_path), module_path, function_name, line, family, float_plan, queue))
+    sql_name = _sql_probe_name(tree, line) if family == "sql-injection" else None
+    if family == "sql-injection" and sql_name is None:
+        return InductionResult("UNDETERMINED", family, "No supported in-memory SQL receiver was found.", f"{module_path}:{line}")
+    process = context.Process(target=_invoke_worker, args=(str(root_path), module_path, function_name, line, family, float_plan, sql_name, queue))
     process.start()
     process.join(INDUCTION_TIMEOUT_SECONDS)
     if process.is_alive():
@@ -423,6 +453,10 @@ def induce_hypothesis(root: str | Path, module_path: str, line: int, description
         if actual != expected:
             return InductionResult("CONFIRMED BY INDUCTION", family, "Binary float comparison diverged from exact-decimal behavior at the threshold probes.", evidence)
         return InductionResult("FALSIFIED", family, "Float threshold matched exact-decimal behavior for all threshold probes.", evidence)
+    if result[0] == "sql-probe":
+        if result[1]:
+            return InductionResult("CONFIRMED BY INDUCTION", family, "Dynamic SQL reached the in-memory SQL probe; no database was touched.", f"{module_path}:{line}: SQL probe observed")
+        return InductionResult("FALSIFIED", family, "The dynamic SQL candidate did not reach the in-memory probe.", f"{module_path}:{line}: SQL probe not observed")
     if result[0] == "exception":
         error_name, detail = result[1], result[2]
         at_hypothesized_call = bool(result[3]) if len(result) > 3 else False

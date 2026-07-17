@@ -100,7 +100,7 @@ def _float_benign(tree: ast.AST, line: int, source: str, function_name: str | No
 def verify_hypotheses(manifest: HypothesesManifest, induce: bool = False) -> VerificationManifest:
     findings, discarded, induction = [], [], []
     root = Path(manifest.root)
-    verified = ("subprocess", "parser", "float comparison", "eval/exec")
+    verified = ("subprocess", "parser", "float comparison", "eval/exec", "sql injection")
     for h in manifest.hypotheses:
         path = root / h.module_path
         source = path.read_text(encoding="utf-8", errors="replace")
@@ -118,6 +118,10 @@ def verify_hypotheses(manifest: HypothesesManifest, induce: bool = False) -> Ver
             if "subprocess" in h.description:
                 benign = _subprocess_enclosure(tree, line, call_name) and _named_handler(tree, _call_at(tree, line, call_name), ("SubprocessError", "OSError"))
                 reason = "AST proves explicit subprocess exception enclosure."
+            elif "SQL execution call" in h.description:
+                # SQL safety is established by the isolated in-memory probe;
+                # no target database or filesystem-backed connection is used.
+                pass
             elif "parser call" in h.description:
                 benign = _parser_benign(tree, line, call_name, ("JSONDecodeError", "ValueError", "ForgeArtifactError")); reason = "AST proves known parser exception handler."
             elif "dynamic evaluation" in h.description.lower():

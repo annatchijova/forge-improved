@@ -140,7 +140,8 @@ the Bug Investigator is measured alongside static agents. Severity is a
 deterministic projection of independent epistemic, controllability and
 exploitability axes, not a synonym for family.
 
-Induction supports parser, eval/exec, subprocess and float-threshold harnesses
+Induction supports parser, eval/exec, subprocess, float-threshold and SQL
+injection harnesses
 inside a spawned, resource-limited worker. The worker blocks network, actual
 process creation and writes outside its temporary directory before importing
 target code. This is defense in depth, **not** a kernel-grade sandbox, and a

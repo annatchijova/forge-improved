@@ -49,6 +49,7 @@ Harnesses activos:
 - eval/exec: sentinel limitado al tempdir;
 - subprocess: sonda en memoria, sin proceso real;
 - float threshold: comparación diferencial con `Decimal` exacto.
+- SQL injection: receptor SQL en memoria, sin conexión a base real.
 
 Familias sin harness compatible quedan `UNDETERMINED`. Confirmación significa
 sólo que la conducta del harness se reprodujo; no prueba RCE, impacto de

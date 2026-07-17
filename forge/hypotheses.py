@@ -119,6 +119,8 @@ def _candidates(module_path: str, source: tuple[str, ...], language: str) -> lis
                 continue
             if not any("try:" in source[i] for i in range(max(0, number - 4), number)):
                 candidates.append((f"The dynamic command invocation `{stripped}` at {module_path}:{number} may pass attacker-controlled arguments without an enclosing failure boundary.", number, f"Invoke this call with a harmless invalid executable and a shell metacharacter fixture; an explicit exception path with no command execution falsifies the hypothesis."))
+        if re.search(r"\.execute(?:many|script)?\s*\(", matching_stripped) and ("f\"" in stripped or "f'" in stripped or "+" in matching_stripped):
+            candidates.append((f"The SQL execution call `{stripped}` at {module_path}:{number} may concatenate input into a query without parameter binding.", number, f"Invoke this call with a harmless metacharacter fixture against an in-memory SQL probe; a parameterized boundary with no dynamic query reaching the probe falsifies the hypothesis."))
         if re.search(r"\b(?:json|yaml|toml)\.loads?\s*\(|\bparse\s*\(", matching_stripped):
             if _is_trusted_local_json_load(source, number, matching_stripped):
                 continue

@@ -34,7 +34,7 @@ def test_ast_discards_actually_enclosed_subprocess(tmp_path):
 def test_parser_known_handler_is_benign_but_generic_is_not(tmp_path):
     (tmp_path / "main.py").write_text("import json\ndef load(raw):\n    try:\n        return json.loads(raw)\n    except json.JSONDecodeError:\n        return None\n")
     result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))
-    assert result.ast_verified_families == ("subprocess", "parser", "float comparison", "eval/exec")
+    assert result.ast_verified_families == ("subprocess", "parser", "float comparison", "eval/exec", "sql injection")
     assert not result.findings
 
 
@@ -126,6 +126,16 @@ def test_float_threshold_induction_compares_float_and_exact_decimal_boundaries(t
     assert result.findings[0].epistemic_level == "CONFIRMED BY INDUCTION"
     assert result.induction[0]["family"] == "float-threshold"
     assert "diverged" in result.induction[0]["detail"]
+
+
+def test_sql_induction_uses_an_in_memory_receiver_probe(tmp_path):
+    (tmp_path / "main.py").write_text(
+        "def search(user):\n"
+        "    cursor.execute(f\"SELECT * FROM users WHERE name = '{user}'\")\n"
+    )
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)), induce=True)
+    assert result.findings[0].epistemic_level == "CONFIRMED BY INDUCTION"
+    assert result.induction[0]["family"] == "sql-injection"
 
 def test_float_tolerance_is_benign_exact_float_remains_candidate(tmp_path):
     (tmp_path / "main.py").write_text("import math\ndef score(x):\n    return math.isclose(x, 1.0, abs_tol=0.01)\n")
