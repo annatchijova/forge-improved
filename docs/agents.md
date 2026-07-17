@@ -134,6 +134,12 @@ conservative, named benign criteria (see `DECISIONS.md`):
   zero of `execute`/`executemany`/`executescript`, including local query
   aliases. Bound parameter tuples/dicts and mapping-key selection of constant
   queries are excluded deliberately.
+* **command-injection** — an unsafe parameter origin interpolated into
+  `os.system`/`os.popen`, or into argument zero of a `subprocess` command with
+  literal `shell=True`. argv lists without shell interpretation,
+  `shlex.quote(...)`, constants, and mapping-key selection of constant commands
+  are excluded deliberately. A variable `shell=` value remains outside the
+  current direct-AST policy.
 * **unverified-webhook** — a state-mutating route (`@app.post`/`put`/`patch`/
   `delete`) whose path is named like a webhook, with no FastAPI
   `Depends(...)` parameter and no signature/HMAC verification anywhere in

@@ -116,6 +116,15 @@ container forms so the precision fix cannot silently become a path-traversal
 false negative. A directed AST test, rather than the narrower return-oriented
 Integrity Inspector, guards this deterministic-core invariant.
 
+Lot 2 reused those snapshots for SQL and command injection. SQL now confines
+taint to the query expression (argument zero), preserving bound values as a
+safe channel; all four measured SQL variants hit. Command injection now
+requires a shell-interpreted string command: `os.system`/`os.popen`, or
+`subprocess` with literal `shell=True`. This closed the two modeled command
+variants and corrected the prior argv-list false positive (FP-006). The
+`shell=<variable>` variant remains an explicit undecided gap, not a claimed
+coverage win.
+
 ## Reproducibility and checkpoints
 
 The relevant checkpoints are:

@@ -1,8 +1,8 @@
 {
   "recall_variants_schema_version": "1.0",
-  "recall_variant_global": {"detected": 25, "total": 36, "recall": 0.694444},
+  "recall_variant_global": {"detected": 27, "total": 36, "recall": 0.75},
   "recall_variant_by_family": {
-    "command-injection": {"detected": 0, "total": 3, "recall": 0.0},
+    "command-injection": {"detected": 2, "total": 3, "recall": 0.666667},
     "decision-adjacent-float": {"detected": 2, "total": 3, "recall": 0.666667},
     "dynamic-evaluation": {"detected": 3, "total": 4, "recall": 0.75},
     "hardcoded-credential": {"detected": 3, "total": 4, "recall": 0.75},
@@ -15,8 +15,6 @@
   },
   "known_gaps": [
     {"case": "variant-path-pathlib", "family": "path-traversal", "disposition": "undecided"},
-    {"case": "variant-command-os-system", "family": "command-injection", "disposition": "close_gap"},
-    {"case": "variant-command-alias", "family": "command-injection", "disposition": "close_gap"},
     {"case": "variant-command-shell-variable", "family": "command-injection", "disposition": "undecided"},
     {"case": "variant-float-interprocedural", "family": "decision-adjacent-float", "disposition": "undecided"},
     {"case": "variant-serialization-yaml-dump", "family": "unversioned-serialization", "disposition": "undecided"},

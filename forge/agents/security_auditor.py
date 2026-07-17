@@ -275,10 +275,6 @@ def _path_controllability(
     return "UNDETERMINED"
 
 
-def _contains_parameter(node: ast.AST, params: set[str]) -> bool:
-    return any(isinstance(item, ast.Name) and item.id in params for item in ast.walk(node))
-
-
 def _function_parameter_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
     return {argument.arg for argument in (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)}
 
@@ -413,20 +409,59 @@ def _sql_injection(tree: ast.AST):
                 yield SecurityFinding("sql-injection", "", node.lineno, "unsafe SQL interpolation reaches execute() without parameter binding", control, "PLAUSIBLE")
 
 
+def _is_command_sanitizer(value: ast.AST) -> bool:
+    return (
+        isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute)
+        and isinstance(value.func.value, ast.Name) and value.func.value.id == "shlex"
+        and value.func.attr == "quote"
+    )
+
+
+def _has_literal_shell_true(node: ast.Call) -> bool:
+    return any(
+        keyword.arg == "shell" and isinstance(keyword.value, ast.Constant) and keyword.value.value is True
+        for keyword in node.keywords
+    )
+
+
 def _command_injection(tree: ast.AST):
+    parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+
+    def enclosing_function(node):
+        current = parents.get(node)
+        while current is not None:
+            if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                return current
+            current = parents.get(current)
+        return None
+
     for function in (node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))):
-        params = {argument.arg for argument in (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)}
-        for node in ast.walk(function):
-            if not (
-                isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name) and node.func.value.id == "subprocess"
-                and node.func.attr in _SUBPROCESS_CALLS and node.args
-            ):
+        calls = tuple(
+            node for node in ast.walk(function)
+            if enclosing_function(node) is function and isinstance(node, ast.Call)
+        )
+        flows = _unsafe_param_origins(function, calls, enclosing_function, _is_command_sanitizer)
+        for node in calls:
+            if not node.args:
                 continue
-            argv = node.args[0]
-            if _contains_parameter(argv, params):
-                control = _path_controllability(tree, function, next(item.id for item in ast.walk(argv) if isinstance(item, ast.Name) and item.id in params))
-                yield SecurityFinding("command-injection", "", node.lineno, "function parameter reaches subprocess argv construction", control, "PLAUSIBLE")
+            command = node.args[0]
+            origins = _origins_reaching(command, flows[node], _is_command_sanitizer)
+            if not origins or isinstance(command, (ast.Constant, ast.List, ast.Tuple)):
+                continue
+            is_os_shell = (
+                isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "os" and node.func.attr in {"system", "popen"}
+            )
+            is_subprocess_shell = (
+                isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "subprocess" and node.func.attr in _SUBPROCESS_CALLS
+                and _has_literal_shell_true(node)
+            )
+            if not (is_os_shell or is_subprocess_shell):
+                continue
+            control = _path_controllability(tree, function, sorted(origins)[0])
+            sink = f"os.{node.func.attr}" if is_os_shell else "subprocess shell=True"
+            yield SecurityFinding("command-injection", "", node.lineno, f"unsafe command interpolation reaches {sink}", control, "PLAUSIBLE")
 
 
 def _paths(tree):

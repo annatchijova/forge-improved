@@ -229,6 +229,25 @@ def test_security_tracks_sql_interpolation_but_not_bound_values_or_lookup_keys(t
     ]
 
 
+def test_security_tracks_shell_command_interpolation_but_not_argv_or_constant_lookup(tmp_path):
+    write(tmp_path, "commands.py", (
+        "import os\nimport shlex\nimport subprocess\n"
+        "COMMANDS = {'version': 'ls -l'}\n"
+        "def run(name, command, choice):\n"
+        "    os.system('ls ' + name)\n"
+        "    alias = 'ls ' + name\n"
+        "    subprocess.run(alias, shell=True)\n"
+        "    subprocess.run(['ls', name])\n"
+        "    subprocess.run(shlex.quote(command), shell=True)\n"
+        "    subprocess.run('ls -l', shell=True)\n"
+        "    subprocess.run(COMMANDS[choice], shell=True)\n"
+    ))
+    findings = [item for item in audit(tmp_path) if item.family == "command-injection"]
+    assert [(item.path, item.line) for item in findings] == [
+        ("commands.py", 6), ("commands.py", 8),
+    ]
+
+
 def test_security_path_normalization_is_scoped_to_each_function(tmp_path):
     write(tmp_path, "mixed.py", """
 def safe(path):

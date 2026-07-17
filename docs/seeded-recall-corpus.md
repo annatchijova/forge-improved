@@ -52,11 +52,11 @@ across commits.
 ## Current measured baseline
 
 The canonical corpus remains 29/29 (`1.0`) with zero benign-twin hits. The
-realistic-variants corpus is 25/36 (`0.694444`) after the SQL portion of the
-second gap-closure lot. That increase came from import spellings for unsafe
-deserialization, extended credential targets, local path-expression flow, and
-SQL interpolation/aliases; it is not a claim of family-complete coverage. The
-remaining non-boundary misses stay in the baseline as visible backlog. See
+realistic-variants corpus is 27/36 (`0.75`) after the second gap-closure lot.
+That increase came from import spellings for unsafe deserialization, extended
+credential targets, local path-expression flow, and SQL/command interpolation
+or aliases; it is not a claim of family-complete coverage. The remaining
+non-boundary misses stay in the baseline as visible backlog. See
 [`recall-gap-closure-lot-1.md`](recall-gap-closure-lot-1.md) for exact
 fixtures and limits, and [`recall-gap-closure-lot-2.md`](recall-gap-closure-lot-2.md)
 for the SQL/command work.

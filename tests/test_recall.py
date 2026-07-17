@@ -47,8 +47,11 @@ def test_variant_recall_is_versioned_without_turning_known_misses_into_build_fai
     assert result["gates"]["unrecorded_known_gaps"] == []
     assert result["known_gaps"]
     shell = next(row for row in result["cases"] if row["case"] == "variant-command-shell-variable")
-    assert shell["raw_detected"] is True
+    # Command injection now requires literal shell=True; a variable shell flag
+    # is an explicit unresolved const-propagation policy, not a generic-flow
+    # hit that the mechanism guard must discount.
+    assert shell["raw_detected"] is False
     assert shell["detected"] is False
-    assert shell["incidental_hit"] is True
+    assert "incidental_hit" not in shell
     assert shell["mechanism_check"]["passed"] is False
     assert next(row for row in result["hypothesis_mismatches"] if row["case"] == "variant-float-container")
