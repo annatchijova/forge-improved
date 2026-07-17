@@ -247,3 +247,15 @@ def test_coverage_makes_js_ts_and_unsupported_language_scope_explicit(tmp_path):
     assert coverage["language_coverage"]["JavaScript/TypeScript"] == {"analyzed": 0, "abstained": 1}
     assert coverage["language_coverage"]["RS"] == {"analyzed": 0, "abstained": 1}
     assert "native.rs" in coverage["skipped_reasons"]["non_python_not_analyzed"]
+
+
+def test_standard_closeout_artifacts_share_finding_set_digest(tmp_path):
+    put(tmp_path, "main.py", "def run(value):\n    return eval(value)\n")
+    result = run_specialized_pipeline(tmp_path, tmp_path / "out")
+    out = tmp_path / "out"
+    sealed = json.loads((out / "verification-manifest.sealed.json").read_text())
+    report = json.loads((out / "report.json").read_text())
+    digest = sealed["manifest"]["finding_set_digest"]
+    assert report["finding_set_digest"] == digest
+    assert f"Finding-set digest: `{digest}`" in (out / "report.md").read_text()
+    assert result["artifacts"]["report_json"].endswith("report.json")

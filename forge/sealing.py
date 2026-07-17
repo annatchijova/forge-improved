@@ -36,6 +36,7 @@ def _authentication_tag(sealed: dict[str, Any], key: bytes) -> str:
 def seal_manifest(manifest: VerificationManifest, audit_trace: dict[str, Any] | None = None) -> dict[str, Any]:
     data = manifest.to_dict()
     findings = data.pop("findings")
+    data["finding_set_digest"] = hashlib.sha256(canonical_json(findings).encode("utf-8")).hexdigest()
     return seal_findings(findings, data, audit_trace)
 
 

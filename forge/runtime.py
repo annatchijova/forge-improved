@@ -382,7 +382,7 @@ class Runtime:
         triage_path, hypotheses_path = out / "triage-manifest.json", out / "hypotheses-manifest.json"
         verification_path, sealed_path, coverage_path = out / "verification-manifest.json", out / "verification-manifest.sealed.json", out / "coverage-report.json"
         skills_path, metrics_path, report_path = out / "skills-runtime.json", out / "metrics.json", out / "forge-report.html"
-        profile_path, markdown_path = out / "repository-profile.json", out / "report.md"
+        profile_path, markdown_path, report_json_path = out / "repository-profile.json", out / "report.md", out / "report.json"
         write_manifest(triage_manifest, triage_path); write_hypotheses_manifest(bug.manifest, hypotheses_path)
         write_verification_manifest(verification, verification_path)
         coverage_path.write_text(json.dumps(coverage.to_dict(), indent=2, sort_keys=True) + "\n")
@@ -422,7 +422,14 @@ class Runtime:
         self._event(trace, cronos, "artifact_written", artifact="recommendations", path=str(recommendations_path), count=len(recommendations))
         report_composer.compose(triage_path, hypotheses_path, sealed_path, report_path, coverage_path, metrics)
         self._event(trace, cronos, "agent_completed", agent="report_composer", adi_stages=["abduction", "deduction", "induction"])
-        write_markdown_report(sealed=load_json(sealed_path, f"sealed manifest {sealed_path}"), metrics=metrics, profile=profile, destination=markdown_path)
+        sealed_payload = load_json(sealed_path, f"sealed manifest {sealed_path}")
+        write_markdown_report(sealed=sealed_payload, metrics=metrics, profile=profile, destination=markdown_path)
+        report_json_path.write_text(json.dumps({
+            "schema_version": "1.0",
+            "finding_set_digest": sealed_payload.get("manifest", {}).get("finding_set_digest"),
+            "records": [entry.get("finding", {}) for entry in sealed_payload.get("chain", [])],
+            "status": "VERIFIED",
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         findings_jsonl_path = out / "findings.jsonl"
         # Per-finding hashes exclude audit_trace_hash (see seal_findings), so
         # this is stable whether written from the provisional or final seal.
@@ -432,7 +439,7 @@ class Runtime:
         trace_path = out / "audit-trace.json"
         trace_path.write_text(json.dumps(trace.to_dict(), indent=2, sort_keys=True) + "\n")
         write_sealed_manifest(verification, sealed_path, trace.to_dict())
-        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path), "recommendations": str(recommendations_path), "findings_jsonl": str(findings_jsonl_path), **{key: value for key, value in rendered_reports.items() if key != "report"}}
+        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path), "recommendations": str(recommendations_path), "findings_jsonl": str(findings_jsonl_path), **{key: value for key, value in rendered_reports.items() if key != "report"}, "report_json": str(report_json_path)}
         if self.cronos_db is not None:
             artifacts["cronos_db"] = str(self.cronos_db)
         return AuditResult(str(root), connected, len(findings), len(verification.discarded), tuple(findings), coverage.to_dict(), artifacts)
