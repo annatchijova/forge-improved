@@ -9,7 +9,7 @@ is the boundary between a deterministic lead and a human/agent adjudication.
 From the repository root:
 
 ```bash
-python3 -m forge audit tests/corpus/demo_connected \
+python3 -m forge audit . \
   --output-dir /tmp/forge-demo-run --summary
 ```
 

@@ -29,8 +29,13 @@ def test_render_sharded_dashboard_links_independent_seals(tmp_path):
         '"parent_seal":"NOT_GENERATED","shards":[{"index":1,"status":"COMPLETE",'
         '"findings":3,"discarded":1,"paths":["a.py","b.py"]}]}', encoding="utf-8"
     )
+    (run / "shards" / "shard-0001" / "findings.jsonl").write_text(
+        '{"hash":"same"}\n{"hash":"same"}\n', encoding="utf-8"
+    )
+    (run / "shards" / "shard-0001" / "report.md").write_text("report", encoding="utf-8")
     output = render_sharded_dashboard(run)
     report = output.read_text(encoding="utf-8")
     assert "navigation and aggregation only" in report
-    assert "3" in report and "1 discarded hypotheses" in report
-    assert "shards/shard-0001/forge-report-standard.html" in report
+    assert "1" in report and "unique surviving leads by record hash" in report
+    assert "1 discarded hypotheses" in report
+    assert "shards/shard-0001/report.md" in report
