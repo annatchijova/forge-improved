@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any, Iterable
 
+from forge.detector_scope import detector_scope_statement
+
 
 _SOURCE_LANGUAGES = {
     ".go": "Go", ".rs": "Rust", ".java": "Java", ".js": "JavaScript",
@@ -162,9 +164,9 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
     return AuditDisposition(
         "COMPLETE_NO_FINDINGS",
         "AUDIT_SCOPE_VERIFIED",
-        "The declared source scope was verified and no findings survived the pipeline.",
-        "No action required within the declared scope.",
-        ("non_python_not_analyzed is an intentional engine boundary",),
+        "The declared source scope and detector scope were verified; no modeled finding survived the pipeline.",
+        "No action required within the declared source and detector scopes.",
+        ("non_python_not_analyzed is an intentional engine boundary", detector_scope_statement()),
     )
 
 

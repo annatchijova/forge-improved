@@ -20,6 +20,9 @@ from forge.severity import severity_for
 
 _KINDS = frozenset({"positive", "benign_twin", "out_of_scope"})
 _DETECTION_MODES = frozenset({"static", "induction", "both"})
+_TIERS = frozenset({"canonical", "variant"})
+_EXPECTED_TODAY = frozenset({"HIT", "MISS", "UNKNOWN"})
+_VARIANT_DISPOSITIONS = frozenset({"close_gap", "scope_boundary", "undecided"})
 _OUT_OF_SCOPE_STATEMENT = (
     "Excluded from the recall denominator: no finding is not a claim that the repository has no bugs."
 )
@@ -47,6 +50,14 @@ def _validate_case(case: dict[str, Any]) -> None:
         raise ValueError(f"invalid detection_mode {case['detection_mode']!r} in {case['name']!r}")
     if case["kind"] == "positive":
         _identity(case)
+        tier = case.get("tier", "canonical")
+        if tier not in _TIERS:
+            raise ValueError(f"invalid recall tier {tier!r} in {case['name']!r}")
+        if tier == "variant":
+            if case.get("expected_today") not in _EXPECTED_TODAY:
+                raise ValueError(f"variant needs expected_today in {case['name']!r}")
+            if case.get("disposition") not in _VARIANT_DISPOSITIONS:
+                raise ValueError(f"variant needs disposition in {case['name']!r}")
     elif "family" not in case:
         raise ValueError(f"{case['kind']} recall case needs a family for an observable result: {case['name']!r}")
 
@@ -81,6 +92,26 @@ def _security_metadata(case_root: Path) -> dict[FindingIdentity, dict[str, str]]
     return metadata
 
 
+def _score(detections: list[bool]) -> dict[str, Any]:
+    detected = sum(detections)
+    total = len(detections)
+    return {"detected": detected, "total": total, "recall": round(detected / total, 6) if total else 1.0}
+
+
+def _scores_by_family(detections: dict[str, list[bool]]) -> dict[str, dict[str, Any]]:
+    return {family: _score(values) for family, values in sorted(detections.items())}
+
+
+def _variant_baseline(root: Path) -> dict[str, Any] | None:
+    path = root / "recall-variants-baseline.json"
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("recall_variants_schema_version") != "1.0":
+        raise ValueError(f"unsupported recall variants baseline at {path}")
+    return data
+
+
 def run_recall(corpus: str | Path) -> dict[str, Any]:
     """Measure seeded recall without conflating it with precision or scope."""
     root = Path(corpus).resolve()
@@ -89,7 +120,8 @@ def run_recall(corpus: str | Path) -> dict[str, Any]:
     if not isinstance(cases, list):
         raise ValueError("recall corpus must declare a recall_cases list")
 
-    positives: dict[str, list[bool]] = defaultdict(list)
+    canonical: dict[str, list[bool]] = defaultdict(list)
+    variants: dict[str, list[bool]] = defaultdict(list)
     twin_failures: list[str] = []
     case_rows: list[dict[str, Any]] = []
     out_of_scope: list[dict[str, Any]] = []
@@ -129,13 +161,21 @@ def run_recall(corpus: str | Path) -> dict[str, Any]:
                 >= severity_order[secondary_checks["expected_severity_min"]]
             )
             detected = expected in actual and control_ok and severity_ok
-            positives[expected[0]].append(detected)
+            tier = case.get("tier", "canonical")
+            (variants if tier == "variant" else canonical)[expected[0]].append(detected)
             row["expected_finding"] = {"family": expected[0], "path": expected[1], "line": expected[2]}
             row["detected"] = detected
+            row["tier"] = tier
             if observed:
                 row["observed_secondary_axes"] = observed
             if any(value is not None for value in secondary_checks.values()):
                 row["secondary_checks"] = secondary_checks | {"passed": control_ok and severity_ok}
+            if tier == "variant":
+                observed_today = "HIT" if detected else "MISS"
+                row["expected_today"] = case["expected_today"]
+                row["observed_today"] = observed_today
+                row["hypothesis_confirmed"] = None if case["expected_today"] == "UNKNOWN" else case["expected_today"] == observed_today
+                row["disposition"] = case["disposition"]
         elif case["kind"] == "benign_twin":
             clean = not family_actual
             row["clean"] = clean
@@ -150,33 +190,57 @@ def run_recall(corpus: str | Path) -> dict[str, Any]:
             out_of_scope.append(row)
         case_rows.append(row)
 
-    by_family = {
-        family: {
-            "detected": sum(detections),
-            "total": len(detections),
-            "recall": round(sum(detections) / len(detections), 6),
-        }
-        for family, detections in sorted(positives.items())
-    }
-    detected = sum(score["detected"] for score in by_family.values())
-    total = sum(score["total"] for score in by_family.values())
+    canonical_by_family = _scores_by_family(canonical)
+    variant_by_family = _scores_by_family(variants)
+    canonical_global = _score([detected for values in canonical.values() for detected in values])
+    variant_global = _score([detected for values in variants.values() for detected in values])
     floor = manifest.get("recall_floor", {})
     minimum = float(floor.get("per_family", 0.0))
     twin_limit = int(floor.get("fp_on_twins", 0))
-    below_floor = {family: score["recall"] for family, score in by_family.items() if score["recall"] < minimum}
+    below_floor = {family: score["recall"] for family, score in canonical_by_family.items() if score["recall"] < minimum}
+    known_gaps = [
+        {"case": row["case"], "family": row["family"], "disposition": row["disposition"]}
+        for row in case_rows
+        if row.get("tier") == "variant" and not row["detected"] and row["disposition"] != "scope_boundary"
+    ]
+    hypothesis_mismatches = [
+        {"case": row["case"], "expected_today": row["expected_today"], "observed_today": row["observed_today"]}
+        for row in case_rows
+        if row.get("tier") == "variant" and row["hypothesis_confirmed"] is False
+    ]
+    baseline = _variant_baseline(root)
+    baseline_by_family = (baseline or {}).get("recall_variant_by_family", {})
+    variant_regressions = {
+        family: {"baseline": score["recall"], "observed": variant_by_family.get(family, {"recall": 0.0})["recall"]}
+        for family, score in baseline_by_family.items()
+        if variant_by_family.get(family, {"recall": 0.0})["recall"] < score["recall"]
+    }
+    baseline_gaps = (baseline or {}).get("known_gaps")
+    unrecorded_gaps = known_gaps if baseline_gaps is None else [gap for gap in known_gaps if gap not in baseline_gaps]
+    stale_baseline_gaps = [] if baseline_gaps is None else [gap for gap in baseline_gaps if gap not in known_gaps]
     return {
-        "recall_schema_version": "1.0",
+        "recall_schema_version": "2.0",
         "corpus": str(root),
         "cases": case_rows,
-        "recall_by_family": by_family,
-        "recall_global": {"detected": detected, "total": total, "recall": round(detected / total, 6) if total else 1.0},
+        "recall_canonical_by_family": canonical_by_family,
+        "recall_canonical_global": canonical_global,
+        "recall_variant_by_family": variant_by_family,
+        "recall_variant_global": variant_global,
+        "recall_by_family": canonical_by_family,
+        "recall_global": canonical_global,
         "fp_on_twins": {"count": len(twin_failures), "cases": twin_failures},
         "out_of_scope": out_of_scope,
+        "known_gaps": known_gaps,
+        "hypothesis_mismatches": hypothesis_mismatches,
+        "variant_baseline": baseline,
         "gates": {
             "minimum_recall_per_family": minimum,
             "maximum_fp_on_twins": twin_limit,
-            "below_recall_floor": below_floor,
-            "passed": not below_floor and len(twin_failures) <= twin_limit,
+            "below_canonical_recall_floor": below_floor,
+            "variant_regressions": variant_regressions,
+            "unrecorded_known_gaps": unrecorded_gaps,
+            "stale_baseline_gaps": stale_baseline_gaps,
+            "passed": not below_floor and len(twin_failures) <= twin_limit and not variant_regressions and not unrecorded_gaps,
         },
     }
 
@@ -196,7 +260,10 @@ def main(argv: list[str] | None = None) -> int:
     if not result["gates"]["passed"]:
         raise SystemExit(
             "seeded recall gate failed: "
-            f"below={result['gates']['below_recall_floor']}, twins={result['fp_on_twins']['cases']}"
+            f"canonical_below={result['gates']['below_canonical_recall_floor']}, "
+            f"twins={result['fp_on_twins']['cases']}, "
+            f"variant_regressions={result['gates']['variant_regressions']}, "
+            f"unrecorded_gaps={result['gates']['unrecorded_known_gaps']}"
         )
     return 0
 

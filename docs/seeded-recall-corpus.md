@@ -24,10 +24,30 @@ The corpus manifest contains three distinct kinds of case:
 harness. Static cases remain static: they do not acquire a confirmation claim
 merely because a harness exists for another family.
 
-The current gate is `recall >= 0.90` for every represented modeled family and
-zero hits on benign twins. The result is deterministic for a given commit and
-manifest, so the JSON emitted by the command can be stored alongside any
-benchmark run and compared across commits.
+## Canonical forms and realistic variants
+
+Positive cases are tiered. Existing canonical positives are the detector's
+contract floor; a missing `tier` is retained as backwards-compatible spelling
+of `canonical`. They gate at `recall >= 0.90` for every represented modeled
+family, with zero hits on benign twins.
+
+Variant positives measure the width of a family: aliases, alternative sinks,
+different interpolation forms, imports, and other patterns found in neglected
+code. Every variant declares a pre-run `expected_today` (`HIT`, `MISS`, or
+`UNKNOWN`) and a disposition: `close_gap`, `scope_boundary`, or `undecided`.
+The report emits canonical and variant recall separately, hypothesis
+mismatches, and the known-gap ledger.
+
+Variants do not lower the canonical gate. Their baseline in
+`tests/corpus/recall-variants-baseline.json` prevents coverage regressions and
+requires every current non-boundary miss to be explicitly enumerated. A miss
+is never resolved by rewriting its fixture into a canonical shape. Moving a
+variant to `scope_boundary` requires a documented decision; the baseline may
+move upward after coverage improves, never silently downward.
+
+The result is deterministic for a given commit and manifest, so the JSON
+emitted by the command can be stored alongside any benchmark run and compared
+across commits.
 
 ## Scope is not a cleanliness certificate
 

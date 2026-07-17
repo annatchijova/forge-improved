@@ -28,6 +28,10 @@ The session closed three classes of risk before measuring recall:
    benign twins are precision guards; out-of-scope defects are recorded but
    excluded from the denominator. The result and a compact baseline are
    versioned with the commit.
+4. **Clean-report language.** A real audit over a deliberately buggy but
+   unmodeled repository must render `COMPLETE_NO_FINDINGS` with both source
+   coverage and detector scope visible. The summary and standard report tiers
+   are denylisted against repository-cleanliness claims.
 
 The recall implementation also exposed and fixed one genuine scope gap:
 `os.path.join(base, user_path)` was declared as a path-traversal operation but
@@ -68,6 +72,22 @@ report assertion: render a real FORGE report over an out-of-scope fixture and
 verify that its disposition and prose preserve the scope qualifier. The
 runner-level coverage statement is necessary but insufficient evidence for
 that claim.
+
+That safeguard is now implemented. The report has one detector-scope source
+listing modeled families and representative unmodeled defect classes; the
+disposition block also shows source coverage and says that
+`COMPLETE_NO_FINDINGS` is bounded by both scopes.
+
+## Variants baseline
+
+The variants corpus contains 36 syntactic/data-flow alternatives across ten
+families. Its first measured baseline is 14/36 (`0.388889`): deliberately much
+lower than the canonical floor, because it measures family width rather than a
+manual-form contract. Twenty non-boundary misses are recorded as known gaps;
+three predicted misses were informative surprises where the detector already
+covered more than expected (shell variable, container-held float, and a helper
+return). The baseline fails only on coverage regression or an unrecorded miss,
+not because an honest known gap exists.
 
 ## Reproducibility and checkpoints
 

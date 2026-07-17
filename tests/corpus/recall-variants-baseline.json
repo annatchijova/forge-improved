@@ -1,0 +1,38 @@
+{
+  "recall_variants_schema_version": "1.0",
+  "recall_variant_global": {"detected": 14, "total": 36, "recall": 0.388889},
+  "recall_variant_by_family": {
+    "command-injection": {"detected": 1, "total": 3, "recall": 0.333333},
+    "decision-adjacent-float": {"detected": 3, "total": 3, "recall": 1.0},
+    "dynamic-evaluation": {"detected": 3, "total": 4, "recall": 0.75},
+    "hardcoded-credential": {"detected": 0, "total": 4, "recall": 0.0},
+    "parser-boundary": {"detected": 2, "total": 3, "recall": 0.666667},
+    "path-traversal": {"detected": 1, "total": 7, "recall": 0.142857},
+    "sql-injection": {"detected": 2, "total": 4, "recall": 0.5},
+    "subprocess": {"detected": 0, "total": 1, "recall": 0.0},
+    "unsafe-deserialization": {"detected": 0, "total": 4, "recall": 0.0},
+    "unversioned-serialization": {"detected": 2, "total": 3, "recall": 0.666667}
+  },
+  "known_gaps": [
+    {"case": "variant-path-concat", "family": "path-traversal", "disposition": "close_gap"},
+    {"case": "variant-path-alias", "family": "path-traversal", "disposition": "close_gap"},
+    {"case": "variant-path-fstring", "family": "path-traversal", "disposition": "close_gap"},
+    {"case": "variant-path-pathlib", "family": "path-traversal", "disposition": "undecided"},
+    {"case": "variant-path-keyword", "family": "path-traversal", "disposition": "close_gap"},
+    {"case": "variant-credential-subscript", "family": "hardcoded-credential", "disposition": "close_gap"},
+    {"case": "variant-credential-attribute", "family": "hardcoded-credential", "disposition": "close_gap"},
+    {"case": "variant-credential-dict", "family": "hardcoded-credential", "disposition": "undecided"},
+    {"case": "variant-pickle-alias", "family": "unsafe-deserialization", "disposition": "close_gap"},
+    {"case": "variant-pickle-direct-import", "family": "unsafe-deserialization", "disposition": "close_gap"},
+    {"case": "variant-yaml-unsafe-load", "family": "unsafe-deserialization", "disposition": "close_gap"},
+    {"case": "variant-yaml-full-load", "family": "unsafe-deserialization", "disposition": "close_gap"},
+    {"case": "variant-sql-format", "family": "sql-injection", "disposition": "close_gap"},
+    {"case": "variant-sql-alias", "family": "sql-injection", "disposition": "close_gap"},
+    {"case": "variant-command-os-system", "family": "command-injection", "disposition": "close_gap"},
+    {"case": "variant-command-alias", "family": "command-injection", "disposition": "close_gap"},
+    {"case": "variant-serialization-yaml-dump", "family": "unversioned-serialization", "disposition": "undecided"},
+    {"case": "variant-parser-yaml-safe", "family": "parser-boundary", "disposition": "undecided"},
+    {"case": "variant-web-template-path", "family": "path-traversal", "disposition": "close_gap"},
+    {"case": "variant-web-exec-file", "family": "subprocess", "disposition": "close_gap"}
+  ]
+}

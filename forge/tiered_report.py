@@ -10,6 +10,7 @@ from pathlib import Path
 import shlex
 from typing import Any
 
+from forge.detector_scope import detector_scope_statement
 from forge.io import load_json
 from forge.findings_narrator import narrate_loaded_sealed_findings
 from forge.sealing import verify_sealed
@@ -144,6 +145,13 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
         seal_text = "FAILED: " + "; ".join(verification.get("issues", []))
     metrics = _sidecar(source, "metrics.json") or {}
     disposition_status = metrics.get("audit_disposition", {}).get("status") or ("VERIFIED" if verification.get("ok") else "FAILED")
+    disposition_reason = str(metrics.get("audit_disposition", {}).get("reason", ""))
+    coverage = _sidecar(source, "coverage-report.json")
+    source_scope = (
+        f"Source coverage: {coverage.get('files_analyzed', 0)} analyzed / "
+        f"{coverage.get('files_discovered', 0)} discovered"
+        if coverage else "Source coverage: unavailable"
+    )
     status_tone = _status_tone(disposition_status)
     root = str(manifest.get("root", "."))
     attestation_text = "Assembly attestation: " + str(verification.get("attestation_status", "NOT_PRESENT"))
@@ -151,7 +159,7 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
     provenance_text = "External analytical provenance: " + str(external_provenance) if external_provenance else ""
     findings_html = "".join(_finding_html(finding, mode == "extended", root, count, locations) for finding, count, locations in display_groups) or "<p>No surviving findings in this artifact.</p>" if verification["ok"] else "<p>Finding records are withheld because this artifact failed verification. Inspect the raw artifact only in a controlled forensic workflow.</p>"
 
-    navigation = ["overview", "seal", "findings", "narrated-summary", "limitations"]
+    navigation = ["overview", "seal", "detector-scope", "findings", "narrated-summary", "limitations"]
     if mode in {"standard", "extended"}:
         navigation += ["discarded", "coverage"]
     if mode == "extended":
@@ -159,8 +167,9 @@ def render_tiered_report(sealed_path: str | Path, mode: str, destination: str | 
     nav_html = "<nav aria-label='Report sections'>" + "".join("<a href='#" + section + "'>" + html.escape(section.replace("-", " ").title()) + "</a>" for section in navigation) + "</nav>"
 
     sections = [
-        _overview_html(manifest, _sidecar(source, "coverage-report.json"), display_findings, display_groups, verification["ok"]),
-        "<section id='seal'><h2>Seal status</h2><p class='status-" + status_tone + "'>" + html.escape(str(disposition_status)) + " · " + html.escape(seal_text) + "<br>" + html.escape(attestation_text) + ("<br>" + html.escape(provenance_text) if provenance_text else "") + "</p></section>",
+        _overview_html(manifest, coverage, display_findings, display_groups, verification["ok"]),
+        "<section id='seal'><h2>Seal status</h2><p class='status-" + status_tone + "'>" + html.escape(str(disposition_status)) + " · " + html.escape(seal_text) + "<br>" + html.escape(attestation_text) + ("<br>" + html.escape(provenance_text) if provenance_text else "") + "<br>" + html.escape(disposition_reason) + "<br>" + html.escape(source_scope) + "</p></section>",
+        "<section id='detector-scope'><h2>Detector scope</h2><p>" + html.escape(detector_scope_statement()) + "</p><p>A clean disposition means no surviving finding within both the declared source scope and detector scope. It is not a repository-wide correctness or safety certification.</p></section>",
         "<section id='findings'><h2>Findings</h2>" + findings_html + "</section>",
         "<section id='narrated-summary' class='narrated-summary'><p class='prose-label'>💬 Narrated summary (not verified)</p><h2>Reader-oriented summary</h2><p>" + html.escape(narration.narrative) + "</p><p>This deterministic prose is derived after verification from the sealed finding set only. It is not evidence, is not sealed, and cannot change a finding, severity, disposition, or audit decision.</p>" + ("<ul>" + "".join("<li>" + html.escape(issue) + "</li>" for issue in narration.verification_issues) + "</ul>" if narration.verification_issues else "") + "</section>",
         "<section id='limitations'><h2>Limitations</h2><ul>" + "".join(f"<li>{html.escape(str(item))}</li>" for item in sealed.get("limitations", [])) + "</ul></section>",

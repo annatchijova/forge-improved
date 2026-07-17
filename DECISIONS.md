@@ -176,6 +176,23 @@ This pause records Codex's role as implementer, experimenter, and recorder,
 not as an authority that can certify repository correctness. Every resulting
 claim remains tied to a fixture, detector output, disposition, and commit.
 
+### Variant corpus scope boundaries (2026-07-18)
+
+The first variants baseline is intentionally below the canonical floor. It
+records 14 detected forms out of 36 variants and preserves every current
+non-boundary miss in `tests/corpus/recall-variants-baseline.json`. Those misses
+are recall backlog, not failures to hide or reasons to weaken the canonical
+gate.
+
+Two variants are explicit scope boundaries at this point: a credential formed
+by concatenating literals (`"ab" + "cd"`) and an indirect evaluator invoked
+through `getattr(obj, "eval")(value)`. Supporting those shapes requires an
+obfuscation/indirection policy beyond the current direct-AST contracts and may
+increase false positives. They remain measured, but do not enter the
+close-gap ledger unless a future scope decision changes them. The remaining
+MISS and `undecided` entries are visible in the variants baseline; they were
+not reclassified away.
+
 Induction supports parser, eval/exec, subprocess, float-threshold and SQL
 injection harnesses
 inside a spawned, resource-limited worker. The worker blocks network, actual
@@ -388,8 +405,9 @@ findings”.
 The disposition contract is implemented in `forge/disposition.py` and has six
 states:
 
-- `COMPLETE_NO_FINDINGS` — the declared source scope was verified and no
-  finding survived;
+- `COMPLETE_NO_FINDINGS` — the declared source and detector scopes were
+  verified and no modeled finding survived; it is not a whole-repository
+  cleanliness certificate;
 - `COMPLETE_WITH_FINDINGS` — the declared source scope was verified and one or
   more findings survived;
 - `ABSTAIN_INSUFFICIENT_SCOPE` — source boundaries were skipped, unreadable,

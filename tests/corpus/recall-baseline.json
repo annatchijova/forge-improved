@@ -1,5 +1,5 @@
 {
-  "recall_schema_version": "1.0",
+  "recall_schema_version": "2.0",
   "recall_global": {"detected": 29, "total": 29, "recall": 1.0},
   "fp_on_twins": {"count": 0, "cases": []},
   "out_of_scope_case_count": 8,

@@ -261,7 +261,7 @@ audit disposition is deterministic and separate from the findings themselves:
 
 | Disposition | Meaning | Next action |
 |---|---|---|
-| `COMPLETE_NO_FINDINGS` | Declared source scope was verified and no finding survived | No action within that scope |
+| `COMPLETE_NO_FINDINGS` | Declared source and detector scopes were verified; no modeled finding survived | No action within those scopes |
 | `COMPLETE_WITH_FINDINGS` | Declared source scope was verified and findings survived | Review the evidence |
 | `ABSTAIN_INSUFFICIENT_SCOPE` | Source files were skipped, unreadable, syntactically invalid, outside scope, or in an unsupported language | Complete the scope and rerun |
 | `ABSTAIN_UNDETERMINED` | Independent evidence paths contradict each other | Resolve the contradiction and rerun |
