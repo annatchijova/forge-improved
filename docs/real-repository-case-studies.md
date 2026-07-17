@@ -53,6 +53,14 @@ deterministic, reproducible signal as a lead for a second investigation. The
 human/agent review supplied the additional reasoning and verification; FORGE
 preserved the initial evidence and did not silently rewrite its verdict.
 
+The subsequent read-only breadth audit of the executable
+`honest-degradation` skill is recorded in
+[`vigia-honest-degradation-breadth-2026-07-17.md`](vigia-honest-degradation-breadth-2026-07-17.md).
+It separates a corpus-backed false positive, a registry timeout represented as
+clean zero, a partial-attestation defect reached through a dead duplicate, and
+the live pattern that FORGE still missed. That document is deliberately more
+precise than a finding count.
+
 ## What these runs demonstrate
 
 FORGE is not a guarantee that a repository is bug-free. It is a governed

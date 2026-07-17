@@ -52,20 +52,23 @@ across commits.
 ## Current measured baseline
 
 The canonical corpus remains 29/29 (`1.0`) with zero benign-twin hits. The
-realistic-variants corpus is 27/36 (`0.75`) after the second gap-closure lot.
-That increase came from import spellings for unsafe deserialization, extended
-credential targets, local path-expression flow, and SQL/command interpolation
-or aliases; it is not a claim of family-complete coverage. The remaining
-non-boundary misses stay in the baseline as visible backlog. See
+realistic-variants corpus is 30/39 (`0.769231`) with zero benign-twin hits.
+The increase includes import spellings for unsafe deserialization, extended
+credential targets, local path-expression flow, SQL/command interpolation or
+aliases, and three VIGÍA-derived honest-degradation patterns. It is not a claim
+of family-complete coverage. The remaining non-boundary misses stay in the
+baseline as visible backlog. See
 [`recall-gap-closure-lot-1.md`](recall-gap-closure-lot-1.md) for exact
 fixtures and limits, and [`recall-gap-closure-lot-2.md`](recall-gap-closure-lot-2.md)
 for the SQL/command work.
 
-The VIGÍA-derived honest-degradation variants add the first breadth checks for
-executable governance skills: logged default returns, logged loop drops, and
-logged stage swallows are positive cases, while sentinels, raised errors,
-explicit error accumulators, skip flags, optional fields, and cleanup paths are
-precision guardrails.
+The VIGÍA-derived honest-degradation variants add breadth checks for executable
+governance skills: logged default returns, logged loop drops, logged stage
+swallows, and direct returned `*_UNANALYZED` markers with a drop ledger.
+Sentinels, raised errors, explicit error accumulators, skip flags, optional
+fields, and cleanup paths are precision guardrails. The VIGÍA breadth
+adjudication is documented in
+[`vigia-honest-degradation-breadth-2026-07-17.md`](vigia-honest-degradation-breadth-2026-07-17.md).
 
 ## Scope is not a cleanliness certificate
 
