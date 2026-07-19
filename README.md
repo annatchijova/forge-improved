@@ -13,6 +13,69 @@
 
 ---
 
+## Visual walkthrough
+
+<p align="center">
+  <img src="visual/logo.png" alt="FORGE logo" width="220">
+</p>
+
+<p align="center">
+  <img src="visual/1.png" alt="FORGE overview 1" width="360">
+  <img src="visual/2.png" alt="FORGE overview 2" width="360">
+  <img src="visual/3.png" alt="FORGE overview 3" width="360">
+  <img src="visual/4.png" alt="FORGE overview 4" width="360">
+</p>
+
+### Four execution modes — CORVUS × CRONOS
+
+The same read-only audit baseline was exercised through CLI, the Python API,
+MCP, and the orchestrator against
+[Wolf & CRONOS](https://github.com/annatchijova/wolf-and-cronos). The
+screenshots preserve the run trail and the follow-up adjudication.
+
+<p align="center">
+  <img src="visual/analisis%204%20modes/cli_corvus.png" alt="CLI audit of CORVUS and CRONOS" width="300">
+  <img src="visual/analisis%204%20modes/clicorvus2.png" alt="CLI sealed verification" width="300">
+  <img src="visual/analisis%204%20modes/phyton_corvus.png" alt="Python API audit" width="300">
+  <img src="visual/analisis%204%20modes/orchestator1.png" alt="Orchestrator audit" width="300">
+  <img src="visual/analisis%204%20modes/orchestator2.png" alt="Orchestrator shard verification" width="300">
+  <img src="visual/analisis%204%20modes/mcp1.png" alt="MCP audit" width="300">
+  <img src="visual/analisis%204%20modes/mcp2.png" alt="MCP artifact output" width="300">
+  <img src="visual/analisis%204%20modes/mcp3.png" alt="MCP findings" width="300">
+  <img src="visual/analisis%204%20modes/mcp4.png" alt="MCP verification" width="300">
+  <img src="visual/analisis%204%20modes/mcp5.png" alt="MCP multi-agent result" width="300">
+  <img src="visual/analisis%204%20modes/mcp6.png" alt="MCP canonical result" width="300">
+  <img src="visual/analisis%204%20modes/Screenshot%20from%202026-07-19%2017-59-31.png" alt="Four-mode run evidence 1" width="300">
+  <img src="visual/analisis%204%20modes/Screenshot%20from%202026-07-19%2018-00-42.png" alt="Four-mode run evidence 2" width="300">
+  <img src="visual/analisis%204%20modes/llm_post_analisis.png" alt="Post-audit adjudication" width="300">
+</p>
+
+### Native HTML reports
+
+<p align="center">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-45-30.png" alt="FORGE HTML report 1" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-45-42.png" alt="FORGE HTML report 2" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-45-56.png" alt="FORGE HTML report 3" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-46-09.png" alt="FORGE HTML report 4" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-46-20.png" alt="FORGE HTML report 5" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-46-28.png" alt="FORGE HTML report 6" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-47-00.png" alt="FORGE HTML report 7" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-47-12.png" alt="FORGE HTML report 8" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-47-26.png" alt="FORGE HTML report 9" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-47-41.png" alt="FORGE HTML report 10" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-48-00.png" alt="FORGE HTML report 11" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-48-14.png" alt="FORGE HTML report 12" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-48-39.png" alt="FORGE HTML report 13" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-49-35.png" alt="FORGE HTML report 14" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-49-55.png" alt="FORGE HTML report 15" width="260">
+  <img src="visual/report_html/Screenshot%20from%202026-07-19%2018-50-23.png" alt="FORGE HTML report 16" width="260">
+</p>
+
+Live report views: [standard](https://annatchijova.github.io/vigia/forge-report.html)
+and [extended](https://annatchijova.github.io/vigia/forge-extended.html).
+
+---
+
 ## Why FORGE?
 
 Modern AI coding assistants are excellent at producing code.
