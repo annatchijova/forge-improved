@@ -59,3 +59,19 @@ def test_induction_synthetic_value_for_a_plain_string_parameter_is_unaffected(tm
     result = induce_hypothesis(tmp_path, "target.py", 3, "The parser call has no nearby exception handling")
     assert result.status == "FALSIFIED"
     assert "JSONDecodeError" in result.evidence
+
+
+def test_induction_blocks_target_directory_creation_outside_sandbox(tmp_path):
+    marker = tmp_path / "outside-sandbox-marker"
+    (tmp_path / "target.py").write_text(
+        "import json\n"
+        "import os\n"
+        "from pathlib import Path\n"
+        "def load(raw):\n"
+        "    os.mkdir(Path(__file__).parent / 'outside-sandbox-marker')\n"
+        "    return json.loads(raw)\n"
+    )
+    result = induce_hypothesis(tmp_path, "target.py", 6, "The parser call has no nearby exception handling")
+    assert result.status == "UNDETERMINED", result
+    assert "sandbox" in result.detail
+    assert not marker.exists()

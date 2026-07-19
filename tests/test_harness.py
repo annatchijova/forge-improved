@@ -1,8 +1,18 @@
+import pytest
+
 from forge.harness.mining import mine, mine_ledger, combine, LEDGER_AGENT
 from forge.harness.proposal import propose
 from forge.harness.validation import validate, run_held_in_gate
+from forge.sealing import seal_findings
+
+
+@pytest.fixture(autouse=True)
+def _authenticated_harness_fixture_seals(monkeypatch):
+    monkeypatch.setenv("FORGE_SEAL_HMAC_KEY", "harness-test-key")
+
+
 def run(reason, path):
-    return {"manifest":{"discarded":[{"reason":reason,"module_path":path,"agent":"bug_investigator","family":"float comparison","mechanism":"unstripped inline comment"}],"findings":[]}}
+    return seal_findings([], {"discarded":[{"reason":reason,"module_path":path,"agent":"bug_investigator","family":"float comparison","mechanism":"unstripped inline comment"}]})
 def test_mining_clusters_exact_recurring_signature():
     bundle=mine([run("AST proves explicit tolerance",f"m{i}.py") for i in range(3)])
     assert len(bundle.clusters)==1 and bundle.clusters[0].frequency==3
@@ -17,7 +27,7 @@ def test_mining_has_no_security_signal_for_benign_examined_cases():
     # The auditor can examine this safe credential surface, but currently
     # emits no structured "examined and ruled benign" record.
     safe_runs = [
-        {"manifest": {"discarded": [], "findings": [], "security_auditor": {"examined": ["safe.py"]}}}
+        seal_findings([], {"discarded": [], "findings": [], "security_auditor": {"examined": ["safe.py"]}})
         for _ in range(3)
     ]
     bundle = mine(safe_runs)
@@ -56,10 +66,10 @@ def test_combine_merges_matching_signatures_across_sources():
     # A second source sharing the exact same (check, agent, mechanism)
     # signature must fold into one cluster with combined frequency, not
     # appear as two separate size-1 clusters.
-    second_bundle = mine([{"manifest": {"discarded": [
+    second_bundle = mine([seal_findings([], {"discarded": [
         {"reason": "duplicate naming proximity", "module_path": "FP-x", "agent": "bug_investigator",
          "family": "float comparison", "mechanism": "unstripped inline comment"},
-    ], "findings": []}}])
+    ], "findings": []})])
     combined = combine(first_bundle, second_bundle)
     assert len(combined.clusters) == 1
     assert combined.clusters[0].frequency == 2
@@ -70,3 +80,18 @@ def test_run_held_in_gate_passes_on_the_repository_golden_corpus():
     assert result["passed"], result["below_threshold"]
     assert result["stage"] == "held_in_corpus"
     assert result["by_family"]
+
+
+def test_mining_rejects_arbitrary_or_tampered_run_data():
+    with pytest.raises(ValueError, match="unverified sealed run"):
+        mine([{"manifest": {"discarded": [], "findings": []}}])
+    tampered = run("AST proves explicit tolerance", "m.py")
+    tampered["manifest"]["discarded"][0]["reason"] = "attacker-controlled"
+    with pytest.raises(ValueError, match="unverified sealed run"):
+        mine([tampered])
+
+
+def test_mining_rejects_ephemeral_unattested_seal(monkeypatch):
+    monkeypatch.delenv("FORGE_SEAL_HMAC_KEY")
+    with pytest.raises(ValueError, match="unauthenticated sealed run"):
+        mine([run("AST proves explicit tolerance", "m.py")])

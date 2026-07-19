@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from forge.io import load_json
+from forge.sealing import verify_sealed
 from forge.severity import finding_family
 
 LEDGER_AGENT = "ledger"
@@ -20,8 +21,24 @@ class WeaknessBundle:
     clusters: tuple[WeaknessCluster, ...]
 
 def _read(run):
-    if isinstance(run, (str, Path)): return load_json(run, f"mined run {run}"), str(run)
-    return run, "memory"
+    if isinstance(run, (str, Path)):
+        data, label = load_json(run, f"mined run {run}"), str(run)
+    elif isinstance(run, dict):
+        data, label = run, "memory"
+    else:
+        raise ValueError("mined run must be a sealed FORGE artifact or its decoded object")
+    verification = verify_sealed(data)
+    if not verification.get("ok"):
+        raise ValueError(f"cannot mine unverified sealed run {label}: {verification.get('issues', [])}")
+    if not (
+        verification.get("authentication_status") == "VERIFIED"
+        or verification.get("attestation_status") == "VERIFIED"
+    ):
+        raise ValueError(
+            f"cannot mine unauthenticated sealed run {label}: "
+            "a verified HMAC seal or persistent source attestation is required"
+        )
+    return data, label
 
 def mine(runs) -> WeaknessBundle:
     groups = defaultdict(list)

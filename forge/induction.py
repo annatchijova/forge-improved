@@ -190,6 +190,24 @@ def _apply_worker_sandbox(sandbox: Path) -> None:
                 return denied()
             return _original(source, destination, *args, **kwargs)
         setattr(os, name, guarded_rename)
+    for name in ("mkdir", "makedirs", "chmod", "chown", "utime", "truncate", "mkfifo", "mknod"):
+        if not hasattr(os, name):
+            continue
+        original = getattr(os, name)
+        def guarded_path_mutation(path: Any, *args: Any, _original=original, **kwargs: Any):
+            if not writable_path(path):
+                return denied()
+            return _original(path, *args, **kwargs)
+        setattr(os, name, guarded_path_mutation)
+    for name in ("link", "symlink"):
+        if not hasattr(os, name):
+            continue
+        original = getattr(os, name)
+        def guarded_link(source: Any, destination: Any, *args: Any, _original=original, **kwargs: Any):
+            if not writable_path(destination):
+                return denied()
+            return _original(source, destination, *args, **kwargs)
+        setattr(os, name, guarded_link)
     socket.socket = denied
 
 
