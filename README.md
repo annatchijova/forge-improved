@@ -17,6 +17,11 @@
 
 **Live** — ▶ [**Preview**](https://forge-preview-lyart.vercel.app) · ▶ [**Technical Companion**](https://forge-technical-companion.vercel.app)
 
+> **Live report views** — ▶ [**Standard**](https://annatchijova.github.io/vigia/forge-report.html) · ▶ [**Extended**](https://annatchijova.github.io/vigia/forge-extended.html)
+>
+> The rendered HTML reports from a real FORGE audit, in two depths: the
+> standard daily-review pass and the extended forensic deep dive.
+
 ---
 
 ## Why FORGE?
@@ -582,10 +587,7 @@ The self-contained interactive dashboard, walked through view by view:
 </p>
 </details>
 
-> **Live report views** — ▶ [**Standard**](https://annatchijova.github.io/vigia/forge-report.html) · ▶ [**Extended**](https://annatchijova.github.io/vigia/forge-extended.html)
->
-> The rendered HTML reports from a real FORGE audit, in two depths: the
-> standard daily-review pass and the extended forensic deep dive.
+*(Live report view links are at the top of this README, next to Preview and Technical Companion.)*
 
 ---
 
