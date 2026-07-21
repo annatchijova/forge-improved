@@ -22,6 +22,24 @@
 > The rendered HTML reports from a real FORGE audit, in two depths: the
 > standard daily-review pass and the extended forensic deep dive.
 
+> **Terminal-first and agent-ready.** One deterministic audit runtime is
+> available through the CLI, Python API, and native MCP: agents use a governed
+> tool boundary rather than a prompt being treated as audit authority. The core
+> audit path is local, read-only, stdlib-only, and needs no API key or network.
+
+## Evidence at hackathon scale
+
+> **Over 800 MB of reproducible audit evidence — approaching a gigabyte.**
+
+`results/` in this repository contains **46 MB** of sealed HTML and JSON audit
+artifacts. A further **764 MB** is published in the separate
+[`forge-results`](https://github.com/annatchijova/forge-results) archive.
+
+This is an accumulated investigation record, not one or two showcase reports:
+self-audits, real-repository case studies, benchmark runs, false positives,
+discarded hypotheses, sealed manifests, traces, and regression-backed fixes
+remain available for inspection.
+
 ---
 
 ## Why FORGE?
@@ -75,11 +93,14 @@ Seal
 The objective is not to produce more findings. It is to produce findings that
 can be independently verified.
 
-## FORGE's governed engineering method
+## A governance SDK for agent engineering
 
-The runtime is organized as a sequence of responsibilities. Each stage is
-backed by explicit skills, so the method is inspectable rather than hidden in a
-prompt or an agent persona.
+FORGE captures 20 documented engineering and governance skills as reusable
+methods, not prompt templates. They make the runtime's reasoning obligations
+inspectable instead of hiding them in a prompt or an agent persona. The current
+executable runtime enforces the applicable versioned contracts; the remaining
+skills stay explicitly documented as process-level methodology rather than
+being misrepresented as scanners.
 
 | Stage | Skills |
 |---|---|
@@ -101,17 +122,17 @@ full configuration and a measured cost example.
 
 ---
 
-## Proof: FORGE found a real bug in itself
+## Dogfooding case study: FORGE found a real bug in itself
 
 Dogfooding isn't a slide, it's a run. Auditing the maintainer's own
 `vigia-repo` (a repository FORGE had never seen) hung indefinitely instead of
 completing. Root cause: an infinite loop in FORGE's own Integrity Inspector,
 triggered by an entirely ordinary pattern — a variable reassigned with a
 different `float()` call in each branch of an `if`/`else`. Fixed, with a
-regression test; the same audit now completes in **~2.5 seconds instead of
-hanging past a 280-second timeout**, and surfaces real findings in the
-audited repository itself — including a probability returned as a raw
-`float()` from a model prediction inside a function literally named
+regression test: the same audit now completes in **~2.5 seconds instead of
+hanging past a 280-second timeout**. The corrected audit also surfaced real
+findings in the audited repository itself, including a probability returned as
+a raw `float()` from a model prediction inside a function literally named
 `calibrated_posterior()`.
 
 Full writeup and all three run artifacts (JSON + HTML) in

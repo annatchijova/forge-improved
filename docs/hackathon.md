@@ -12,6 +12,36 @@ evidence provenance, bounded execution, and judge-friendly outputs:
 * The project separates observed findings, discarded hypotheses, optional
   recommendations, and applied code changes.
 
+## Evidence at hackathon scale
+
+> **Over 800 MB of reproducible audit evidence — approaching a gigabyte.**
+
+The checked-in [`results/`](../results/) directory contains **46 MB** of
+sealed HTML and JSON artifacts. Another **764 MB** is published in the
+separate [forge-results archive](https://github.com/annatchijova/forge-results).
+
+Together, these records show accumulated work rather than a pair of polished
+demo outputs: self-audits, real-repository case studies, benchmark runs, false
+positives, discarded hypotheses, traces, manifests, and regression-backed
+fixes remain available for inspection.
+
+## Developer-tool surface
+
+- **Terminal-first local audits.** `python3 -m forge audit /path/to/repository`
+  runs the read-only deterministic core with no API key, network connection, or
+  third-party runtime dependency.
+- **Native MCP frontend.** The same runtime is available to Codex, Claude
+  Code, and compatible MCP clients through governed audit tools. MCP changes
+  the integration surface, never the evidence model or decision authority.
+- **Multi-agent work-product verification.** External agent findings can be
+  assembled against FORGE's evidence and provenance contracts. An external
+  layer that cannot be analytically attested remains `UNATTESTED`, and the
+  canonical result abstains rather than promoting it by authority.
+- **Governance SDK, not prompt templates.** The project publishes 20
+  documented engineering skills that can guide humans and agents. Six currently
+  run as versioned, executable contracts; the rest remain visibly
+  process-level obligations instead of being overstated as automated scanners.
+
 ## Submission links
 
 - **Video:** <https://www.youtube.com/watch?v=zdxnPsre31I>
