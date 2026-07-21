@@ -40,6 +40,23 @@ self-audits, real-repository case studies, benchmark runs, false positives,
 discarded hypotheses, sealed manifests, traces, and regression-backed fixes
 remain available for inspection.
 
+### What those numbers mean
+
+The counts below were generated with `cloc` over tracked `.py`, `.md`,
+`.json`, `.sql`, and `.html` files on 2026-07-21. They separate the runtime
+from the generated evidence it preserves:
+
+| Repository | Tracked files counted | Total lines | Meaning |
+|---|---:|---:|---|
+| This `forge` repository | 479 | **743,646** | Runtime, tests, documentation, visual reports, and checked-in sealed artifacts |
+| [`forge-results`](https://github.com/annatchijova/forge-results) | 563 | **7,868,088** | Separately versioned archive of generated JSON/HTML evidence and audit reports |
+
+The runtime itself contains **11,603 Python LOC**. The rest is not being
+presented as implementation code: it is the inspectable corpus of manifests,
+reports, traces, false positives, discarded hypotheses, benchmark runs, and
+regression evidence that the project has accumulated. The distinction matters.
+FORGE is designed to leave an investigation record, not merely print a result.
+
 ---
 
 ## Why FORGE?
@@ -51,6 +68,12 @@ defect, distinguishing evidence from speculation, documenting discarded
 hypotheses, or proving what was actually inspected.
 
 FORGE addresses that gap.
+
+It is deliberately not a generic “find bugs” wrapper. A detector signal is a
+lead with a scope, mechanism, provenance, and uncertainty state. The runtime
+must preserve the lead even when it later becomes a false positive, because a
+false positive can reveal a different reachable defect — and because silently
+rewriting that history would make the audit less trustworthy, not more.
 
 ## The problem FORGE solves
 
