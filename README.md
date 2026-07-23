@@ -112,6 +112,17 @@ audit runtime. It makes scope, evidence, discarded hypotheses, limitations,
 role boundaries, and reproducible sealed artifacts part of the audit result
 rather than optional commentary around a list of findings.
 
+## How Codex and ChatGPT were used
+
+Codex, operating through ChatGPT with GPT-5.6, supported the engineering loop
+around FORGE: local deterministic audits and tests performed the first pass;
+Codex reviewed the resulting evidence and diffs, validated suspected bugs
+against the live repository, and began bounded corrections only when the
+evidence justified them. This workflow reduced unnecessary model context and
+token cost by using local tooling to narrow the search before asking ChatGPT to
+reason about a specific failure. The runtime itself remains honest: its
+detectors, sealing, and reports do not claim that a model ran when they did not.
+
 > FORGE behaves like a forensic engineering team.
 
 ```
@@ -738,3 +749,4 @@ Every artifact can stand again.
 Audit the future, protect the code.
 Truth is the only road.
 FORGE!
+# forge-improved
