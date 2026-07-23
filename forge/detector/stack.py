@@ -44,9 +44,14 @@ def discover_files(root: str | os.PathLike[str], include_excluded: bool = False)
 
     ``include_excluded`` is only for coverage accounting, which must report
     policy exclusions rather than silently losing them.
+
+    The result is sorted: ``Path.rglob`` yields entries in filesystem order,
+    which varies across platforms and would make discovery order (and therefore
+    finding order and the seal) non-deterministic. Sorting keeps the walk
+    reproducible bit-for-bit.
     """
     base = Path(root)
-    return [p for p in base.rglob("*") if p.is_file() and (include_excluded or not is_excluded_by_policy(p, base))]
+    return sorted(p for p in base.rglob("*") if p.is_file() and (include_excluded or not is_excluded_by_policy(p, base)))
 
 
 def is_excluded_by_policy(path: Path, root: Path) -> bool:
