@@ -2,8 +2,10 @@ from forge.agents.security_auditor import audit as security_audit
 from forge.agents.web_auditor import audit as web_audit
 from forge.agents.integrity_inspector import inspect as integrity_inspect
 from forge.models import Evidence, Finding
-from forge.runtime import _agent_finding, _deduplicate_findings
-from forge.severity import severity_for
+from types import SimpleNamespace
+
+from forge.runtime import _agent_finding, _deduplicate_findings, _with_severity
+from forge.severity import is_test_module, severity_for
 
 
 def _write(root, name, text):
@@ -134,3 +136,33 @@ connection.execute("CREATE TABLE ledger (total DECIMAL, name TEXT)")
     assert sorted((item.path, item.line) for item in findings if item.family == "money-as-float") == [
         ("money.py", 2), ("money.py", 3), ("money.py", 6), ("money.py", 6),
     ]
+
+
+def test_is_test_module_matches_test_paths_not_lookalikes():
+    for path in ("test/run.js", "tests/foo.py", "src/foo.test.js", "__tests__/x.py",
+                 "test/fixtures/a.js", "spec/thing_spec.py"):
+        assert is_test_module(path), path
+    for path in ("lib/parser.js", "src/latest.py", "bin/zone38.js", "app/contest.py"):
+        assert not is_test_module(path), path
+
+
+def test_boundary_findings_downweighted_in_test_modules_only():
+    base = dict(epistemic_level="CODE FACT", description="path traversal via open",
+                controllability="UNDETERMINED", exploitability="NOT_ASSESSED")
+    # Real production module: unchanged (MEDIUM under UNDETERMINED controllability).
+    assert severity_for("src/app.py", family="path-traversal", **base) == "MEDIUM"
+    # Same finding inside a test module: down-weighted to LOW.
+    assert severity_for("test/run.js", family="path-traversal", **base) == "LOW"
+    assert severity_for("test/run.js", family="parser-boundary", **base) == "LOW"
+    # Other families are NOT down-weighted in tests (a hardcoded credential still matters).
+    assert severity_for("test/run.js", family="credential", **base) == "MEDIUM"
+
+
+def test_downweight_names_the_reason_and_keeps_the_finding():
+    item = SimpleNamespace(description="path traversal via open", path="test/run.js",
+                           line=10, family="path-traversal", column=None,
+                           controllability="UNDETERMINED", exploitability="NOT_ASSESSED")
+    finding = _with_severity(_agent_finding("security_auditor", item), family="path-traversal")
+    assert finding.severity == "LOW"                    # down-weighted
+    assert finding.module_path == "test/run.js"         # present, not suppressed
+    assert "test module" in finding.reasoning.lower()   # the degradation is named (honest)

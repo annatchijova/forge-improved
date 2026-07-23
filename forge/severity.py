@@ -29,6 +29,31 @@ _CONFIDENCE_CEILING = {
     "NOT_APPLICABLE": "INFO",
 }
 
+# Path/parser boundary findings inside test code are real but low actionable
+# value: tests read known fixtures under a fixed path, not hostile input. These
+# families are down-weighted (never suppressed) when the module is a test module.
+TEST_CONTEXT_DOWNWEIGHT_FAMILIES = frozenset({"path-traversal", "parser-boundary"})
+_TEST_DIR_SEGMENTS = frozenset(
+    {"test", "tests", "__tests__", "spec", "specs", "fixtures", "testdata"}
+)
+
+
+def is_test_module(module_path: str) -> bool:
+    """Heuristic (pure, deterministic): is this module test code?
+
+    True when any path segment is a test directory (``test``, ``tests``,
+    ``__tests__``, ``spec``, ``fixtures``, ...) or the filename follows a test
+    naming convention (``test_x``, ``x.test.js``, ``x_spec.py``). Full-segment
+    matching for directories avoids false hits like ``latest``/``contest``.
+    """
+    segments = module_path.replace("\\", "/").lower().split("/")
+    name = segments[-1] if segments else ""
+    if any(seg in _TEST_DIR_SEGMENTS for seg in segments):
+        return True
+    if name.startswith("test_") or name.startswith("test."):
+        return True
+    return any(marker in name for marker in (".test.", ".spec.", "_test.", "_spec."))
+
 
 def finding_family(description: str) -> str:
     text = description.lower()
@@ -80,4 +105,10 @@ def severity_for(
         ceiling = "MEDIUM"
     elif exploitability not in {"PLAUSIBLE", "CONFIRMED"}:
         ceiling = "MEDIUM"
-    return severity if _SEVERITY_RANK[severity] <= _SEVERITY_RANK[ceiling] else ceiling
+    severity = severity if _SEVERITY_RANK[severity] <= _SEVERITY_RANK[ceiling] else ceiling
+    if family in TEST_CONTEXT_DOWNWEIGHT_FAMILIES and is_test_module(module_path):
+        # Real, but low actionable value inside a test module. Down-weight for
+        # signal/noise; the finding and its evidence are kept, never suppressed.
+        if _SEVERITY_RANK[severity] > _SEVERITY_RANK["LOW"]:
+            severity = "LOW"
+    return severity

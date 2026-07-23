@@ -23,7 +23,12 @@ from forge.evidence_package import build_repository_profile, write_markdown_repo
 from forge.governance.runtime import infer_domains, load_skills, run_skills
 from forge.hypotheses import generate_hypotheses, write_hypotheses_manifest
 from forge.io import load_json
-from forge.severity import finding_family, severity_for
+from forge.severity import (
+    TEST_CONTEXT_DOWNWEIGHT_FAMILIES,
+    finding_family,
+    is_test_module,
+    severity_for,
+)
 from forge.sharding import deterministic_shards, validate_shards
 from forge.models import AgentScanResult, CoverageReport, Evidence, Finding, ModelRouting, TriageManifest, VerificationManifest
 from forge.metrics import collect_metrics
@@ -129,8 +134,15 @@ def _agent_finding(agent: str, item) -> Finding:
 
 
 def _with_severity(finding: Finding, family: str | None = None) -> Finding:
+    reasoning = finding.reasoning
+    if family in TEST_CONTEXT_DOWNWEIGHT_FAMILIES and is_test_module(finding.module_path):
+        reasoning += (
+            " Severity reduced: this boundary is inside a test module, where paths"
+            " and inputs are fixed fixtures rather than hostile input -- real, but"
+            " low actionable value. The finding is kept, not suppressed."
+        )
     return Finding(finding.category, finding.epistemic_level, finding.module_path,
-                   finding.description, finding.evidence, finding.reasoning,
+                   finding.description, finding.evidence, reasoning,
                    finding.agent, finding.outcome,
                    severity_for(
                        finding.module_path, finding.epistemic_level, finding.description, finding.agent,
