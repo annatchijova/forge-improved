@@ -137,6 +137,54 @@ def test_sql_induction_uses_an_in_memory_receiver_probe(tmp_path):
     assert result.findings[0].epistemic_level == "CONFIRMED BY INDUCTION"
     assert result.induction[0]["family"] == "sql-injection"
 
+def test_sql_closed_literal_set_is_benign(tmp_path):
+    # Real false positive found running Strix's bandit/semgrep against
+    # vigia-repo's browser_forensics.py: the interpolated fragment is one of
+    # two SQL literals chosen by a bool computed inside the function, never
+    # attacker input. Static provenance tracing should discard this without
+    # needing to run induction.
+    (tmp_path / "main.py").write_text(
+        "def query(cur, has_chains):\n"
+        "    url_expr = '(SELECT url FROM chains)' if has_chains else 'd.tab_url'\n"
+        "    return cur.execute(f\"SELECT d.id, {url_expr} AS url FROM downloads d\")\n"
+    )
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))
+    assert not result.findings
+    assert result.discarded
+
+def test_sql_parameter_source_is_not_discarded_even_without_induction(tmp_path):
+    (tmp_path / "main.py").write_text(
+        "def search(user):\n"
+        "    return cursor.execute(f\"SELECT * FROM users WHERE name = '{user}'\")\n"
+    )
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))
+    assert result.findings
+    assert result.findings[0].epistemic_level == "PLAUSIBLE HYPOTHESIS"
+    assert not result.discarded
+
+def test_sql_attribute_read_is_not_discarded(tmp_path):
+    # A value read off an object (request.args, a row from another table,
+    # etc.) is exactly as open as a parameter — must not be classified benign
+    # just because it isn't a bare function argument.
+    (tmp_path / "main.py").write_text(
+        "def search(request):\n"
+        "    name = request.args['name']\n"
+        "    return cursor.execute(f\"SELECT * FROM users WHERE name = '{name}'\")\n"
+    )
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))
+    assert result.findings
+    assert not result.discarded
+
+def test_sql_string_concatenation_of_literals_is_benign(tmp_path):
+    (tmp_path / "main.py").write_text(
+        "def query(cur):\n"
+        "    suffix = ' ORDER BY id'\n"
+        "    return cur.execute('SELECT * FROM t' + suffix)\n"
+    )
+    result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))
+    assert not result.findings
+    assert result.discarded
+
 def test_float_tolerance_is_benign_exact_float_remains_candidate(tmp_path):
     (tmp_path / "main.py").write_text("import math\ndef score(x):\n    return math.isclose(x, 1.0, abs_tol=0.01)\n")
     result = verify_hypotheses(generate_hypotheses(triage(tmp_path)))

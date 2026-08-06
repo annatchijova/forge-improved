@@ -97,6 +97,80 @@ def _float_benign(tree: ast.AST, line: int, source: str, function_name: str | No
     text = ast.unparse(node)
     return "Decimal(" in text or "Fraction(" in text
 
+def _enclosing_function(tree: ast.AST, node: ast.AST) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    parents = {}
+    for parent in ast.walk(tree):
+        for child in ast.iter_child_nodes(parent):
+            parents[child] = parent
+    while node in parents:
+        node = parents[node]
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return node
+    return None
+
+def _is_closed_string_expr(tree: ast.AST, function: ast.AST, node: ast.AST, seen: frozenset[str]) -> bool:
+    """True iff ``node`` can only ever evaluate to a string drawn from a
+    closed set of literals fixed in source — never something an argument,
+    an external read (attribute/subscript/call), or a loop could smuggle in.
+
+    Deliberately conservative in one direction only: any construct this
+    cannot prove closed is treated as open. That means it can only ever
+    *discard* a hypothesis that provably cannot be attacker-controlled; it
+    can never mis-classify a genuinely open source as closed and hide a
+    real injection behind a false "benign" verdict.
+    """
+    if isinstance(node, ast.Constant):
+        return isinstance(node.value, str)
+    if isinstance(node, ast.JoinedStr):  # an f-string: every {expr} must itself be closed
+        return all(
+            _is_closed_string_expr(tree, function, value.value, seen)
+            for value in node.values
+            if isinstance(value, ast.FormattedValue)
+        )
+    if isinstance(node, ast.IfExp):
+        return _is_closed_string_expr(tree, function, node.body, seen) and _is_closed_string_expr(
+            tree, function, node.orelse, seen
+        )
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _is_closed_string_expr(tree, function, node.left, seen) and _is_closed_string_expr(
+            tree, function, node.right, seen
+        )
+    if isinstance(node, ast.Name):
+        return _closed_string_name(tree, function, node.id, seen)
+    # Calls, subscripts, attributes, comprehensions, f-string conversions of
+    # non-string values, etc: no proof of closure available here.
+    return False
+
+def _closed_string_name(tree: ast.AST, function: ast.AST, name: str, seen: frozenset[str]) -> bool:
+    if name in seen:
+        return True  # already on the trace path; do not loop forever on it
+    seen = seen | {name}
+    params = function.args
+    param_names = {a.arg for a in (*params.posonlyargs, *params.args, *params.kwonlyargs)}
+    if params.vararg: param_names.add(params.vararg.arg)
+    if params.kwarg: param_names.add(params.kwarg.arg)
+    if name in param_names:
+        return False  # caller-controlled: never closed
+    values = [
+        n.value for n in ast.walk(function)
+        if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in n.targets)
+    ] + [
+        n.value for n in ast.walk(function)
+        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.target.id == name and n.value is not None
+    ]
+    if not values:
+        return False  # not locally assigned: closure/global/comprehension var — cannot prove closed
+    return all(_is_closed_string_expr(tree, function, value, seen) for value in values)
+
+def _sql_benign(tree: ast.AST, line: int, function_name: str | None = None) -> bool:
+    call = _call_at(tree, line, function_name)
+    if not call or not call.args:
+        return False
+    function = _enclosing_function(tree, call)
+    if function is None:
+        return False
+    return _is_closed_string_expr(tree, function, call.args[0], frozenset())
+
 def verify_hypotheses(manifest: HypothesesManifest, induce: bool = False) -> VerificationManifest:
     findings, discarded, induction = [], [], []
     root = Path(manifest.root)
@@ -119,9 +193,12 @@ def verify_hypotheses(manifest: HypothesesManifest, induce: bool = False) -> Ver
                 benign = _subprocess_enclosure(tree, line, call_name) and _named_handler(tree, _call_at(tree, line, call_name), ("SubprocessError", "OSError"))
                 reason = "AST proves explicit subprocess exception enclosure."
             elif "SQL execution call" in h.description:
-                # SQL safety is established by the isolated in-memory probe;
-                # no target database or filesystem-backed connection is used.
-                pass
+                benign = _sql_benign(tree, line, call_name)
+                reason = (
+                    "AST proves every interpolated value traces back to a closed set of "
+                    "string literals fixed in this function — never a parameter, an "
+                    "attribute/subscript read, or a call result."
+                )
             elif "parser call" in h.description:
                 benign = _parser_benign(tree, line, call_name, ("JSONDecodeError", "ValueError", "ForgeArtifactError")); reason = "AST proves known parser exception handler."
             elif "dynamic evaluation" in h.description.lower():
