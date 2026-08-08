@@ -61,7 +61,13 @@ def _function_for_line(tree: ast.AST, line: int) -> ast.FunctionDef | ast.AsyncF
         parent = parents.get(node)
         nested = False
         while parent is not None:
-            if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                # A method (unittest.TestCase or otherwise) is not reachable
+                # via getattr(module, name) — only its class is a module-level
+                # attribute. Treating it as callable here used to reach
+                # _invoke_worker with a name that doesn't exist on the module,
+                # raising an AttributeError that got misread as induction
+                # evidence about the target code instead of a harness gap.
                 nested = True
                 break
             parent = parents.get(parent)

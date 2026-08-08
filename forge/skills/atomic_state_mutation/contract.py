@@ -20,6 +20,58 @@ def _related(tables: list[str]) -> bool:
     return len(set(normalized)) < len(normalized)
 
 
+def _param_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    args = function.args
+    names = {a.arg for a in (*args.posonlyargs, *args.args, *args.kwonlyargs)}
+    if args.vararg:
+        names.add(args.vararg.arg)
+    if args.kwarg:
+        names.add(args.kwarg.arg)
+    return names
+
+
+def _cursor_root_is_external(function: ast.FunctionDef | ast.AsyncFunctionDef, call: ast.Call) -> bool:
+    """True if ``call`` runs against a cursor this function obtained from a
+    connection object it did not create itself — i.e. ``with <param>.cursor()
+    as cur: cur.execute(...)`` where ``<param>`` is a function parameter.
+
+    Transaction state (autocommit, commit/rollback) lives on the *connection*,
+    not the cursor a `with <conn>.cursor()` block merely scopes for cleanup.
+    When that connection is caller-supplied, whether a transaction wraps this
+    call is a property of the caller this contract cannot see — per its own
+    stated scope (forge/skills/_common.py: "must return UNDETERMINED/declare
+    a limitation rather than infer... interprocedural behaviour it cannot
+    prove"). This does not suppress the finding — a caller-supplied
+    connection is exactly as plausibly unwrapped as any other case, and
+    silently discarding it would trade a false positive for a false negative
+    — it only makes the finding's own claim honest about what it can and
+    cannot see, instead of asserting "no visible transaction boundary" as if
+    that settled a question this contract has no visibility into.
+    """
+    if not isinstance(call.func, ast.Attribute) or not isinstance(call.func.value, ast.Name):
+        return False
+    cursor_name = call.func.value.id
+    params = _param_names(function)
+    if cursor_name in params:
+        return False  # covered by the direct bare-parameter case; not this cursor-scoping case
+    for node in ast.walk(function):
+        if not isinstance(node, ast.With):
+            continue
+        for item in node.items:
+            if not (isinstance(item.optional_vars, ast.Name) and item.optional_vars.id == cursor_name):
+                continue
+            context = item.context_expr
+            if (
+                isinstance(context, ast.Call)
+                and isinstance(context.func, ast.Attribute)
+                and context.func.attr == "cursor"
+                and isinstance(context.func.value, ast.Name)
+                and context.func.value.id in params
+            ):
+                return True
+    return False
+
+
 class AtomicStateMutationSkill:
     contract = SkillContract(
         "atomic-state-mutation", "1.0",
@@ -58,6 +110,21 @@ class AtomicStateMutationSkill:
             protected = protected or bool(re.search(r"\b(?:BEGIN|commit\s*\(|rollback\s*\()", lexical, re.IGNORECASE))
             if protected:
                 continue
-            detail = "related SQL mutations occur without a visible transaction boundary"
-            findings.append(source_finding(context, self.contract.name, writes[0][0], detail, "A crash between related writes can leave persistent state only partially mutated."))
+            external_connection = any(_cursor_root_is_external(function, call) for call, _table in writes)
+            if external_connection:
+                detail = (
+                    "related SQL mutations run through a cursor scoped from a caller-supplied "
+                    "connection, with no transaction boundary visible in this function"
+                )
+                reasoning = (
+                    "The connection's transaction state (autocommit, commit/rollback) is owned "
+                    "by whoever created it; this contract only inspects this function's own body "
+                    "and cannot see whether the caller already wraps this call in a transaction. "
+                    "A crash between related writes leaves persistent state only partially "
+                    "mutated if the caller does not — verify at the call site(s)."
+                )
+            else:
+                detail = "related SQL mutations occur without a visible transaction boundary"
+                reasoning = "A crash between related writes can leave persistent state only partially mutated."
+            findings.append(source_finding(context, self.contract.name, writes[0][0], detail, reasoning))
         return tuple(findings)

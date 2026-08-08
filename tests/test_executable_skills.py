@@ -287,6 +287,46 @@ def replace(conn, row):
     assert _skill_findings(result, "atomic-state-mutation") == []
 
 
+def test_atomic_state_mutation_caller_supplied_cursor_is_honest_about_scope(tmp_path):
+    # Real shape found auditing ai-scanner/script/db_notifier.py:
+    # _enqueue_broadcast_stats_job(company_id, queue_conn) scopes a cursor off
+    # a parameter connection and never calls commit/rollback itself — its one
+    # caller (notify_report_running) wraps the call in
+    # `with pooled_connection("queue") as queue_conn: queue_conn.autocommit
+    # = False; ...; queue_conn.commit()`. This contract cannot see that (it
+    # is intra-module/intra-function by design), so it must still surface
+    # the finding rather than silently discard it — but must not claim "no
+    # visible transaction boundary" as a settled fact when the boundary is
+    # simply out of this contract's view.
+    result = _run(tmp_path, """\
+def enqueue(job_id, queue_conn):
+    with queue_conn.cursor() as cur:
+        cur.execute(\"INSERT INTO jobs VALUES (?)\", (job_id,))
+        cur.execute(\"INSERT INTO job_executions VALUES (?)\", (job_id,))
+""")
+    findings = _skill_findings(result, "atomic-state-mutation")
+    assert len(findings) == 1
+    assert "caller-supplied" in findings[0].description
+    assert findings[0].description != "related SQL mutations occur without a visible transaction boundary"
+
+
+def test_atomic_state_mutation_local_cursor_keeps_the_unqualified_claim(tmp_path):
+    # A cursor scoped off a *locally created* connection is a genuinely
+    # different case from the caller-supplied one above: nothing outside
+    # this function could be managing its transaction, so the unqualified
+    # "no visible transaction boundary" claim is accurate here.
+    result = _run(tmp_path, """\
+def replace(row):
+    conn = connect()
+    with conn.cursor() as cur:
+        cur.execute(\"INSERT INTO records VALUES (?)\", (row,))
+        cur.execute(\"DELETE FROM records WHERE stale = 1\")
+""")
+    findings = _skill_findings(result, "atomic-state-mutation")
+    assert len(findings) == 1
+    assert findings[0].description == "related SQL mutations occur without a visible transaction boundary"
+
+
 def test_sql_aggregation_contract_detects_n_plus_one_but_not_batched_query(tmp_path):
     result = _run(tmp_path, """\
 def load(conn, ids):

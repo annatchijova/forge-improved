@@ -75,3 +75,23 @@ def test_induction_blocks_target_directory_creation_outside_sandbox(tmp_path):
     assert result.status == "UNDETERMINED", result
     assert "sandbox" in result.detail
     assert not marker.exists()
+
+
+def test_induction_does_not_misfire_on_a_method_inside_a_class(tmp_path):
+    # Found via self-audit: _function_for_line only excluded nesting inside
+    # another function, not inside a class, so a unittest.TestCase method
+    # (or any class method) was picked as the "module-level function" to
+    # induce. _invoke_worker then called getattr(module, method_name), which
+    # always raises AttributeError since the name only exists on the class,
+    # not the module - a harness bug, not evidence about the target code.
+    (tmp_path / "target.py").write_text(
+        "import json\n"
+        "import unittest\n"
+        "class MyTest(unittest.TestCase):\n"
+        "    def test_load(self, raw='{}'):\n"
+        "        return json.loads(raw)\n"
+    )
+    result = induce_hypothesis(tmp_path, "target.py", 5, "The parser call has no nearby exception handling")
+    assert result.status == "UNDETERMINED", result
+    assert "AttributeError" not in result.evidence
+    assert "module-level function" in result.detail
