@@ -17,6 +17,11 @@ _IMPACT_BY_FAMILY = {
     "parser-boundary": "HIGH",
     "numeric-boundary": "MEDIUM",
     "unversioned-serialization": "MEDIUM",
+    # An `unsafe` block is a declared boundary, not a defect: it is where the
+    # compiler stops guaranteeing memory safety and the author takes over. It
+    # is reported so coverage is honest, and rated MEDIUM so it never competes
+    # with an actual injectable sink for a reviewer's attention.
+    "unsafe-block": "MEDIUM",
 }
 _CONFIDENCE_CEILING = {
     "PLAUSIBLE HYPOTHESIS": "MEDIUM",

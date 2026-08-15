@@ -13,9 +13,38 @@ MODELED_DETECTOR_FAMILIES = (
     "deterministic-core", "dynamic-evaluation", "hardcoded-credential",
     "honest-degradation", "money-as-float", "parser-boundary",
     "path-traversal", "sql-aggregation-not-materialization", "sql-injection",
-    "subprocess", "tamper-evident-audit-chain", "unsafe-deserialization",
-    "unverified-webhook", "unversioned-serialization", "validate-at-the-boundary",
+    "subprocess", "tamper-evident-audit-chain", "unsafe-block",
+    "unsafe-deserialization", "unverified-webhook", "unversioned-serialization",
+    "validate-at-the-boundary",
 )
+
+# Not every family is modeled for every language. A reader who sees
+# `sql-injection` in the list above must not conclude that FORGE looked for it
+# in a Java file it never analysed, so the per-language reach is declared
+# separately and reported alongside coverage.
+FAMILIES_BY_LANGUAGE = {
+    "Python": (
+        "atomic-state-mutation", "command-injection", "decision-adjacent-float",
+        "deterministic-core", "dynamic-evaluation", "hardcoded-credential",
+        "honest-degradation", "money-as-float", "parser-boundary",
+        "path-traversal", "sql-aggregation-not-materialization", "sql-injection",
+        "subprocess", "tamper-evident-audit-chain", "unsafe-deserialization",
+        "unverified-webhook", "unversioned-serialization",
+        "validate-at-the-boundary",
+    ),
+    "JavaScript/TypeScript": (
+        "dynamic-evaluation", "hardcoded-credential", "parser-boundary",
+        "path-traversal", "sql-injection", "subprocess",
+    ),
+    "Go": (
+        "command-injection", "dynamic-evaluation", "hardcoded-credential",
+        "parser-boundary", "path-traversal", "sql-injection", "subprocess",
+    ),
+    "Rust": (
+        "command-injection", "hardcoded-credential", "parser-boundary",
+        "path-traversal", "sql-injection", "subprocess", "unsafe-block",
+    ),
+}
 
 UNMODELED_DEFECT_CLASSES = (
     "general business logic", "business authorization",
@@ -33,4 +62,28 @@ def detector_scope_statement() -> str:
         + ". It did not analyze defect classes outside that list, including "
         + ", ".join(UNMODELED_DEFECT_CLASSES)
         + "."
+    )
+
+
+def language_scope_statement() -> str:
+    """Third boundary: which families were reachable in which language.
+
+    Coverage says which files were read and detector scope says which families
+    were modeled. Neither alone stops a reader from assuming the full family
+    list applied to every file. This says, per language, what could have been
+    found -- and at what analysis depth it could have been found.
+    """
+    from forge.languages import analysis_depth
+
+    depths = {"Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go", "Rust": ".rs"}
+    parts = [
+        f"{language} ({analysis_depth(depths[language])}): " + ", ".join(families)
+        for language, families in sorted(FAMILIES_BY_LANGUAGE.items())
+    ]
+    return (
+        "Language scope: an 'ast' language was parsed into a syntax tree; a "
+        "'lexical' language was scanned as masked text, with no scope, type or "
+        "reachability information. Families reachable per language -- "
+        + "; ".join(parts)
+        + ". A language absent from this list was not analyzed at all."
     )

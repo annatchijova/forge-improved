@@ -19,6 +19,7 @@ AGENT_NAMES = (
     "archaeologist",
     "bug_investigator",
     "integrity_inspector",
+    "lexical_auditor",
     "patch_reviewer",
     "recommendation_agent",
     "report_composer",

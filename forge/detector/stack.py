@@ -13,6 +13,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
+from forge.detector.imports import RESOLVED_SUFFIXES, resolved_references
+from forge.languages import entry_point_names
 from forge.models import Evidence, ModuleClass, ModuleRecord, StackFingerprint, TriageManifest
 
 # Repository policy: agents audit authored application/source files only.
@@ -27,7 +29,16 @@ SKIP_DIRS = {
     "resultados", "results", "artifacts", ".forge-results",
 }
 SKIP_FILE_NAMES = {".gitignore"}
-LANG_EXT = {".py": "Python", ".js": "JavaScript", ".ts": "TypeScript", ".rs": "Rust", ".go": "Go", ".java": "Java", ".rb": "Ruby", ".c": "C", ".cpp": "C++", ".cs": "C#"}
+# The JSX/ESM/CJS spellings were previously absent, so a `.tsx` component was
+# never triaged, never became CONNECTED_ALIVE, and was therefore never inside
+# any detector's scope -- invisible rather than declared out of scope.
+LANG_EXT = {
+    ".py": "Python",
+    ".js": "JavaScript", ".jsx": "JavaScript", ".mjs": "JavaScript", ".cjs": "JavaScript",
+    ".ts": "TypeScript", ".tsx": "TypeScript", ".mts": "TypeScript", ".cts": "TypeScript",
+    ".rs": "Rust", ".go": "Go", ".java": "Java", ".rb": "Ruby",
+    ".c": "C", ".cpp": "C++", ".cs": "C#",
+}
 MANIFESTS = {
     "pyproject.toml": "Python", "setup.py": "Python", "requirements.txt": "Python", "Pipfile": "Python",
     "package.json": "Node.js", "Cargo.toml": "Rust", "go.mod": "Go", "pom.xml": "Java", "build.gradle": "Java", "Gemfile": "Ruby",
@@ -189,20 +200,45 @@ def _reference_tallies(text: str, stems: set[str]) -> dict[str, int]:
 
 
 def _caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[int, int]]:
+    """Count references per module, resolving imports wherever a resolver exists.
+
+    Python, Go, Rust and JavaScript/TypeScript get real resolution. What is
+    left over -- Java, Ruby, C, C++, C# -- keeps the historical stem tally,
+    which is approximate in both directions and is why triage declares those
+    languages' connectivity as an explicit limitation.
+    """
     paths = list(paths)
     result: dict[str, tuple[int, int]] = {}
-    python_paths = [path for path in paths if path.suffix.lower() == ".py"]
     result.update(_python_caller_counts(root, paths))
-    other_paths = [path for path in paths if path.suffix.lower() != ".py"]
-    if other_paths:
-        text = "\n".join(p.read_text(errors="ignore") for p in _files(root) if p.suffix.lower() in {".js", ".ts", ".rs", ".go", ".java", ".rb"})
-        tallies = _reference_tallies(text, {p.stem for p in other_paths})
-        for path in other_paths:
+    for target, callers in resolved_references(root, paths).items():
+        result[target] = (len(callers), len(callers))
+    approximate_paths = [
+        path for path in paths
+        if path.suffix.lower() != ".py" and path.suffix.lower() not in RESOLVED_SUFFIXES
+    ]
+    if approximate_paths:
+        text = "\n".join(
+            p.read_text(errors="ignore") for p in _files(root)
+            if p.suffix.lower() in {".java", ".rb", ".c", ".cpp", ".cs"}
+        )
+        tallies = _reference_tallies(text, {p.stem for p in approximate_paths})
+        for path in approximate_paths:
             imports = tallies.get(path.stem, 0)
             key = str(path.relative_to(root))
             current = result.get(key, (0, 0))
             result[key] = (max(current[0], imports), max(current[1], imports))
     return result
+
+
+def approximate_connectivity_languages(paths: Iterable[Path]) -> tuple[str, ...]:
+    """Languages present whose connectivity was tallied, not resolved."""
+    return tuple(sorted({
+        LANG_EXT[path.suffix.lower()]
+        for path in paths
+        if path.suffix.lower() in LANG_EXT
+        and path.suffix.lower() != ".py"
+        and path.suffix.lower() not in RESOLVED_SUFFIXES
+    }))
 
 
 def _python_module_map(root: Path, paths: Iterable[Path]) -> dict[str, str]:
@@ -271,15 +307,70 @@ def _python_caller_counts(root: Path, paths: Iterable[Path]) -> dict[str, tuple[
     return {path: (len(callers), len(callers)) for path, callers in references.items()}
 
 
+def _manifest_entry_points(root: Path, candidates: list[Path]) -> set[str]:
+    """Entry points a project *declares* rather than names by convention.
+
+    ``package.json`` and ``Cargo.toml`` state which files are executable. A
+    declared entry point is stronger evidence than a filename, and reading it
+    costs one file each.
+    """
+    declared: set[str] = set()
+    known = {str(path.relative_to(root)) for path in candidates}
+
+    def record(value: object) -> None:
+        if not isinstance(value, str):
+            return
+        relative = value.lstrip("./")
+        if relative in known:
+            declared.add(relative)
+
+    package_json = root / "package.json"
+    if package_json.is_file():
+        try:
+            data = json.loads(package_json.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            data = {}
+        if isinstance(data, dict):
+            record(data.get("main"))
+            record(data.get("module"))
+            binaries = data.get("bin")
+            if isinstance(binaries, str):
+                record(binaries)
+            elif isinstance(binaries, dict):
+                for value in binaries.values():
+                    record(value)
+
+    cargo_toml = root / "Cargo.toml"
+    if cargo_toml.is_file():
+        try:
+            data = tomllib.loads(cargo_toml.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            data = {}
+        for section in ("bin", "lib", "example", "test", "bench"):
+            entries = data.get(section)
+            entries = entries if isinstance(entries, list) else [entries]
+            for entry in entries:
+                if isinstance(entry, dict):
+                    record(entry.get("path"))
+    return declared
+
+
 def _entry_point_paths(root: Path, paths: Iterable[Path]) -> set[str]:
-    """Return source paths that are executable entry points by convention/config."""
+    """Return source paths that are executable entry points by convention/config.
+
+    An entry point has no importer by construction, so without this every
+    ``main.go`` and every ``src/main.rs`` would be classified as dead weight --
+    the one file in the repository that is certainly alive.
+    """
     candidates = list(paths)
+    conventional = {"__main__.py", "main.py", "conftest.py"} | entry_point_names()
     entry_points = {
         str(path.relative_to(root))
         for path in candidates
-        if path.name in {"__main__.py", "main.py", "conftest.py"}
+        if path.name in conventional
         or any(part in {"bin", "scripts", "tests"} for part in path.relative_to(root).parts)
     }
+    entry_points |= _manifest_entry_points(root, candidates)
     pyproject = root / "pyproject.toml"
     if pyproject.is_file():
         try:
@@ -346,6 +437,17 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
         records.append(ModuleRecord(rel, LANG_EXT[p.suffix.lower()], cls, epoch, caller_count, import_count, keywords, tuple(ev)))
     summary = Counter(r.module_class.value for r in records)
     limitations = [git_limitation] if git_limitation else []
+    approximate = approximate_connectivity_languages(files)
+    if approximate:
+        # Say so rather than let a tallied count read like a resolved one: a
+        # duplicate stem in another directory can make an orphaned module look
+        # connected, and the classification inherits that error silently.
+        limitations.append(
+            "Connectivity for " + ", ".join(approximate) + " was approximated by "
+            "counting import-line references to each file's name, not by resolving "
+            "imports. Modules sharing a filename may be credited with each other's "
+            "callers, so CONNECTED_ALIVE and DEAD_WEIGHT are provisional for them."
+        )
     return TriageManifest("1.1", "0.1.0", str(base), now, detect_stack(base), tuple(sorted(records, key=lambda r: r.path)), dict(summary), tuple(limitations))
 
 

@@ -129,7 +129,7 @@ def test_disposition_can_complete_with_findings_without_abstaining():
 
 def test_disposition_completes_with_explicit_declared_boundary():
     class Coverage:
-        skipped_reasons = {"non_python_not_analyzed": ("native.rs",)}
+        skipped_reasons = {"unsupported_language_not_analyzed": ("Legacy.java",)}
     class Triage:
         modules = [type("Module", (), {"path": "legacy.py", "module_class": "DEAD_WEIGHT"})()]
     class Governance:
@@ -243,8 +243,8 @@ def test_audit_seals_repository_snapshot_and_provenance(tmp_path):
     assert "REPRODUCED" in finding["provenance"]
 
 def test_unsupported_source_language_and_undetermined_governance_are_a_declared_boundary_not_abstain(tmp_path):
-    # An unsupported source language (native.rs) and an UNDETERMINED skill
-    # applicability result (main.py: no clear input-boundary signal for
+    # An unsupported source language (Legacy.java -- no registered language
+    # pack) and an UNDETERMINED skill
     # validate-at-the-boundary) are declared boundaries of the same kind as
     # an excluded module, not failures - the specialized agents still ran
     # fully. A single ambiguous applicability result out of the whole
@@ -254,11 +254,11 @@ def test_unsupported_source_language_and_undetermined_governance_are_a_declared_
     # still be visible in evidence_boundary - reported, never hidden - they
     # just no longer block a completeness claim on their own.
     put(tmp_path, "main.py", "x = 1\n")
-    put(tmp_path, "native.rs", "fn main() {}\n")
+    put(tmp_path, "Legacy.java", "class Legacy {}\n")
     result = run_specialized_pipeline(tmp_path, tmp_path / "out")
     metrics = json.loads((tmp_path / "out/metrics.json").read_text())
     assert metrics["audit_disposition"]["status"] == "COMPLETE_WITHIN_DECLARED_SCOPE"
-    assert "unsupported_source_language: Rust (1 file(s))" in metrics["audit_disposition"]["evidence_boundary"]
+    assert "unsupported_source_language: Java (1 file(s))" in metrics["audit_disposition"]["evidence_boundary"]
     assert "skill_applicability: 1 undetermined result(s)" in metrics["audit_disposition"]["evidence_boundary"]
 
 def test_self_assessment_is_bounded_not_a_quality_score(tmp_path):
@@ -341,19 +341,29 @@ def test_coverage_accounting_never_loses_readable_non_python_files(tmp_path):
     assert coverage["files_discovered"] == accounted_for, (
         "every discovered file must land in exactly one bucket: analyzed or a skipped_reasons category"
     )
-    assert "README.md" in coverage["skipped_reasons"].get("non_python_not_analyzed", ())
-    assert coverage["language_coverage"]["Python"] == {"analyzed": 1, "abstained": 0}
-    assert coverage["language_coverage"]["MD"] == {"analyzed": 0, "abstained": 1}
+    # Prose is not an audit gap. It belongs in its own bucket, apart from
+    # source FORGE could not analyse and source it chose not to.
+    assert "README.md" in coverage["skipped_reasons"].get("non_source_not_analyzed", ())
+    assert coverage["language_coverage"]["Python"] == {"analyzed": 1, "abstained": 0, "depth": "ast"}
+    assert coverage["language_coverage"]["MD"] == {"analyzed": 0, "abstained": 1, "depth": "none"}
 
 
-def test_coverage_makes_js_ts_and_unsupported_language_scope_explicit(tmp_path):
+def test_coverage_separates_scope_from_engine_limit_and_records_depth(tmp_path):
     put(tmp_path, "main.py", "x = 1\n")
     put(tmp_path, "frontend.ts", "export const parse = (raw) => JSON.parse(raw);\n")
     put(tmp_path, "native.rs", "fn main() {}\n")
+    put(tmp_path, "Legacy.java", "class Legacy {}\n")
     coverage = run_specialized_pipeline(tmp_path, tmp_path / "out")["coverage"]
-    assert coverage["language_coverage"]["JavaScript/TypeScript"] == {"analyzed": 0, "abstained": 1}
-    assert coverage["language_coverage"]["RS"] == {"analyzed": 0, "abstained": 1}
-    assert "native.rs" in coverage["skipped_reasons"]["non_python_not_analyzed"]
+    # Depth is reported per language so a masked lexical scan is never read as
+    # if it carried the authority of a parse.
+    assert coverage["language_coverage"]["Python"]["depth"] == "ast"
+    assert coverage["language_coverage"]["JavaScript/TypeScript"]["depth"] == "lexical"
+    assert coverage["language_coverage"]["Rust"]["depth"] == "lexical"
+    assert coverage["language_coverage"]["Java"]["depth"] == "none"
+    # TypeScript and Rust have detectors; these two files were simply outside
+    # the connected scope the lexical agents ran over. Java has no pack at all.
+    assert set(coverage["skipped_reasons"]["out_of_detector_scope"]) == {"frontend.ts", "native.rs"}
+    assert tuple(coverage["skipped_reasons"]["unsupported_language_not_analyzed"]) == ("Legacy.java",)
 
 
 def test_standard_closeout_artifacts_share_finding_set_digest(tmp_path):

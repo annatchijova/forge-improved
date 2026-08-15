@@ -6,6 +6,6 @@ contracts without changing the evidence model.
 
 AGENT_ROLES = (
     "archaeologist", "bug_investigator", "security_auditor",
-    "integrity_inspector", "web_auditor", "patch_reviewer", "report_composer",
-    "recommendation_agent",
+    "integrity_inspector", "web_auditor", "lexical_auditor", "patch_reviewer",
+    "report_composer", "recommendation_agent",
 )

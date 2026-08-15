@@ -6,6 +6,7 @@ import time
 import pytest
 
 from forge import Runtime
+from forge.detector.stack import triage
 from forge.hypotheses import _candidates
 from forge.induction import induce_hypothesis
 
@@ -116,12 +117,26 @@ def test_red_team_fixture_is_not_silently_accepted_after_parser_failure():
 
 
 def test_web_language_scope_is_not_counted_as_unanalyzed_when_scanned(tmp_path):
-    (tmp_path / "main.py").write_text("import frontend\n")
+    (tmp_path / "main.py").write_text("x = 1\n")
+    (tmp_path / "index.ts").write_text("import { value } from './frontend';\n")
     (tmp_path / "frontend.ts").write_text("export const value = 1;\n")
     result = Runtime().audit(tmp_path, tmp_path / "out")
     coverage = result.coverage
-    assert "frontend.ts" not in coverage["skipped_reasons"].get("non_python_not_analyzed", ())
-    assert coverage["files_analyzed"] == 2
+    assert "frontend.ts" not in coverage["skipped_reasons"].get("out_of_detector_scope", ())
+    assert coverage["files_analyzed"] == 3
+
+
+def test_a_python_import_does_not_credit_a_same_named_typescript_module(tmp_path):
+    # Connectivity used to be a text tally over import-looking lines, so a
+    # Python `import frontend` credited `frontend.ts` with a caller and an
+    # orphaned TypeScript module was classified CONNECTED_ALIVE. Imports are
+    # resolved per language now: a Python statement cannot reach a TS file.
+    (tmp_path / "main.py").write_text("import frontend\n")
+    (tmp_path / "frontend.ts").write_text("export const value = 1;\n")
+    triage_manifest = triage(tmp_path)
+    frontend = next(item for item in triage_manifest.modules if item.path == "frontend.ts")
+    assert frontend.caller_count == 0
+    assert frontend.module_class.value != "CONNECTED_ALIVE"
 
 
 def test_generated_build_output_cannot_expand_the_audit_scope(tmp_path):
@@ -145,7 +160,8 @@ def test_generated_rust_target_output_cannot_expand_the_audit_scope(tmp_path):
 
 
 def test_python_hypothesis_engine_does_not_parse_typescript_as_python(tmp_path):
-    (tmp_path / "main.py").write_text("import frontend\n")
+    (tmp_path / "main.py").write_text("x = 1\n")
+    (tmp_path / "index.ts").write_text("import { x } from './frontend';\n")
     (tmp_path / "frontend.ts").write_text("export const x = eval(userInput);\n")
     result = Runtime().audit(tmp_path, tmp_path / "out")
     sealed = json.loads((tmp_path / "out" / "verification-manifest.json").read_text())
