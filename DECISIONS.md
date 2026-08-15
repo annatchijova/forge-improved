@@ -578,3 +578,121 @@ The state machine records `AUDITED`, `PATCH_PROPOSED`,
 `PATCH_APPLIED_TEMPORARILY`, `TESTED`, `REAUDITED`, `CONVERGED`,
 `STILL_PRESENT`, and explicit abstention/failure states. A model or human may
 author a proposal; FORGE remains the judge.
+
+## Multi-language analysis via declarative language packs
+
+FORGE recognized ten languages during triage and analyzed two. Go, Rust, Java,
+Ruby, C, C++, and C# were classified into module health classes and then never
+inspected by any detector, so a Go repository could finish an audit with no
+findings — a cleanliness that came entirely from having looked at nothing.
+
+### Why lexical packs, and not a real parser
+
+Adding a parser per language means adding `tree-sitter` or an equivalent: a
+native dependency, a build step, and the end of the property this runtime is
+built on — that the core audit path is local, read-only, stdlib-only, and needs
+no API key or network. That price buys precision FORGE is not otherwise able to
+claim anyway, because it has no induction harness for these languages and so
+could not raise a parsed finding above an observation regardless.
+
+A language is therefore described as data. `forge/languages/spec.py` declares
+what a `LanguagePack` is: extensions, comment syntax, string-literal forms,
+sink rules, sanitizers, and custom rules. `forge/languages/engine.py` owns the
+one operation every pack needs — masking comments and string data out of source
+while preserving line and column geometry — and the shared primitives built on
+it. Adding a language is a specification, not an agent.
+
+Masking is contractual, not incidental. It runs in a single pass with no
+backtracking, so minified bundles and unterminated literals are ordinary input
+rather than a denial-of-service vector against the audit. It preserves geometry,
+so a reported line and column point at real positions. And it is per-language,
+which is what makes Rust lifetimes, Go rune literals, nested block comments,
+variable-width raw-string fences, and JavaScript regular-expression literals
+safe: each of those would otherwise open a phantom string and silently blank the
+remainder of a file, turning an unanalyzed file into a clean one.
+
+Two exceptions to blanking are deliberate. String *delimiters* survive, because
+a detector often needs to know an argument was a literal (`exec.Command("sh",
+"-c", cmd)`) without seeing its text. JavaScript template *interpolations*
+survive in full, because `${userInput}` reaching `readFile` is code flowing to a
+sink, not inert data; that is what closed the `variant-web-template-path` gap.
+
+### Analysis depth is reported, never implied
+
+Findings now arrive at two depths, and a reader must not have to guess which
+produced a given result. `ast` means a real parse tree, Python only, verifiable
+structurally and reproducible by induction where a harness exists. `lexical`
+means a masked-text scan with no scope, no type information, and no
+reachability. Coverage reports depth per language; the disposition's language
+scope statement declares which families were reachable in which language at
+which depth. Every lexical finding is `NOT_ASSESSED` for exploitability, and
+packs are not permitted to raise it.
+
+### Coverage buckets separate three different facts
+
+`non_python_not_analyzed` collapsed three unrelated situations into one list:
+source in a language with no detector, source in a supported language that fell
+outside the connected detector scope, and files that are not source at all. A
+reviewer reading that bucket was shown a `README.md` and an unanalyzed Rust file
+as the same kind of gap. They are now `unsupported_language_not_analyzed`,
+`out_of_detector_scope`, and `non_source_not_analyzed`. Only the first is an
+engine limit, and only it reaches the disposition's evidence boundary. The set of
+unsupported languages is derived from the registry rather than restated, so
+shipping a pack removes its language from the abstention automatically.
+
+`eligible_source_files` — the coverage denominator — now counts every language
+FORGE can analyze at any depth, not just Python and the web extensions.
+
+### Agent boundary
+
+`web_auditor` keeps its name, its JavaScript/TypeScript scope, and its recorded
+precision and recall baselines; only its engine moved into the pack registry.
+Renaming it to match the refactor would have meant rewriting the agent labels
+inside `precision-baseline.json` and the recall corpus, which is editing the
+audit record to suit the code. Go and Rust are covered by a new
+`lexical_auditor` sharing the same engine and the same honesty constraints.
+
+### Connectivity is resolved per language, not tallied
+
+Triage classified non-Python modules by counting how often a file's *stem*
+appeared on any import-looking line anywhere in the repository. That is wrong in
+both directions and the errors are not symmetric noise: two files named
+`config.ts` in different directories were indistinguishable, so an orphan
+inherited its namesake's callers and was classified `CONNECTED_ALIVE`; an
+`import store from "store"` credited a local `store.go`; a Python `import
+frontend` credited `frontend.ts`; and a Rust file reachable only through a `mod`
+declaration — the actual mechanism wiring a crate together — scored zero and was
+reported as dead weight.
+
+`forge/detector/imports.py` resolves each language as that language defines
+reference. Go imports name a package directory, so an import credits every file
+in it, anchored on the `go.mod` module path when present and falling back to an
+unambiguous trailing match otherwise. Rust connectivity is the `mod` declaration
+chain, plus `use crate::` paths. JavaScript and TypeScript resolve relative
+specifiers only, with extension and `/index` resolution; bare specifiers are
+packages and credit nothing.
+
+Java, Ruby, C, C++, and C# keep the stem tally, and triage now states that
+limitation in the manifest rather than letting an approximated count read as a
+resolved one. Entry points are recognized per pack and read from `package.json`
+and `Cargo.toml`, because an entry point has no importer by construction and
+would otherwise be the one certainly-live file classified as dead weight.
+
+### Recall gaps closed
+
+`variant-web-template-path` and `variant-web-exec-file` were declared
+`close_gap` misses and are now detected; the variant baseline moved from 30/39
+to 32/39. The `.jsx`, `.tsx`, `.mjs`, and `.cjs` spellings were absent from
+`LANG_EXT`, so those files were never triaged, never became `CONNECTED_ALIVE`,
+and were therefore invisible to every detector rather than declared out of
+scope. They are now recognized.
+
+### A reserved-word constraint on finding text
+
+`find_contradictions` treats the words `placeholder`, `fixture`, `test value`,
+`test-only`, and `example` in any finding co-located with a credential finding
+as an alternative explanation for that credential. A Go SQL finding initially
+read "instead of placeholder binding", which made any module holding both
+findings abstain the entire audit under `CONTRADICTORY_EVIDENCE` for a reason
+nobody had asserted. Finding text must avoid those words; a test over every pack
+enforces it.

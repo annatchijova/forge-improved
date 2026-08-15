@@ -17,8 +17,9 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable
 
-from forge.agents import archaeologist, bug_investigator, integrity_inspector, report_composer, security_auditor, web_auditor
+from forge.agents import archaeologist, bug_investigator, integrity_inspector, lexical_auditor, report_composer, security_auditor, web_auditor
 from forge.detector.stack import discover_files, exclusion_reason, write_manifest
+from forge.languages import ANALYZED_EXTENSIONS, RECOGNIZED_LANGUAGES, analysis_depth, language_name
 from forge.evidence_package import build_repository_profile, write_markdown_report, write_repository_profile
 from forge.governance.runtime import infer_domains, load_skills, run_skills
 from forge.hypotheses import generate_hypotheses, write_hypotheses_manifest
@@ -52,19 +53,44 @@ def _peak_rss_bytes() -> int | None:
         return None
 
 def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> CoverageReport:
+    """Account for every discovered file, and record at what depth it was read.
+
+    Two distinctions here are load-bearing.
+
+    The first is *why* a file was not analysed. A supported language that fell
+    outside the detector's connected scope, real source in a language with no
+    detector, and a file that is not source at all are three different facts:
+    the first is a scope decision, the second an engine limit, the third
+    nothing at all. The single ``non_python_not_analyzed`` bucket collapsed all
+    three, which is how a README ended up presented to a reviewer as an audit
+    gap while an unanalysed Rust file sat in the same list.
+
+    The second is *depth*. A lexically scanned file and a parsed file both
+    count as analysed, so the language breakdown carries the depth behind each
+    count -- otherwise a masked text scan borrows the authority of an AST.
+    """
     discovered = discovered if discovered is not None else discover_files(root, include_excluded=True)
     skipped: dict[str, list[str]] = {
         "excluded_by_policy": [], "oversized_file": [], "binary_file": [],
         "unreadable_file": [], "non_utf8_text": [], "syntax_error": [],
-        "non_python_not_analyzed": [],
+        "out_of_detector_scope": [], "unsupported_language_not_analyzed": [],
+        "non_source_not_analyzed": [],
     }
     analyzed = 0
     eligible_source_files = 0
-    language_coverage: dict[str, dict[str, int]] = {}
-    language_names = {".py": "Python", ".js": "JavaScript/TypeScript", ".jsx": "JavaScript/TypeScript", ".ts": "JavaScript/TypeScript", ".tsx": "JavaScript/TypeScript"}
+    language_coverage: dict[str, dict[str, Any]] = {}
     def account(path: Path, state: str) -> None:
-        language = language_names.get(path.suffix.lower(), path.suffix.lower().lstrip(".").upper() or "Other")
-        language_coverage.setdefault(language, {"analyzed": 0, "abstained": 0})[state] += 1
+        suffix = path.suffix.lower()
+        language = (
+            language_name(suffix)
+            or RECOGNIZED_LANGUAGES.get(suffix)
+            or suffix.lstrip(".").upper()
+            or "Other"
+        )
+        record = language_coverage.setdefault(
+            language, {"analyzed": 0, "abstained": 0, "depth": analysis_depth(suffix)}
+        )
+        record[state] += 1
     analyzed_paths = set(analyzed_paths)
     for path in discovered:
         rel = str(path.relative_to(root))
@@ -72,9 +98,12 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         if reason:
             skipped[reason].append(rel)
             continue
-        if path.suffix.lower() in language_names:
+        suffix = path.suffix.lower()
+        if suffix in ANALYZED_EXTENSIONS:
             # Semantic coverage excludes VCS objects, images, prose, and
-            # unsupported languages merely because discovery can enumerate them.
+            # languages no detector reaches. Counting those in the denominator
+            # would make the ratio a statement about the filesystem, not about
+            # what FORGE was able to inspect.
             eligible_source_files += 1
         try:
             source = path.read_text(encoding="utf-8")
@@ -85,7 +114,17 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         if rel in analyzed_paths:
             analyzed += 1; account(path, "analyzed")
             continue
-        if path.suffix != ".py": skipped["non_python_not_analyzed"].append(rel); account(path, "abstained"); continue
+        if suffix != ".py":
+            if suffix in ANALYZED_EXTENSIONS:
+                # FORGE can read this language; this file simply was not in the
+                # scope the lexical agents ran over. Saying "unsupported" here
+                # would blame the engine for a scoping decision.
+                bucket = "out_of_detector_scope"
+            elif suffix in RECOGNIZED_LANGUAGES:
+                bucket = "unsupported_language_not_analyzed"
+            else:
+                bucket = "non_source_not_analyzed"
+            skipped[bucket].append(rel); account(path, "abstained"); continue
         try: ast.parse(source)
         except SyntaxError: skipped["syntax_error"].append(rel); account(path, "abstained"); continue
         analyzed += 1; account(path, "analyzed")
@@ -356,20 +395,31 @@ class Runtime:
                 raise ValueError(f"scope guard: triage manifest declares {connected} CONNECTED_ALIVE modules but does not provide matching module paths")
             return self._audit_sharded(root, out, triage_manifest, limit, trace, cronos)
         web_degraded: list[str] = []
-        web_started = self._phase_start(trace, cronos, "web_auditor")
+        lexical_started = self._phase_start(trace, cronos, "lexical_agents")
+        connected_paths = {module.path for module in triage_manifest.modules if module.module_class.value == "CONNECTED_ALIVE"}
         try:
-            connected_paths = {module.path for module in triage_manifest.modules if module.module_class.value == "CONNECTED_ALIVE"}
             web_result, web_analyzed_paths = web_auditor.audit(root, connected_paths)
         except Exception as exc:
             message = f"web_auditor unavailable: {type(exc).__name__}: {exc}"
             web_degraded.append(message)
             web_result, web_analyzed_paths = AgentScanResult((), {}, mandatory_protocol("web_auditor", (message,), ())), ()
             self._event(trace, cronos, "agent_degraded", agent="web_auditor", error=message)
+        try:
+            systems_result, systems_analyzed_paths = lexical_auditor.audit(root, connected_paths)
+        except Exception as exc:
+            message = f"lexical_auditor unavailable: {type(exc).__name__}: {exc}"
+            web_degraded.append(message)
+            systems_result, systems_analyzed_paths = AgentScanResult((), {}, mandatory_protocol("lexical_auditor", (message,), ())), ()
+            self._event(trace, cronos, "agent_degraded", agent="lexical_auditor", error=message)
         self._event(trace, cronos, "agent_completed", agent="web_auditor", findings=len(web_result.findings), examinations=web_result.examinations)
-        self._phase_end(trace, cronos, "web_auditor", web_started)
+        self._event(trace, cronos, "agent_completed", agent="lexical_auditor", findings=len(systems_result.findings), examinations=systems_result.examinations)
+        self._phase_end(trace, cronos, "lexical_agents", lexical_started)
         coverage_started = self._phase_start(trace, cronos, "coverage")
         coverage = _with_detector_scope(
-            _coverage(root, discovered=discovered, analyzed_paths=web_analyzed_paths),
+            _coverage(
+                root, discovered=discovered,
+                analyzed_paths=tuple(web_analyzed_paths) + tuple(systems_analyzed_paths),
+            ),
             triage_manifest,
         )
         self._event(trace, cronos, "coverage_collected", discovered=coverage.files_discovered, analyzed=coverage.files_analyzed, skipped=coverage.files_skipped, skipped_reasons=coverage.skipped_reasons)
@@ -411,6 +461,7 @@ class Runtime:
         findings += [_with_severity(_agent_finding("security_auditor", item), family=item.family) for item in security_result.findings]
         findings += [_with_severity(_agent_finding("integrity_inspector", item), family=item.family) for item in integrity_result.findings]
         findings += [_with_severity(_agent_finding("web_auditor", item), family=item.family) for item in web_result.findings]
+        findings += [_with_severity(_agent_finding("lexical_auditor", item), family=item.family) for item in systems_result.findings]
         findings += [_with_severity(item) for item in governance.findings]
         findings = _attach_provenance(_deduplicate_findings(findings))
         from forge.agents import patch_reviewer, recommendation_agent, report_composer
@@ -425,6 +476,7 @@ class Runtime:
             "security_auditor": security_result.protocol,
             "integrity_inspector": integrity_result.protocol,
             "web_auditor": web_result.protocol,
+            "lexical_auditor": systems_result.protocol,
             "patch_reviewer": patch_reviewer.protocol(),
             "recommendation_agent": recommendation_agent.protocol(),
             "report_composer": report_composer.protocol(),
@@ -479,7 +531,8 @@ class Runtime:
             "bug_investigator": {"hypotheses_generated": len(bug.hypotheses), "discarded": len(verification.discarded), "survived": len([f for f in findings if f.agent == "bug_investigator"]), "examinations": {m.path: bug_status(m) for m in triage_manifest.modules}},
             "security_auditor": {"findings_per_family": {family: sum(item.family == family for item in security_result.findings) for family in ("hardcoded-credential", "unsafe-deserialization", "path-traversal", "unverified-webhook")}, "examinations": security_result.examinations},
             "integrity_inspector": {"findings_per_family": {family: sum(item.family == family for item in integrity_result.findings) for family in ("decision-adjacent-float", "money-as-float", "unversioned-serialization")}, "examinations": integrity_result.examinations},
-            "web_auditor": {"findings_per_family": {family: sum(item.family == family for item in web_result.findings) for family in ("dynamic-evaluation", "subprocess", "parser-boundary", "path-traversal")}, "examinations": web_result.examinations},
+            "web_auditor": {"findings_per_family": {family: sum(item.family == family for item in web_result.findings) for family in ("dynamic-evaluation", "subprocess", "parser-boundary", "path-traversal", "sql-injection", "hardcoded-credential")}, "examinations": web_result.examinations},
+            "lexical_auditor": {"findings_per_family": {family: sum(item.family == family for item in systems_result.findings) for family in ("command-injection", "dynamic-evaluation", "hardcoded-credential", "parser-boundary", "path-traversal", "sql-injection", "subprocess", "unsafe-block")}, "findings_per_language": {language: sum(item.language == language for item in systems_result.findings) for language in sorted(lexical_auditor.DECLARED_FAMILIES)}, "examinations": systems_result.examinations},
             "governance_skills": {"loaded": [item["name"] for item in self.list_available_skills()], "findings": len(governance.findings), "applicability_counts": {state: sum(state in values.values() for values in governance.applicability.values()) for state in ("APPLICABLE", "NOT_APPLICABLE", "UNDETERMINED")}},
         }
         metrics = collect_metrics(root=root, discovered=discovered, triage=triage_manifest, coverage=coverage, governance=governance, findings=findings, discarded=verification.discarded, trace=trace, skills=self.list_available_skills(), hypothesis_limitations=bug.manifest.limitations, degraded_reasons=degraded_reasons, contradiction_records=contradictions, repository_snapshot_sha256=repository_snapshot_sha256)

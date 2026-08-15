@@ -5,6 +5,7 @@
 # FORGE
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Analyzes](https://img.shields.io/badge/analyzes-Python%20%C2%B7%20JS%2FTS%20%C2%B7%20Go%20%C2%B7%20Rust-blueviolet)
 ![Architecture](https://img.shields.io/badge/architecture-multi--agent-darkgreen)
 ![Deterministic](https://img.shields.io/badge/decision%20path-deterministic-success)
 ![Audit](https://img.shields.io/badge/audit-SHA--256%20sealed-brightgreen)
@@ -68,7 +69,8 @@ from the generated evidence it preserves:
 | This `forge` repository | 479 | **743,646** | Runtime, tests, documentation, visual reports, and checked-in sealed artifacts |
 | [`forge-results`](https://github.com/annatchijova/forge-results) | 563 | **7,868,088** | Separately versioned archive of generated JSON/HTML evidence and audit reports |
 
-The runtime itself contains **11,603 Python LOC**. The rest is not being
+At that snapshot the runtime itself contained **11,603 Python LOC**; it has
+grown since, and this table is not re-run per commit. The rest is not being
 presented as implementation code: it is the inspectable corpus of manifests,
 reports, traces, false positives, discarded hypotheses, benchmark runs, and
 regression evidence that the project has accumulated. The distinction matters.
@@ -238,7 +240,9 @@ Repository
 Archaeologist
    │
    ▼
-Specialized agents  (Bug Investigator · Security Auditor · Integrity Inspector)
+Specialized agents
+   │   AST (Python)   Bug Investigator · Security Auditor · Integrity Inspector
+   │   Lexical        Web Auditor (JS/TS) · Lexical Auditor (Go · Rust)
    │
    ▼
 Evidence
@@ -262,6 +266,7 @@ is a small set of layers, each with one job, composed by one runtime:
 |---|---|---|
 | **Core** | `forge/models.py`, `canonical.py`, `sealing.py`, `metrics.py`, `severity.py`, `io.py` | Typed data contracts, canonical serialization, SHA-256 sealing, run metrics |
 | **Specialized agents** | `forge/agents/*.py` | Single-responsibility detectors — see [`docs/agents.md`](docs/agents.md) |
+| **Language packs** | `forge/languages/*.py` | Declarative per-language scanning: a language is data (comment syntax, string forms, sink rules), not an agent — see [Language support](#language-support) |
 | **Governance skills** | `forge/governance/runtime.py`, `forge/skills/*` | Executable, versioned contracts loaded by domain applicability, not hardcoded into the core |
 | **Harness** | `forge/harness/*.py` | Mines weaknesses from sealed runs, proposes bounded fixes, validates against the real test suite |
 | **Tracing** | `forge/tracing.py`, `forge/cronos/*` | Event-level, tamper-evident record of what the runtime *did*, sealed alongside findings |
@@ -272,6 +277,70 @@ No agent reasons on another agent's behalf, and the orchestrator does not
 delegate open-ended judgment to anything: each agent has a verifiable
 responsibility and an explicit contract. Full agent-by-agent breakdown and
 diagram in [`docs/agents.md`](docs/agents.md).
+
+---
+
+## Language support
+
+FORGE analyses source at two depths, and it reports which one produced every
+result. That distinction is the whole point: a finding from a masked text scan
+must never borrow the authority of a parse tree.
+
+**AST** means a real syntax tree. Scope, aliasing, and intra-function data flow
+are available, and where a harness exists a finding can be reproduced by
+induction. **Lexical** means source with comments and string data masked out,
+then scanned for declared boundaries. A match is always real code — never a
+sink name quoted in a string or mentioned in a comment — but there is no scope,
+no type information, and no reachability. Lexical findings are therefore capped
+at `NOT_ASSESSED` for exploitability by construction, not by convention.
+
+| Language | Extensions | Depth | Families modeled | Connectivity |
+|---|---|---|---|---|
+| **Python** | `.py` | AST | 18 | resolved (import graph) |
+| **Go** | `.go` | lexical | 7 | resolved (`go.mod` package paths) |
+| **Rust** | `.rs` | lexical | 7 | resolved (`mod` chain, `use crate::`) |
+| **JavaScript / TypeScript** | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | lexical | 6 | resolved (relative specifiers) |
+| Java, Ruby, C, C++, C# | `.java` `.rb` `.c` `.cpp` `.cs` | **none** | — | approximated (filename tally) |
+| Everything else | — | **none** | — | — |
+
+A language with no detector is **abstained from, never reported as clean**. It
+appears in coverage as `unsupported_language_not_analyzed` and reaches the audit
+disposition as an explicit boundary. Recognised-but-unanalysed languages are
+still triaged into module health classes, and triage declares in the manifest
+that their connectivity was approximated rather than resolved.
+
+Coverage reports analysis depth per language, so a mixed repository shows
+exactly what it got:
+
+```json
+"language_coverage": {
+  "Python": { "analyzed": 12, "abstained": 0, "depth": "ast" },
+  "Go":     { "analyzed":  6, "abstained": 1, "depth": "lexical" },
+  "Rust":   { "analyzed":  4, "abstained": 0, "depth": "lexical" },
+  "Java":   { "analyzed":  0, "abstained": 3, "depth": "none" }
+}
+```
+
+### Adding a language
+
+A language is a specification, not an agent. `forge/languages/spec.py` declares
+what a pack is — extensions, comment syntax, string-literal forms, sink rules,
+sanitizers — and `forge/languages/engine.py` owns the shared machinery every
+pack reuses, chiefly masking comments and string data out of source in a single
+non-backtracking pass that preserves line and column geometry.
+
+Masking is per-language because it has to be. Rust lifetimes (`&'a str`), Go
+rune literals (`'"'`), nested block comments, variable-width raw-string fences
+(`r##"..."##`), and JavaScript regular-expression character classes each look
+like an opening quote to a naive scanner. Any one of them, mishandled, blanks
+the remainder of a file — which would silently turn an unanalysed file into a
+clean one. Two exceptions to masking are deliberate: string *delimiters* survive
+so a detector can tell an argument was a literal, and JavaScript template
+*interpolations* survive in full, because `${userInput}` reaching `readFile` is
+code flowing to a sink rather than inert text.
+
+The design rationale, including why this is not a `tree-sitter` integration, is
+recorded in [`DECISIONS.md`](DECISIONS.md).
 
 ---
 
@@ -293,6 +362,7 @@ forge/
 │   ├── detector/             # discovery and detector-scope stack
 │   ├── governance/           # executable governance runtime
 │   ├── harness/              # bounded self-improvement and validation
+│   ├── languages/            # declarative language packs and the lexical engine
 │   ├── skills/               # executable domain contracts
 │   ├── cli.py                # CLI frontend
 │   ├── mcp_server.py         # MCP frontend
@@ -482,7 +552,7 @@ audit disposition is deterministic and separate from the findings themselves:
 |---|---|---|
 | `COMPLETE_NO_FINDINGS` | Declared source and detector scopes were verified; no modeled finding survived | No action within those scopes |
 | `COMPLETE_WITH_FINDINGS` | Declared source scope was verified and findings survived | Review the evidence |
-| `ABSTAIN_INSUFFICIENT_SCOPE` | Source files were skipped, unreadable, syntactically invalid, outside scope, or in an unsupported language | Complete the scope and rerun |
+| `ABSTAIN_INSUFFICIENT_SCOPE` | Source files were skipped, unreadable, syntactically invalid, outside scope, or written in a language with no registered detector | Complete the scope, add a language pack, and rerun |
 | `ABSTAIN_UNDETERMINED` | Independent evidence paths contradict each other | Resolve the contradiction and rerun |
 | `ABSTAIN_DEGRADED` | A specialized agent was unavailable but partial evidence was preserved | Restore the agent and rerun |
 | `ABSTAIN_UNATTESTED_EXTERNAL` | External findings were preserved but FORGE cannot attest their analytical provenance | Review and explicitly operator-attest the external layer before relying on it as an audit result |
@@ -511,6 +581,11 @@ FORGE intentionally does **not**:
   discard reason, not silently dropped
 * convert an AST pattern match into a claim about runtime behavior it did not
   observe
+* present a lexical scan as if it were a parse — Go, Rust and JavaScript/
+  TypeScript findings carry no scope, type or reachability information, are
+  never raised above `NOT_ASSESSED` exploitability, and say so in coverage
+* report a language it cannot analyse as clean — an unsupported language is an
+  explicit abstention, never a silent pass
 * claim cryptographic guarantees beyond its documented threat model — the
   seal is tamper-evident, not tamper-proof, and says so
 * replace human engineering judgment
