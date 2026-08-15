@@ -1,9 +1,13 @@
 # The agents
 
-FORGE contains seven specialized, single-responsibility agent modules. Five
+FORGE contains nine specialized, single-responsibility agent modules. Seven
 participate in the normal repository audit; Patch Reviewer and Recommendation
 Agent are deliberately kept optional and post-audit. Report Composer renders
 the result but does not invent findings.
+
+Two of the seven scan at lexical depth rather than over an AST, and the
+distinction is contractual rather than cosmetic — see
+[Language support](../README.md#language-support).
 
 ```
                           Repository
@@ -23,6 +27,15 @@ the result but does not invent findings.
    │ + AST-verified  │ │ pattern checks │ │ schema-versioning  │
    │ adversarial test│ │                │ │ checks             │
    └────────────────┘ └───────────────┘ └────────────────────┘
+        AST depth — Python only
+              │               │                │
+              │   ┌───────────────────┐ ┌────────────────────┐
+              │   │   WEB AUDITOR     │ │  LEXICAL AUDITOR   │
+              │   │ JS/TS masked-text │ │ Go + Rust masked-  │
+              │   │ boundary scan     │ │ text boundary scan │
+              │   └───────────────────┘ └────────────────────┘
+              │        lexical depth — no scope, type or
+              │        reachability; exploitability NOT_ASSESSED
               │               │                │
               └───────────────┼────────────────┘
                               ▼
@@ -48,21 +61,33 @@ Each agent has a strictly bounded responsibility. No agent silently changes
 another agent's conclusions: findings are merged into one
 `VerificationManifest`, sealed once, and rendered once.
 
-## Agent status: seventh agent is optional
+## Agent status: the last two agents are optional
 
-FORGE currently has exactly seven agent modules:
+FORGE currently has exactly nine agent modules:
 
-| Agent | Automatic repository scan | Role |
-|---|---:|---|
-| Archaeologist | Yes | discovery, triage, deletion judgments |
-| Bug Investigator | Yes | hypotheses and falsification |
-| Security Auditor | Yes | AST security checks |
-| Integrity Inspector | Yes | decision-path and serialization integrity |
-| Report Composer | Yes, presentation only | HTML rendering |
-| Patch Reviewer | No | review a requested unified diff |
-| Recommendation Agent | No | propose bounded changes after the audit |
+| Agent | Automatic repository scan | Depth | Role |
+|---|---:|---|---|
+| Archaeologist | Yes | — | discovery, triage, deletion judgments |
+| Bug Investigator | Yes | AST | hypotheses and falsification |
+| Security Auditor | Yes | AST | AST security checks |
+| Integrity Inspector | Yes | AST | decision-path and serialization integrity |
+| Web Auditor | Yes | lexical | bounded boundaries in JavaScript/TypeScript |
+| Lexical Auditor | Yes | lexical | bounded boundaries in Go and Rust |
+| Report Composer | Yes, presentation only | — | HTML rendering |
+| Patch Reviewer | No | — | review a requested unified diff |
+| Recommendation Agent | No | — | propose bounded changes after the audit |
 
-The seventh agent is deliberately post-audit and optional. Recommendations
+A lexical agent scans source with comments and string data masked out. A match
+is therefore always real code, but it carries no scope, no type information and
+no reachability, and no induction harness exists for those languages — so its
+findings are capped at `NOT_ASSESSED` exploitability by construction.
+
+Web Auditor and Lexical Auditor share one engine and differ only in which
+language packs they own. They are kept apart because Web Auditor's precision
+and recall baselines are recorded evidence keyed to that agent name; merging
+them would mean relabelling the audit record to suit a refactor.
+
+The last agent is deliberately post-audit and optional. Recommendations
 are available only after contextual domain hypotheses and executable skill
 contracts have run. The Recommendation Agent consumes the sealed findings and
 metrics; it does not rescan, rewrite, or change findings. It emits a
@@ -228,6 +253,46 @@ Also pure AST scanning. Flags three families:
   self-audit of `forge/agent_independence.py::_fingerprint()`, which splits
   the dump and the hash across two statements instead of one nested
   expression.
+
+## Web Auditor (`forge/agents/web_auditor.py`)
+
+Drives the JavaScript/TypeScript language pack. Scans `.js`, `.jsx`, `.mjs`,
+`.cjs`, `.ts`, `.tsx`, `.mts` and `.cts` for six families: `dynamic-evaluation`,
+`subprocess`, `parser-boundary`, `path-traversal`, `sql-injection` and
+`hardcoded-credential`.
+
+The rules that matter are the ones that keep it quiet. `JSON.parse` is reported
+only when no `try` block is still open at the call site, measured by brace
+depth, so a handler in an adjacent function cannot vouch for an unguarded call.
+`child_process` execution is bound to the import that introduced it, which is
+how `const { exec } = require("child_process"); exec(cmd)` is caught while
+`db.exec(statement)` is not. A path sink is dropped when a normalizer is visible
+on the value, following assignments to a fixed point so `slug = basename(input);
+target = join("runs", slug)` stays clean. When a call spans lines and lexical
+scope cannot settle the question, it says so — the finding reads "requires
+verification" rather than asserting a traversal.
+
+## Lexical Auditor (`forge/agents/lexical_auditor.py`)
+
+Drives the Go and Rust packs through the same engine. Before it existed, both
+languages were triaged into module health classes and then inspected by nothing,
+so a finding-free Go repository produced a clean-looking report whose
+cleanliness came from having looked at nothing.
+
+Go (7 families) leans on the language's stable, fully-qualified selectors:
+`exec.Command`, `os.ReadFile`, `db.Query`. A discarded `Unmarshal` error is
+visible in the assignment form itself (`_ =` or a bare statement), which is why
+`parser-boundary` can be stated without a control-flow graph. Running a program
+directly is a `subprocess` boundary; handing a constructed string to `sh -c` is
+`command-injection`, a different claim.
+
+Rust (7 families) adds `unsafe-block` — not because an `unsafe` block is a
+defect, it usually is not, but because it is the exact point where the compiler
+stops providing the guarantee the rest of the language rests on. It is rated
+MEDIUM so it never competes with an injectable sink for attention. Rust's
+masking is the most demanding of any pack: lifetimes and char literals share the
+apostrophe, raw strings carry a variable-width hash fence, block comments nest,
+and ordinary strings may span lines.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 
