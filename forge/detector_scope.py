@@ -52,6 +52,14 @@ FAMILIES_BY_LANGUAGE = {
         "hardcoded-credential", "path-traversal", "sql-injection", "subprocess",
         "unsafe-deserialization",
     ),
+    "Ruby": (
+        "dynamic-evaluation", "hardcoded-credential", "path-traversal",
+        "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
+    "PHP": (
+        "dynamic-evaluation", "hardcoded-credential", "path-traversal",
+        "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
 }
 
 UNMODELED_DEFECT_CLASSES = (
@@ -85,7 +93,7 @@ def language_scope_statement() -> str:
 
     depths = {
         "Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go",
-        "Rust": ".rs", "Java": ".java", "C#": ".cs",
+        "Rust": ".rs", "Java": ".java", "C#": ".cs", "Ruby": ".rb", "PHP": ".php",
     }
     parts = [
         f"{language} ({analysis_depth(depths[language])}): " + ", ".join(families)

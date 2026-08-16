@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from forge.languages import csharp, go, java, javascript, rust
+from forge.languages import csharp, go, java, javascript, php, ruby, rust
 from forge.languages.engine import build_context, mask_source, read_source, scan_source
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
@@ -30,6 +30,7 @@ from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, Sink
 #: the audit seal, so this is a tuple and never a set.
 PACKS: tuple[LanguagePack, ...] = (
     javascript.PACK, go.PACK, rust.PACK, java.PACK, csharp.PACK,
+    ruby.PACK, php.PACK,
 )
 
 #: Languages the web-facing agent owns, kept separate from the rest so each
@@ -37,7 +38,7 @@ PACKS: tuple[LanguagePack, ...] = (
 #: ownership, not by a claim about language taxonomy.
 WEB_PACKS: tuple[LanguagePack, ...] = (javascript.PACK,)
 LEXICAL_AUDITOR_PACKS: tuple[LanguagePack, ...] = (
-    go.PACK, rust.PACK, java.PACK, csharp.PACK,
+    go.PACK, rust.PACK, java.PACK, csharp.PACK, ruby.PACK, php.PACK,
 )
 
 #: Extensions parsed into a real AST. Kept here so coverage has one source of
@@ -84,7 +85,7 @@ RECOGNIZED_LANGUAGES: dict[str, str] = {
     ".mts": "JavaScript/TypeScript", ".cts": "JavaScript/TypeScript",
     ".go": "Go", ".rs": "Rust",
     ".java": "Java", ".kt": "Kotlin", ".scala": "Scala", ".rb": "Ruby",
-    ".php": "PHP", ".cs": "C#", ".swift": "Swift", ".m": "Objective-C",
+    ".php": "PHP", ".phtml": "PHP", ".rake": "Ruby", ".cs": "C#", ".swift": "Swift", ".m": "Objective-C",
     ".c": "C", ".h": "C/C++", ".hpp": "C++", ".cc": "C++", ".cpp": "C++",
     ".sh": "Shell", ".bash": "Shell", ".ps1": "PowerShell", ".lua": "Lua",
     ".ex": "Elixir", ".exs": "Elixir", ".erl": "Erlang", ".dart": "Dart",

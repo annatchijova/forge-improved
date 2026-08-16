@@ -32,7 +32,7 @@ distinction is contractual rather than cosmetic — see
               │   ┌───────────────────┐ ┌────────────────────┐
               │   │   WEB AUDITOR     │ │  LEXICAL AUDITOR   │
               │   │ JS/TS masked-text │ │ Go · Rust · Java · │
-              │   │ boundary scan     │ │ C# masked-text scan│
+              │   │ boundary scan     │ │ C# · Ruby · PHP    │
               │   └───────────────────┘ └────────────────────┘
               │        lexical depth — no scope, type or
               │        reachability; exploitability NOT_ASSESSED
@@ -72,7 +72,7 @@ FORGE currently has exactly nine agent modules:
 | Security Auditor | Yes | AST | AST security checks |
 | Integrity Inspector | Yes | AST | decision-path and serialization integrity |
 | Web Auditor | Yes | lexical | bounded boundaries in JavaScript/TypeScript |
-| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java and C# |
+| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java, C#, Ruby and PHP |
 | Report Composer | Yes, presentation only | — | HTML rendering |
 | Patch Reviewer | No | — | review a requested unified diff |
 | Recommendation Agent | No | — | propose bounded changes after the audit |
@@ -279,9 +279,8 @@ languages were triaged into module health classes and then inspected by nothing,
 so a finding-free Go repository produced a clean-looking report whose
 cleanliness came from having looked at nothing.
 
-It owns four packs. Adding the fourth cost a specification and a benign-code
-audit, not a new agent -- which is the return the language registry exists to
-pay.
+It owns six packs. Each new one cost a specification and a benign-code audit,
+not a new agent -- which is the return the language registry exists to pay.
 
 Go (7 families) leans on the language's stable, fully-qualified selectors:
 `exec.Command`, `os.ReadFile`, `db.Query`. A discarded `Unmarshal` error is
@@ -311,6 +310,21 @@ whose substitutions are code, and both combined in either order. Its
 `unsafe-deserialization` rule requires the file to name a formatter that
 rebuilds arbitrary object graphs, because `Deserialize` is also how every safe
 JSON library spells its entry point.
+
+Ruby (6 families) puts nearly all of its difficulty in the masker rather than
+the rules: backticks execute rather than quote, `=begin`/`=end` is line-anchored,
+heredocs routinely hold SQL, and a symbol (`:name`) or character literal (`?a`)
+must not open a phantom string. Its query rule splits raw sinks, which need
+visible SQL in the argument, from ORM fragment methods like `.where`, whose own
+name is the proof that the argument is a clause.
+
+PHP (6 families) is the only language here where a file is not code by default.
+A template is HTML until `<?php` opens, so the pack declares code delimiters and
+everything outside them is blanked. `$name` and `{$expr}` survive masking inside
+a double-quoted string, which is what makes an interpolated query visible as a
+value reaching a sink. `include $page` is reported as `dynamic-evaluation`
+rather than a file read, because it resolves a path at runtime and then executes
+it.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 

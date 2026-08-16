@@ -66,6 +66,11 @@ def _mask_string_literal(
             out[index] = " "
             index += 2
             continue
+        if rule.preserve is not None:
+            preserved = rule.preserve.match(source, index)
+            if preserved and preserved.end() > index:
+                index = preserved.end()
+                continue
         if rule.interpolation is not None and source.startswith(rule.interpolation[0], index):
             index += len(rule.interpolation[0])
             depth = 1
@@ -90,6 +95,47 @@ def _mask_string_literal(
     return length
 
 
+def _block_opener(
+    source: str, index: int, pairs: tuple[tuple[str, str], ...],
+) -> tuple[str, str] | None:
+    """Return the block-comment pair opening at ``index``, if any.
+
+    An opener written with a leading newline is *line-anchored*: it only counts
+    at the start of a line. The first line of a file has no preceding newline,
+    so it is matched there as well -- otherwise a licence header written as a
+    Ruby ``=begin`` block at offset zero would be read as code.
+    """
+    for open_token, close_token in pairs:
+        if source.startswith(open_token, index):
+            return open_token, close_token
+        if (
+            index == 0 and open_token.startswith("\n")
+            and source.startswith(open_token[1:], 0)
+        ):
+            return open_token[1:], close_token
+    return None
+
+
+def _heredoc_body_end(source: str, start: int, label: str) -> tuple[int, int]:
+    """Return ``(body_end, resume)`` for a heredoc closed by ``label``.
+
+    The body begins on the line after the opener and ends at the first later
+    line whose stripped text is the label. Trailing punctuation is tolerated
+    because PHP writes ``EOT;`` and Ruby sometimes writes ``SQL)``.
+    """
+    line_end = source.find("\n", start)
+    if line_end < 0:
+        return len(source), len(source)
+    position = line_end + 1
+    while position < len(source):
+        end = source.find("\n", position)
+        end = len(source) if end < 0 else end
+        if source[position:end].strip().rstrip(";,)").strip() == label:
+            return position, end
+        position = end + 1
+    return len(source), len(source)
+
+
 def mask_source(source: str, pack: LanguagePack) -> list[str]:
     """Return the source's lines with comments and string data blanked out."""
     out = list(source)
@@ -101,10 +147,36 @@ def mask_source(source: str, pack: LanguagePack) -> list[str]:
             if out[position] != "\n":
                 out[position] = " "
 
+    if pack.code_delimiters:
+        # Everything outside a code region is markup or prose, never code. A
+        # template's HTML must not be scanned for sinks.
+        index = 0
+        cursor = 0
+        while cursor < length:
+            opened = min(
+                (position for position in
+                 (source.find(open_token, cursor) for open_token, _ in pack.code_delimiters)
+                 if position >= 0),
+                default=-1,
+            )
+            if opened < 0:
+                blank(cursor, length)
+                break
+            blank(cursor, opened)
+            close_token = next(
+                close for open_token, close in pack.code_delimiters
+                if source.startswith(open_token, opened)
+            )
+            closed = source.find(close_token, opened)
+            cursor = length if closed < 0 else closed + len(close_token)
+        source = "".join(out)
+
     while index < length:
-        if source[index] == "\n":
-            index += 1
-            continue
+        # Newlines are deliberately *not* skipped early here. A line-anchored
+        # block comment declares its opener with a leading newline (Ruby's
+        # `=begin`), so the scanner has to be standing on that newline for the
+        # opener to match. Skipping ahead made every `=begin` block invisible
+        # and its prose was scanned as code.
         skipped = None
         for pattern in pack.skip_patterns:
             match = pattern.match(source, index)
@@ -121,9 +193,7 @@ def mask_source(source: str, pack: LanguagePack) -> list[str]:
             blank(index, end)
             index = end
             continue
-        opened = next(
-            (pair for pair in pack.block_comments if source.startswith(pair[0], index)), None
-        )
+        opened = _block_opener(source, index, pack.block_comments)
         if opened is not None:
             open_token, close_token = opened
             depth = 1
@@ -140,6 +210,13 @@ def mask_source(source: str, pack: LanguagePack) -> list[str]:
             blank(index, cursor)
             index = cursor
             continue
+        if pack.heredoc is not None:
+            opener = pack.heredoc.match(source, index)
+            if opener:
+                body_end, resume = _heredoc_body_end(source, opener.end(), opener.group("label"))
+                blank(opener.start(), body_end)
+                index = resume
+                continue
         if pack.raw_string_fence is not None:
             fence = pack.raw_string_fence.match(source, index)
             if fence:
@@ -244,6 +321,7 @@ def sql_findings(
     constructed: re.Pattern[str],
     language: str,
     description: str,
+    require_sql_keyword: bool = True,
 ) -> list[LexicalFinding]:
     """Report query text built by formatting or concatenation instead of binding.
 
@@ -251,6 +329,12 @@ def sql_findings(
     positive observed against idiomatic code: the call is real code in the
     masked view, its *first* argument shows construction, and the raw text of
     that call actually contains SQL.
+
+    ``require_sql_keyword`` relaxes the third condition for sinks whose *name*
+    already proves the argument is SQL. An ORM fragment method such as Rails'
+    ``.where`` takes a WHERE clause, not a whole statement, so demanding a
+    ``SELECT`` there loses the real injection ``.where("n = '#{param}'")``
+    while protecting nothing.
     """
     findings: list[LexicalFinding] = []
     for number, masked in enumerate(context.masked, 1):
@@ -264,7 +348,9 @@ def sql_findings(
         if open_index < 0:
             continue
         argument = argument_zero(source, open_index)
-        if not constructed.search(argument) or not SQL_KEYWORD.search(span_raw):
+        if not constructed.search(argument):
+            continue
+        if require_sql_keyword and not SQL_KEYWORD.search(span_raw):
             continue
         findings.append(LexicalFinding(
             "sql-injection", context.path, number, description,

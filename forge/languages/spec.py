@@ -39,6 +39,10 @@ class StringRule:
     # languages escape one; without it the masker would end the literal early and
     # read the remaining text as code.
     doubled_close_escapes: bool = False
+    # Spans inside the literal that are code and must survive masking, matched at
+    # the cursor. ``interpolation`` handles the nesting-aware brace form; this
+    # handles the ones a plain regex describes, such as PHP's bare ``$name``.
+    preserve: re.Pattern[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -87,6 +91,15 @@ class LanguagePack:
     # open a string, and a JavaScript regular-expression literal must not have
     # its bracket class mistaken for one.
     skip_patterns: tuple[re.Pattern[str], ...] = ()
+    # A heredoc opener whose ``label`` group names the terminator. The body runs
+    # to the first later line whose stripped text is that label. Ruby and PHP
+    # both put SQL and shell text in heredocs, and without this the body is read
+    # as code -- which invents findings out of quoted data.
+    heredoc: re.Pattern[str] | None = None
+    # When set, only text *inside* these delimiters is code and everything else
+    # is blanked. PHP needs it: a template file is HTML until ``<?php`` opens,
+    # and prose in the markup must never be scanned for sinks.
+    code_delimiters: tuple[tuple[str, str], ...] = ()
     sinks: tuple[SinkRule, ...] = ()
     sanitizers: re.Pattern[str] | None = None
     interpolation_markers: tuple[str, ...] = ()

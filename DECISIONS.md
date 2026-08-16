@@ -852,3 +852,59 @@ Java's deserialization pattern also matched both the construction and the read
 of an `ObjectInputStream`, so one boundary produced two findings on one line at
 different columns — which the runtime's deduplication, keyed partly on column,
 could not collapse. The read is the boundary; the construction is its setup.
+
+## Ruby and PHP packs, and the invariant they exposed
+
+These two put nearly all their difficulty in the masker rather than the rules,
+which is why adding them required three new engine capabilities rather than
+just two specifications.
+
+**Heredocs.** Ruby and PHP both keep SQL and shell text in heredocs. Without
+support the body is read as code, which invents findings out of quoted data. A
+pack now declares a heredoc opener whose `label` group names the terminator, and
+the body runs to the first later line whose stripped text is that label.
+
+**Code regions.** PHP is the only language here where a file is not code by
+default: a template is HTML until `<?php` opens. `code_delimiters` blanks
+everything outside a code region, so prose in the markup — including a
+sink-shaped sentence in a paragraph — is never scanned.
+
+**Simple in-string preservation.** `interpolation` handles the nesting-aware
+brace form; PHP's bare `$name` needed a plain regex, so `StringRule.preserve`
+was added. Both keep an interpolated query visible as a value reaching a sink
+rather than as inert text.
+
+### Two defects found by auditing, and one by testing
+
+Ruby's `=begin`/`=end` block never matched. The opener is line-anchored, so the
+pack declares it with a leading newline — but the masker skipped newlines before
+trying block comments, so the scanner was never standing where the opener began.
+Every such block was invisible and its prose was scanned as code; the benign
+corpus produced two findings out of a comment saying what the code *used to* do.
+The newline skip is gone, and `_block_opener` also matches a line-anchored
+opener at offset zero, where a licence header has no preceding newline.
+
+The SQL keyword guard added for the earlier false-positive pass turned out to
+cost a true positive here. Rails' `.where("n = '#{param}'")` is a real injection,
+but an ORM fragment method receives a *clause*, never a whole statement, so
+demanding `SELECT` lost the finding while protecting nothing. `sql_findings`
+grew `require_sql_keyword`, and Ruby splits raw sinks (generic names, keyword
+required) from fragment methods (the name itself is the proof).
+
+PHP's taint pattern captured the `$` sigil while assignment targets are recorded
+without it, so the sanitized and untainted sets could never match a name up and
+a provably-cleared path was still reported. Found by a test rather than by the
+benign corpus, because the corpus happened to use a sink the pack does not model.
+
+### The invariant
+
+`index.php` finished the first end-to-end run in `out_of_detector_scope`: the
+pack could read it, but `LANG_EXT` did not list `.php`, so triage never
+classified it, it never became `CONNECTED_ALIVE`, and no detector could reach
+it. That is the same latent defect `.tsx` had, and `.rake` and `.phtml` had it
+too — a file that is *invisible* rather than declared out of scope, which is the
+one outcome the coverage contract exists to prevent.
+
+Anything a pack can analyse must therefore be triageable, and that is now
+checked at import: registering a pack whose extensions triage cannot classify
+raises rather than silently producing an unreachable language.

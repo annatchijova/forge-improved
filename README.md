@@ -5,7 +5,7 @@
 # FORGE
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Analyzes](https://img.shields.io/badge/analyzes-Python%20%C2%B7%20JS%2FTS%20%C2%B7%20Go%20%C2%B7%20Rust%20%C2%B7%20Java%20%C2%B7%20C%23-blueviolet)
+![Analyzes](https://img.shields.io/badge/analyzes-8%20languages-blueviolet)
 ![Architecture](https://img.shields.io/badge/architecture-multi--agent-darkgreen)
 ![Deterministic](https://img.shields.io/badge/decision%20path-deterministic-success)
 ![Audit](https://img.shields.io/badge/audit-SHA--256%20sealed-brightgreen)
@@ -302,7 +302,9 @@ at `NOT_ASSESSED` for exploitability by construction, not by convention.
 | **JavaScript / TypeScript** | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | lexical | 6 | resolved (relative specifiers) |
 | **Java** | `.java` | lexical | 7 | approximated (filename tally) |
 | **C#** | `.cs` | lexical | 5 | approximated (filename tally) |
-| Ruby, C, C++, Kotlin, PHP, … | `.rb` `.c` `.cpp` `.kt` `.php` | **none** | — | approximated (filename tally) |
+| **Ruby** | `.rb` `.rake` | lexical | 6 | approximated (filename tally) |
+| **PHP** | `.php` `.phtml` | lexical | 6 | approximated (filename tally) |
+| C, C++, Kotlin, Scala, Swift, … | `.c` `.cpp` `.kt` `.scala` `.swift` | **none** | — | approximated (filename tally) |
 | Everything else | — | **none** | — | — |
 
 A language with no detector is **abstained from, never reported as clean**. It
@@ -311,10 +313,13 @@ disposition as an explicit boundary. Recognised-but-unanalysed languages are
 still triaged into module health classes, and triage declares in the manifest
 that their connectivity was approximated rather than resolved.
 
-Analysis depth and connectivity are independent claims. Java and C# are scanned
-by a language pack, but their imports are not resolved, so their module
-connectivity still comes from the filename tally — and triage says so in the
-manifest rather than letting an approximated count read as a resolved one.
+Analysis depth and connectivity are independent claims. Java, C#, Ruby and PHP
+are scanned by a language pack, but their imports are not resolved, so their
+module connectivity still comes from the filename tally — and triage says so in
+the manifest rather than letting an approximated count read as a resolved one.
+
+Anything a pack can read must also be triageable, or it would be invisible
+rather than declared out of scope; the registry enforces that at import.
 
 Coverage reports analysis depth per language, so a mixed repository shows
 exactly what it got:
@@ -339,8 +344,11 @@ non-backtracking pass that preserves line and column geometry.
 Masking is per-language because it has to be. Rust lifetimes (`&'a str`), Go
 rune literals (`'"'`), nested block comments, variable-width raw-string fences
 (`r##"..."##`), Java text blocks, C# verbatim strings where a backslash is
-ordinary and a doubled quote is an escape, and JavaScript regular-expression
-character classes each look like an opening quote to a naive scanner. Any one of them, mishandled, blanks
+ordinary and a doubled quote is an escape, Ruby symbols and character literals,
+heredocs in Ruby and PHP, and JavaScript regular-expression character classes
+each look like an opening quote to a naive scanner. PHP goes further still: a
+template file is HTML until `<?php` opens, so everything outside a code region
+is blanked before any rule runs. Any one of them, mishandled, blanks
 the remainder of a file — which would silently turn an unanalysed file into a
 clean one. Two exceptions to masking are deliberate: string *delimiters* survive
 so a detector can tell an argument was a literal, and JavaScript template

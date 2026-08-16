@@ -28,6 +28,8 @@ from forge.languages.csharp import PACK as CSHARP
 from forge.languages.go import PACK as GO
 from forge.languages.java import PACK as JAVA
 from forge.languages.javascript import PACK as JS
+from forge.languages.php import PACK as PHP
+from forge.languages.ruby import PACK as RUBY
 from forge.languages.rust import PACK as RUST
 
 
@@ -596,3 +598,195 @@ def test_a_name_is_not_tainted_merely_by_being_called_target():
     assert not families(CSHARP, benign)
     tainted = 'var target = Path.Combine(userInput, ConfigName);\nvar body = File.ReadAllText(target);\n'
     assert families(CSHARP, tainted) == {("path-traversal", 2)}
+
+
+# --------------------------------------------------------------------------
+# Ruby pack
+# --------------------------------------------------------------------------
+
+def test_ruby_reports_its_declared_families():
+    source = (
+        'class Bad\n'
+        '  API_TOKEN = "sk-live-99"\n'
+        '  def run(params)\n'
+        '    eval(params[:code])\n'
+        '    system("echo #{params[:msg]}")\n'
+        '    File.read(params[:path])\n'
+        '    Marshal.load(params[:blob])\n'
+        '  end\n'
+        'end\n'
+    )
+    assert families(RUBY, source) == {
+        ("hardcoded-credential", 2),
+        ("dynamic-evaluation", 4),
+        ("subprocess", 5),
+        ("path-traversal", 6),
+        ("unsafe-deserialization", 7),
+    }
+
+
+def test_ruby_begin_end_block_comment_is_not_code():
+    # `=begin`/`=end` is line-anchored, so the masker has to be standing on the
+    # newline that precedes it. Skipping newlines early made every such block
+    # invisible and its prose was scanned as code.
+    source = (
+        "x = 1\n"
+        "=begin\n"
+        'this used to call system("rake db:migrate") and File.read(params[:p])\n'
+        "=end\n"
+        "y = 2\n"
+    )
+    assert not families(RUBY, source)
+
+
+def test_ruby_begin_block_at_the_very_start_of_a_file_is_still_a_comment():
+    # A licence header at offset zero has no preceding newline.
+    source = "=begin\neval(payload)\n=end\nx = 1\n"
+    assert not families(RUBY, source)
+
+
+def test_ruby_heredoc_body_is_data_not_code():
+    source = (
+        "sql = <<~SQL\n"
+        "  SELECT count(*) FROM orders WHERE eval(x) system(y)\n"
+        "SQL\n"
+        "eval(payload)\n"
+    )
+    assert families(RUBY, source) == {("dynamic-evaluation", 4)}
+
+
+def test_ruby_backticks_execute_rather_than_quote():
+    assert families(RUBY, "output = `ls -la #{dir}`\n") == {("subprocess", 1)}
+
+
+def test_ruby_symbol_and_character_literal_do_not_open_a_string():
+    source = "status = :pending\nletter = ?A\neval(payload)\n"
+    assert families(RUBY, source) == {("dynamic-evaluation", 3)}
+
+
+def test_ruby_safe_yaml_load_is_not_unsafe_deserialization():
+    assert not families(RUBY, "config = YAML.safe_load(body)\n")
+    assert families(RUBY, "config = YAML.load(body)\n") == {("unsafe-deserialization", 1)}
+
+
+def test_ruby_orm_fragment_needs_no_select_keyword_but_still_needs_construction():
+    # `.where` receives a clause, never a whole statement, so demanding SELECT
+    # would lose the real injection while protecting nothing.
+    assert families(RUBY, 'Order.where("name = \'#{params[:n]}\'")\n') == {("sql-injection", 1)}
+    assert not families(RUBY, "Order.where('status = ?', params[:status])\n")
+    assert not families(RUBY, "Order.where(status: params[:status])\n")
+
+
+def test_ruby_benign_controller_is_clean():
+    source = (
+        "class OrdersController < ApplicationController\n"
+        "  CONFIG_NAME = 'config/orders.yml'\n"
+        "  def index\n"
+        "    @orders = Order.where('status = ?', params[:status])\n"
+        "  end\n"
+        "  def config\n"
+        "    YAML.safe_load(File.read(File.expand_path(CONFIG_NAME, Rails.root)))\n"
+        "  end\n"
+        "end\n"
+    )
+    assert not families(RUBY, source)
+
+
+# --------------------------------------------------------------------------
+# PHP pack
+# --------------------------------------------------------------------------
+
+def test_php_reports_its_declared_families():
+    source = (
+        '<?php\n'
+        '$apiKey = "sk-live-11";\n'
+        'function h($pdo, $page) {\n'
+        '  eval($_GET["code"]);\n'
+        '  system("echo " . $_GET["msg"]);\n'
+        '  file_get_contents($_GET["path"]);\n'
+        '  $pdo->query("SELECT * FROM t WHERE n = \'$_GET[name]\'");\n'
+        '  unserialize($_POST["blob"]);\n'
+        '  include $page;\n'
+        '}\n'
+    )
+    assert families(PHP, source) == {
+        ("hardcoded-credential", 2),
+        ("dynamic-evaluation", 4),
+        ("subprocess", 5),
+        ("path-traversal", 6),
+        ("sql-injection", 7),
+        ("unsafe-deserialization", 8),
+        ("dynamic-evaluation", 9),
+    }
+
+
+def test_php_markup_outside_the_code_delimiters_is_never_scanned():
+    # A template is HTML until `<?php` opens. Prose in the markup must not be
+    # read as code, however sink-shaped it looks.
+    source = (
+        '<h1>Orders</h1>\n'
+        '<p>Run system("rm -rf /") is only prose here.</p>\n'
+        '<?php\n'
+        'eval($payload);\n'
+        '?>\n'
+        '<footer>eval($more)</footer>\n'
+    )
+    assert families(PHP, source) == {("dynamic-evaluation", 4)}
+
+
+def test_php_nowdoc_body_is_inert():
+    source = (
+        '<?php\n'
+        "$text = <<<'TEXT'\n"
+        'eval($payload); and system($cmd); are inert here\n'
+        'TEXT;\n'
+        'unserialize($blob);\n'
+    )
+    assert families(PHP, source) == {("unsafe-deserialization", 5)}
+
+
+def test_php_variable_interpolation_survives_masking_but_literal_text_does_not():
+    from forge.languages import mask_source
+
+    masked = mask_source('<?php\n$q = "SELECT * FROM t WHERE n = $name";\n', PHP)
+    assert "$name" in masked[1]
+    assert "SELECT" not in masked[1]
+
+
+def test_php_literal_include_is_ordinary_composition():
+    # `include $page` resolves at runtime and then executes; a literal one does not.
+    assert not families(PHP, "<?php\nrequire_once __DIR__ . '/bootstrap.php';\n")
+    assert families(PHP, "<?php\ninclude $page;\n") == {("dynamic-evaluation", 2)}
+
+
+def test_php_prepared_statement_is_not_sql_injection():
+    safe = (
+        '<?php\n'
+        "$stmt = $pdo->prepare('SELECT code FROM orders WHERE id = :id');\n"
+        "$stmt->execute([':id' => $id]);\n"
+    )
+    assert not families(PHP, safe)
+
+
+def test_php_realpath_clears_a_filesystem_path():
+    assert not families(PHP, '<?php\n$target = realpath($root . "/cfg.ini");\nfile_get_contents($target);\n')
+    assert families(PHP, '<?php\nfile_get_contents($_GET["path"]);\n') == {("path-traversal", 2)}
+
+
+def test_every_analysable_extension_is_also_triageable():
+    # A file triage never classifies can never become CONNECTED_ALIVE, so no
+    # detector reaches it: invisible rather than declared out of scope, which
+    # is the one outcome the coverage contract exists to prevent. This is how
+    # `.tsx`, then `.php`, then `.rake` each shipped with a pack that could
+    # read them and a triage that never handed them over.
+    from forge.detector.stack import LANG_EXT
+
+    assert ANALYZED_EXTENSIONS <= set(LANG_EXT), sorted(ANALYZED_EXTENSIONS - set(LANG_EXT))
+
+
+def test_declared_families_cover_every_pack_the_lexical_auditor_owns():
+    from forge.agents.lexical_auditor import DECLARED_FAMILIES
+    from forge.languages import LEXICAL_AUDITOR_PACKS
+
+    assert set(DECLARED_FAMILIES) == {pack.name for pack in LEXICAL_AUDITOR_PACKS}
+    assert all(DECLARED_FAMILIES[name] for name in DECLARED_FAMILIES)
