@@ -752,3 +752,42 @@ kept in a collapsible block rather than dumped into the lede. The three
 not-analysed buckets each carry the reason a reviewer would act on, so a
 `README.md` no longer presents as the same kind of gap as an unanalysed Java
 file.
+
+## Auditing the language packs against benign code
+
+The packs shipped with positive fixtures and benign twins written alongside the
+detectors, which is exactly the corpus most likely to agree with them. Running
+them instead over idiomatic Go and Rust written independently -- a config
+loader, a bound query, a git invocation, a default-port parse -- surfaced four
+false positives that the paired twins had not.
+
+**A constructed bound parameter is not a constructed query.** In
+`db.QueryRow("SELECT count(*) FROM e WHERE ts > $1", fmt.Sprintf("%s", since))`
+the query is a constant and the formatting builds a *bound parameter* -- the
+safe form. Scanning the whole call span reported it as injection. The rule now
+inspects argument zero only.
+
+**`execute` and `query` are not reserved for databases.**
+`step.execute(format!("step-{}", step.id))` is ordinary domain code. A query
+sink's first argument must now actually contain SQL, checked against the raw
+text after the masked view has established the call is real code -- the same
+discipline the credential rule already used.
+
+**Parsing a compile-time constant cannot fail at runtime.**
+`"8080".parse().unwrap()` and `let raw = "3"; raw.parse().expect(...)` were
+reported as panicking parser boundaries. Idiomatic Rust is full of both, and
+neither is actionable. A literal receiver, directly or through a
+literal-only binding, is excluded; masking keeps the quotes while blanking their
+contents, which is enough to tell a constant from a runtime value without
+reading what the constant said.
+
+All four fixes narrow the rules rather than suppress the families: the
+concatenated-SQL form, `sqlx::query(&format!(...))`, and
+`raw_header.parse().unwrap()` all still report. Each false positive is now a
+regression test, and the benign service files are fixtures in their own right.
+
+The one remaining Go finding on that corpus -- `exec.Command("git", "log", ...)`
+reported as `subprocess` -- is deliberate and consistent with the JavaScript
+pack reporting every `child_process.exec`. Process creation is a declared
+boundary; only handing a constructed string to a shell is escalated to
+`command-injection`.

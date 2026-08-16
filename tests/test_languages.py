@@ -366,3 +366,68 @@ def test_no_finding_text_collides_with_a_contradiction_marker(pack):
     for description in descriptions:
         lowered = description.lower()
         assert not [word for word in reserved if word in lowered], description
+
+
+# --------------------------------------------------------------------------
+# False positives found by auditing the packs against idiomatic benign code
+# --------------------------------------------------------------------------
+
+def test_sprintf_in_a_bound_parameter_is_not_sql_injection():
+    # `db.QueryRow("SELECT ... $1", fmt.Sprintf("%s", raw))` is the *safe* form:
+    # the query is constant and the constructed value is a bound parameter.
+    # Scanning the whole call instead of argument zero reported it as injection.
+    source = 'err := db.QueryRow("SELECT count(*) FROM e WHERE ts > $1", fmt.Sprintf("%s", since)).Scan(&n)\n'
+    assert not families(GO, source)
+    assert families(GO, 'db.Query(fmt.Sprintf("SELECT * FROM t WHERE n = %s", name))\n') == {
+        ("sql-injection", 1)
+    }
+
+
+def test_a_generic_execute_call_is_not_a_query():
+    # `execute` and `query` are not reserved for databases. Requiring the first
+    # argument to actually contain SQL keeps ordinary domain code out.
+    assert not families(RUST, 'step.execute(format!("step-{}", step.id))?;\n')
+    assert families(RUST, 'sqlx::query(&format!("SELECT * FROM t WHERE n = {}", name));\n') == {
+        ("sql-injection", 1)
+    }
+
+
+def test_parsing_a_string_literal_is_not_a_parser_boundary():
+    # A compile-time constant cannot fail to parse at runtime, so unwrapping it
+    # is not a boundary a reviewer can act on -- and idiomatic Rust is full of it.
+    assert not families(RUST, 'let port: u16 = "8080".parse().unwrap();\n')
+    assert families(RUST, 'let port: u16 = raw_header.parse().unwrap();\n') == {
+        ("parser-boundary", 1)
+    }
+
+
+def test_parsing_a_locally_bound_literal_is_not_a_parser_boundary():
+    source = 'let raw = "3";\nlet n = raw.parse::<u32>().expect("literal is valid");\n'
+    assert not families(RUST, source)
+    # The same shape with a value that did not come from a literal still counts.
+    runtime_source = 'let raw = read_header();\nlet n = raw.parse::<u32>().expect("bad");\n'
+    assert families(RUST, runtime_source) == {("parser-boundary", 2)}
+
+
+def test_string_concatenated_sql_is_still_reported():
+    # Narrowing to argument zero must not lose the non-Sprintf construction form.
+    assert families(GO, 'db.Exec("DELETE FROM t WHERE n = " + name)\n') == {("sql-injection", 1)}
+
+
+def test_benign_idiomatic_go_service_is_clean_except_declared_boundaries():
+    source = (
+        'const configName = "config.json"\n'
+        'func LoadConfig(root string) (*Config, error) {\n'
+        '\tdata, err := os.ReadFile(filepath.Join(root, configName))\n'
+        '\tif err != nil { return nil, err }\n'
+        '\tvar cfg Config\n'
+        '\tif err := json.Unmarshal(data, &cfg); err != nil { return nil, err }\n'
+        '\treturn &cfg, nil\n'
+        '}\n'
+        'func Render(tmpl *Template, target string) error {\n'
+        '\treturn tmpl.Execute(os.Stdout, target)\n'
+        '}\n'
+    )
+    # filepath.Join with a constant, a checked Unmarshal, and `tmpl.Execute`
+    # (which is not `Exec(`) must all stay silent.
+    assert not families(GO, source)

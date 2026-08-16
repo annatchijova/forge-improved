@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from forge.languages.engine import call_span, credential_findings
+from forge.languages.engine import call_span, credential_findings, sql_findings
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
@@ -95,24 +95,14 @@ def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
 
 def _sql_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Query text built with Sprintf or concatenation instead of bind parameters."""
-    findings: list[LexicalFinding] = []
-    for number, masked in enumerate(context.masked, 1):
-        match = _SQL_EXEC.search(masked)
-        if not match:
-            continue
-        span = call_span(context, number)
-        if not _SQL_CONSTRUCTED.search(span if span is not None else masked):
-            continue
-        findings.append(LexicalFinding(
-            "sql-injection", context.path, number,
-            # Deliberately avoids the word "placeholder": the contradiction
-            # engine treats that word in a co-located finding as an alternative
-            # explanation for a credential, so using it here would make any
-            # module holding both findings abstain for a fabricated reason.
-            "query text is built with Sprintf or concatenation instead of bind parameters",
-            column=match.start() + 1, language="Go",
-        ))
-    return findings
+    return sql_findings(
+        context, _SQL_EXEC, _SQL_CONSTRUCTED, "Go",
+        # Deliberately avoids the word "placeholder": the contradiction engine
+        # treats that word in a co-located finding as an alternative explanation
+        # for a credential, so using it here would make any module holding both
+        # findings abstain for a fabricated reason.
+        "query text is built with Sprintf or concatenation instead of bind parameters",
+    )
 
 
 def _parser_boundaries(context: ScanContext) -> list[LexicalFinding]:

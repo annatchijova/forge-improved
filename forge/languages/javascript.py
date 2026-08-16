@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 
-from forge.languages.engine import call_span, credential_findings, guarded_lines
+from forge.languages.engine import call_span, credential_findings, guarded_lines, sql_findings
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
@@ -148,22 +148,12 @@ def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
 
 def _sql_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Query execution built by interpolation or concatenation, not binding."""
-    findings: list[LexicalFinding] = []
-    for number, masked in enumerate(context.masked, 1):
-        match = _SQL_EXEC.search(masked)
-        if not match:
-            continue
-        span = call_span(context, number)
-        if not _SQL_CONSTRUCTED.search(span if span is not None else masked):
-            continue
-        findings.append(LexicalFinding(
-            "sql-injection", context.path, number,
-            # See the note in the Go pack: "placeholder" is a reserved word for
-            # the contradiction engine and must stay out of finding text.
-            "query text is interpolated or concatenated instead of parameter-bound",
-            column=match.start() + 1, language="JavaScript/TypeScript",
-        ))
-    return findings
+    return sql_findings(
+        context, _SQL_EXEC, _SQL_CONSTRUCTED, "JavaScript/TypeScript",
+        # See the note in the Go pack: "placeholder" is a reserved word for the
+        # contradiction engine and must stay out of finding text.
+        "query text is interpolated or concatenated instead of parameter-bound",
+    )
 
 
 PACK = LanguagePack(

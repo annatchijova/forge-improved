@@ -180,6 +180,93 @@ def call_span(context: ScanContext, line_number: int, max_lines: int = 32) -> st
     return None
 
 
+def span_lines(context: ScanContext, line_number: int, max_lines: int = 32) -> tuple[str, str]:
+    """Return the masked and raw text of the call beginning at ``line_number``.
+
+    The masked half is for structure, the raw half for literal values. Unlike
+    :func:`call_span` this always returns text, because its callers use it as a
+    guard that narrows a candidate rather than as proof the call closed.
+    """
+    depth = 0
+    masked_parts: list[str] = []
+    raw_parts: list[str] = []
+    for number in range(line_number, min(len(context.masked), line_number + max_lines - 1) + 1):
+        masked_parts.append(context.masked_line(number))
+        raw_parts.append(context.raw_line(number))
+        depth += masked_parts[-1].count("(") - masked_parts[-1].count(")")
+        if number > line_number and depth <= 0:
+            break
+    return " ".join(masked_parts), " ".join(raw_parts)
+
+
+def argument_zero(text: str, open_index: int) -> str:
+    """Return the first argument of the call whose ``(`` is at ``open_index``.
+
+    Which argument matters is the whole question for a query sink. In
+    ``db.QueryRow("SELECT name WHERE id = $1", fmt.Sprintf("%s", raw))`` the
+    query is a constant and the constructed value is a *bound parameter* --
+    the safe form, and the one a whole-call scan reports as an injection.
+    """
+    depth = 0
+    start = open_index + 1
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+            if depth == 0:
+                return text[start:index]
+        elif char == "," and depth == 1:
+            return text[start:index]
+    return text[start:]
+
+
+#: A query sink's first argument has to actually look like a query. Without
+#: this, any generic ``execute(...)`` or ``query(...)`` method -- and those
+#: names are not reserved for databases -- became a SQL finding as soon as its
+#: argument was built with string formatting.
+SQL_KEYWORD = re.compile(
+    r"\b(?:select|insert\s+into|update|delete\s+from|merge|upsert|create\s+table|drop\s+table|alter\s+table)\b",
+    re.I,
+)
+
+
+def sql_findings(
+    context: ScanContext,
+    call_pattern: re.Pattern[str],
+    constructed: re.Pattern[str],
+    language: str,
+    description: str,
+) -> list[LexicalFinding]:
+    """Report query text built by formatting or concatenation instead of binding.
+
+    Three conditions must hold together, and each one removes a class of false
+    positive observed against idiomatic code: the call is real code in the
+    masked view, its *first* argument shows construction, and the raw text of
+    that call actually contains SQL.
+    """
+    findings: list[LexicalFinding] = []
+    for number, masked in enumerate(context.masked, 1):
+        match = call_pattern.search(masked)
+        if not match:
+            continue
+        span_masked, span_raw = span_lines(context, number)
+        located = call_pattern.search(span_masked) or match
+        source = span_masked if call_pattern.search(span_masked) else masked
+        open_index = source.find("(", located.end() - 1)
+        if open_index < 0:
+            continue
+        argument = argument_zero(source, open_index)
+        if not constructed.search(argument) or not SQL_KEYWORD.search(span_raw):
+            continue
+        findings.append(LexicalFinding(
+            "sql-injection", context.path, number, description,
+            column=match.start() + 1, language=language,
+        ))
+    return findings
+
+
 def guarded_lines(context: ScanContext, opener: re.Pattern[str]) -> frozenset[int]:
     """Line numbers still enclosed by a brace block that ``opener`` started.
 
