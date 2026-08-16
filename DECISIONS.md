@@ -696,3 +696,59 @@ read "instead of placeholder binding", which made any module holding both
 findings abstain the entire audit under `CONTRADICTORY_EVIDENCE` for a reason
 nobody had asserted. Finding text must avoid those words; a test over every pack
 enforces it.
+
+## Sharded coverage: union the shard-scoped half, pin the repository snapshot
+
+Sharding bounds detector attention on repositories with more than
+`max_connected` live modules. Two defects in how its results were combined made
+a sharded audit weaker than a single-shard one, and adding language packs made
+both worse rather than better.
+
+### Coverage aggregation compared what it should have unioned
+
+The parent coverage was published only when every shard's snapshot was
+byte-identical, and otherwise abstained with `ABSTAIN_INCONSISTENT_SHARD_SNAPSHOTS`.
+But shard snapshots are not supposed to be identical. Parsing is repository-wide:
+`_coverage` parses every Python file regardless of which shard is running, and
+language and exclusion classification are decided by extension. Lexical analysis
+is not: a Go, Rust or TypeScript file is scanned only by the shard whose
+`CONNECTED_ALIVE` scope contains it and is `out_of_detector_scope` in every
+other. Requiring identical snapshots therefore guaranteed a mismatch on any
+repository containing lexically-scanned source, and collapsed *every* parent
+count — `files_analyzed`, `coverage_ratio`, the entire language matrix — to
+null. FORGE's own repository, which shards into three, reported no coverage at
+all.
+
+The two halves are now treated according to what they are. Repository-wide facts
+must agree, and a disagreement still abstains, because it means the shards did
+not audit the same tree. The shard-scoped half is unioned: the lexical agents run
+once over the full connected set, which is exactly the union each shard
+contributes a slice of, and one repository-wide snapshot is built from that.
+Per-shard detector scope stays listed separately, so no reader can mistake a
+union of scopes for a single shard's attention.
+
+### Shards attested different trees
+
+Shards run sequentially, and each shard's audit walked the filesystem itself. With
+the output directory inside the audited repository — which is what the documented
+`forge audit . -o forge-run` quick start produces — every shard after the first
+discovered the artifacts its predecessors had just written. On a five-file
+fixture, three shards discovered 5, 23 and 41 files and sealed three *different*
+`repository_snapshot_sha256` values for one audit of one unchanged repository.
+
+That is a seal-integrity problem, not a reporting one: a snapshot hash is an
+attestation about the tree that was audited, and three conflicting attestations
+for the same run cannot all be true. Discovery is now taken once, before the
+first shard starts, and pinned for every shard through `discovery_override`. All
+shards attest the repository as it stood when the audit began.
+
+### Report rendering
+
+The language matrix reached the HTML report as an escaped Python `dict`, which
+made the report's single most important qualifier — whether a language was
+parsed or merely scanned — effectively unreadable. It is a table now, sorted so
+that depth reads as a hierarchy of evidence, with the per-language family list
+kept in a collapsible block rather than dumped into the lede. The three
+not-analysed buckets each carry the reason a reviewer would act on, so a
+`README.md` no longer presents as the same kind of gap as an unanalysed Java
+file.

@@ -53,9 +53,14 @@ def test_mcp_sharded_audit_returns_a_plan_and_parent_readers_work(tmp_path):
     coverage = get_coverage(run_dir)
     assert coverage["ok"] is True
     assert coverage["sharded"] is True
-    assert coverage["coverage_aggregation"] == "DEDUPLICATED_IDENTICAL_PARSE_SNAPSHOTS"
+    assert coverage["coverage_aggregation"] == "REPOSITORY_WIDE_SNAPSHOT_WITH_UNIONED_LEXICAL_SCOPE"
     assert coverage["connected_alive_modules"] == 3
     assert [item["connected_alive_modules"] for item in coverage["detector_scope_by_shard"]] == [1, 1, 1]
+    # A sharded run still publishes real counts. Requiring identical shard
+    # snapshots used to null every one of them as soon as the repository held
+    # any lexically-scanned source.
+    assert coverage["files_analyzed"] is not None
+    assert coverage["coverage_ratio"]["denominator"] == coverage["eligible_source_files"]
 
     findings = get_findings(run_dir)
     assert isinstance(findings, list)

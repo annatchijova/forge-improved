@@ -141,6 +141,44 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         language_coverage=dict(sorted(language_coverage.items())),
     )
 
+# Coverage facts that do not depend on which shard is running: parsing is
+# repository-wide and language classification is by extension. Detector-scope
+# fields and the lexical `out_of_detector_scope` bucket are shard-sensitive by
+# design and are deliberately excluded from the comparison.
+_SHARD_SENSITIVE_COVERAGE_KEYS = frozenset({
+    "connected_alive_modules",
+    "detector_scope_excluded_modules",
+    "detector_scope_excluded_by_class",
+    "files_analyzed",
+    "files_skipped",
+    "coverage_ratio",
+    "discovery_ratio",
+    "language_coverage",
+})
+
+
+def _repository_wide_agreement(snapshots: list[dict[str, Any]]) -> bool:
+    """Whether every shard saw the same repository, ignoring its own scope.
+
+    A disagreement here means the shards did not audit the same tree -- a real
+    anomaly. A disagreement in the shard-sensitive fields means only that
+    sharding worked as designed, and must not invalidate the parent claim.
+    """
+    def repository_wide(snapshot: dict[str, Any]) -> str:
+        skipped = {
+            key: sorted(value)
+            for key, value in (snapshot.get("skipped_reasons") or {}).items()
+            if key != "out_of_detector_scope"
+        }
+        rest = {
+            key: value for key, value in snapshot.items()
+            if key not in _SHARD_SENSITIVE_COVERAGE_KEYS and key != "skipped_reasons"
+        }
+        return json.dumps({"skipped_reasons": skipped, **rest}, sort_keys=True, default=str)
+
+    return len({repository_wide(item) for item in snapshots}) == 1
+
+
 def _with_detector_scope(coverage: CoverageReport, triage_manifest) -> CoverageReport:
     summary = dict(getattr(triage_manifest, "summary", {}) or {})
     connected = int(summary.get("CONNECTED_ALIVE", 0))
@@ -279,7 +317,8 @@ class Runtime:
                  triage_override: Callable | None = None,
                  model_routing: ModelRouting | None = None,
                  cronos_db: str | Path | None = None,
-                 induction: bool = True):
+                 induction: bool = True,
+                 discovery_override: list[Path] | None = None):
         """Create a runtime.
 
         By default triage uses Archaeologist's enriched path, including
@@ -287,6 +326,16 @@ class Runtime:
         for callers that need a supplied triage function (for example,
         compatibility tests); when set, that callable is used exactly and
         deletion judgments are not added by this runtime.
+
+        ``discovery_override`` pins the file-discovery snapshot instead of
+        walking the tree again. Sharding needs this: shards run sequentially,
+        so when the output directory sits inside the audited repository -- as
+        the documented ``forge audit . -o forge-run`` quick start produces --
+        every shard after the first discovers the artifacts its predecessors
+        wrote. That made shards of one audit disagree on how many files the
+        repository contained and seal *different* ``repository_snapshot_sha256``
+        values for the same tree. Pinning one snapshot makes every shard attest
+        the repository as it stood when the audit began.
         """
         self.skills_root = skills_root
         self.max_connected = max_connected
@@ -294,6 +343,7 @@ class Runtime:
         self.model_routing = model_routing or ModelRouting()
         self.cronos_db = Path(cronos_db) if cronos_db is not None else None
         self.induction = induction
+        self.discovery_override = discovery_override
 
     @staticmethod
     def _event(trace: RuntimeTrace, cronos, kind: str, **payload: Any) -> None:
@@ -374,7 +424,10 @@ class Runtime:
         root, out = Path(repo).resolve(), Path(output_dir)
         started = time.monotonic(); self._event(trace, cronos, "run_started", repository=str(root), max_connected=self.max_connected if max_connected is None else max_connected, model_routing=self.model_routing.to_dict())
         discovery_started = self._phase_start(trace, cronos, "discovery")
-        discovered = discover_files(root, include_excluded=True)
+        discovered = (
+            list(self.discovery_override) if self.discovery_override is not None
+            else discover_files(root, include_excluded=True)
+        )
         repository_snapshot_sha256 = snapshot_sha256(root, discovered)
         out.mkdir(parents=True, exist_ok=True)
         self._phase_end(trace, cronos, "discovery", discovery_started)
@@ -613,6 +666,10 @@ class Runtime:
                 triage_override=lambda _repo, manifest=shard_manifest: manifest,
                 model_routing=self.model_routing,
                 induction=self.induction,
+                # Every shard audits the repository as it stood before shard 1
+                # started, so an in-repository output directory cannot make a
+                # later shard see a larger tree than an earlier one.
+                discovery_override=discovered,
             )
             try:
                 result = shard_runtime.audit(root, shard_output, max_connected=max_connected)
@@ -647,34 +704,59 @@ class Runtime:
         plan_path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         # Every shard parses the same repository tree to retain complete AST
         # accounting, while each shard limits only CONNECTED_ALIVE detector
-        # scope.  Do not add those identical parse counts: that would turn one
-        # repository into N fictitious repositories.  Reuse one complete
-        # snapshot only when all completed shards agree; otherwise abstain from
-        # publishing a parent coverage ratio.
+        # scope.  Do not add those parse counts: that would turn one repository
+        # into N fictitious repositories.
+        #
+        # Two components behave differently and must not be conflated. Parsing
+        # is repository-wide: `_coverage` parses every Python file regardless of
+        # which shard is running, and language and exclusion classification are
+        # decided by extension. Those facts must agree across shards, and a
+        # disagreement is a genuine anomaly worth abstaining over.
+        #
+        # Lexical analysis is not repository-wide. A Go, Rust or TypeScript file
+        # is scanned only by the shard whose CONNECTED_ALIVE scope contains it,
+        # and appears as `out_of_detector_scope` in every other shard. Requiring
+        # those snapshots to be *identical* therefore guaranteed a mismatch on
+        # any repository with lexical source, and the whole coverage claim --
+        # every count, every ratio, the entire language matrix -- collapsed to
+        # null. Adding language packs made that failure more likely, not less.
+        #
+        # So the shard-sensitive half is unioned rather than compared: run the
+        # lexical agents once over the full connected set, which is exactly the
+        # union each shard contributes a slice of, and build one repository-wide
+        # snapshot from it. Per-shard detector scope stays listed separately.
         completed_coverage = [item["coverage"] for item in records if item.get("status") == "COMPLETE" and isinstance(item.get("coverage"), dict)]
-        # Detector-scope fields are expected to differ per shard.  Compare only
-        # the repository-wide parse snapshot before deciding whether a parent
-        # source-coverage claim can be deduplicated.
-        scope_keys = {
-            "connected_alive_modules",
-            "detector_scope_excluded_modules",
-            "detector_scope_excluded_by_class",
-        }
-        source_snapshots = [{key: value for key, value in item.items() if key not in scope_keys} for item in completed_coverage]
-        distinct_coverage = {json.dumps(item, sort_keys=True) for item in source_snapshots}
-        if completed_coverage and len(distinct_coverage) == 1:
-            coverage = dict(source_snapshots[0])
+        scope_by_shard = [
+            {"index": item["index"], "connected_alive_modules": len(item["paths"])}
+            for item in records
+        ]
+        agreement = _repository_wide_agreement(completed_coverage)
+        if completed_coverage and agreement:
+            connected_scope = set(connected_paths)
+            lexical_analyzed: list[str] = []
+            lexical_degraded: list[str] = []
+            for agent, module in (("web_auditor", web_auditor), ("lexical_auditor", lexical_auditor)):
+                try:
+                    _result, analyzed_paths = module.audit(root, connected_scope)
+                    lexical_analyzed.extend(analyzed_paths)
+                except Exception as exc:
+                    lexical_degraded.append(f"{agent}: {type(exc).__name__}: {exc}")
+                    self._event(trace, cronos, "agent_degraded", agent=agent, error=str(exc))
+            coverage = _with_detector_scope(
+                _coverage(root, discovered=discovered, analyzed_paths=tuple(lexical_analyzed)),
+                triage_manifest,
+            ).to_dict()
             coverage.update({
                 "sharded": True,
                 "shard_count": len(shards),
                 "connected_alive_modules": len(connected_paths),
-                "detector_scope_by_shard": [
-                    {"index": item["index"], "connected_alive_modules": len(item["paths"])}
-                    for item in records
-                ],
-                "coverage_aggregation": "DEDUPLICATED_IDENTICAL_PARSE_SNAPSHOTS",
-                "coverage_note": "Source parsing counts are one repository-wide snapshot, not a sum across shards; detector scope is listed separately per shard.",
+                "detector_scope_by_shard": scope_by_shard,
+                "coverage_aggregation": "REPOSITORY_WIDE_SNAPSHOT_WITH_UNIONED_LEXICAL_SCOPE",
+                "coverage_note": "Parsing counts are one repository-wide snapshot, never a sum across shards. Lexical analysis is shard-scoped, so its analyzed set is the union over the full connected scope. Detector scope is listed separately per shard.",
             })
+            if lexical_degraded:
+                coverage["coverage_note"] += " A lexical agent was unavailable while building this snapshot, so its languages are under-counted."
+                coverage["lexical_degraded"] = sorted(lexical_degraded)
         else:
             coverage = {
                 "sharded": True,
@@ -684,12 +766,14 @@ class Runtime:
                 "coverage_ratio": None,
                 "shard_count": len(shards),
                 "connected_alive_modules": len(connected_paths),
-                "detector_scope_by_shard": [
-                    {"index": item["index"], "connected_alive_modules": len(item["paths"])}
-                    for item in records
-                ],
+                "detector_scope_by_shard": scope_by_shard,
                 "coverage_aggregation": "ABSTAIN_INCONSISTENT_SHARD_SNAPSHOTS",
-                "coverage_note": "Shard parse snapshots differed, so no parent coverage count was inferred.",
+                "coverage_note": (
+                    "Shards disagreed on repository-wide parse facts, so no parent coverage count "
+                    "was inferred."
+                    if completed_coverage
+                    else "No shard completed, so no parent coverage count was inferred."
+                ),
             }
         self._event(trace, cronos, "run_completed", findings=len(findings), sharded=True)
         trace_path = out / "audit-trace.json"
