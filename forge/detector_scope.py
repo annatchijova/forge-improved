@@ -44,6 +44,14 @@ FAMILIES_BY_LANGUAGE = {
         "command-injection", "hardcoded-credential", "parser-boundary",
         "path-traversal", "sql-injection", "subprocess", "unsafe-block",
     ),
+    "Java": (
+        "dynamic-evaluation", "hardcoded-credential", "parser-boundary",
+        "path-traversal", "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
+    "C#": (
+        "hardcoded-credential", "path-traversal", "sql-injection", "subprocess",
+        "unsafe-deserialization",
+    ),
 }
 
 UNMODELED_DEFECT_CLASSES = (
@@ -75,7 +83,10 @@ def language_scope_statement() -> str:
     """
     from forge.languages import analysis_depth
 
-    depths = {"Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go", "Rust": ".rs"}
+    depths = {
+        "Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go",
+        "Rust": ".rs", "Java": ".java", "C#": ".cs",
+    }
     parts = [
         f"{language} ({analysis_depth(depths[language])}): " + ", ".join(families)
         for language, families in sorted(FAMILIES_BY_LANGUAGE.items())

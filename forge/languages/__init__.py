@@ -21,19 +21,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from forge.languages import go, javascript, rust
+from forge.languages import csharp, go, java, javascript, rust
 from forge.languages.engine import build_context, mask_source, read_source, scan_source
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
 #: Packs in a fixed order. Iteration order reaches finding order, which reaches
 #: the audit seal, so this is a tuple and never a set.
-PACKS: tuple[LanguagePack, ...] = (javascript.PACK, go.PACK, rust.PACK)
+PACKS: tuple[LanguagePack, ...] = (
+    javascript.PACK, go.PACK, rust.PACK, java.PACK, csharp.PACK,
+)
 
-#: Languages the web-facing agent owns, kept separate from the systems
-#: languages so each agent declares an honest scope in its protocol.
+#: Languages the web-facing agent owns, kept separate from the rest so each
+#: agent declares an honest scope in its protocol. The split is by agent
+#: ownership, not by a claim about language taxonomy.
 WEB_PACKS: tuple[LanguagePack, ...] = (javascript.PACK,)
-SYSTEMS_PACKS: tuple[LanguagePack, ...] = (go.PACK, rust.PACK)
+LEXICAL_AUDITOR_PACKS: tuple[LanguagePack, ...] = (
+    go.PACK, rust.PACK, java.PACK, csharp.PACK,
+)
 
 #: Extensions parsed into a real AST. Kept here so coverage has one source of
 #: truth for analysis depth instead of rediscovering ``.py`` in five modules.
@@ -142,7 +147,7 @@ def scan_path(path: str | Path, root: str | Path) -> tuple[tuple[LexicalFinding,
 
 __all__ = (
     "ANALYZED_EXTENSIONS", "AST_EXTENSIONS", "LEXICAL_EXTENSIONS", "PACKS",
-    "RECOGNIZED_LANGUAGES", "SYSTEMS_PACKS", "WEB_PACKS", "LanguagePack",
+    "LEXICAL_AUDITOR_PACKS", "RECOGNIZED_LANGUAGES", "WEB_PACKS", "LanguagePack",
     "LexicalFinding", "ScanContext", "SinkRule", "StringRule", "analysis_depth",
     "build_context", "entry_point_names", "language_name", "mask_source",
     "pack_for_path", "pack_for_suffix", "scan_path", "scan_source",

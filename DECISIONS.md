@@ -791,3 +791,64 @@ reported as `subprocess` -- is deliberate and consistent with the JavaScript
 pack reporting every `child_process.exec`. Process creation is a declared
 boundary; only handing a constructed string to a shell is escalated to
 `command-injection`.
+
+## Java and C# packs, and what auditing them changed in the engine
+
+Adding two languages cost two specifications and two benign-code audits, not
+two agents. That is the return the language registry exists to pay, and it is
+the first evidence that the abstraction holds.
+
+Both are owned by `lexical_auditor`. Its former constant `SYSTEMS_PACKS` was
+renamed `LEXICAL_AUDITOR_PACKS`: the split from `web_auditor` is by agent
+ownership, and calling Java and C# "systems languages" would have been a
+taxonomy claim the code does not need to make.
+
+### What each pack can honestly see
+
+Java (7 families) is the only pack with **file-scoped** rules, because that is
+where its evidence lives. XXE is proven by an absence — no `setFeature`, no
+secure processing anywhere in the compilation unit — and hardening is
+conventionally written a few lines below the factory, not on it, so a
+line-scoped check would report every correct usage. A script engine's `eval` is
+treated as a data-to-code boundary only in a file that imports the scripting
+API; every other `eval` in Java is someone's ordinary method.
+
+C# (5 families) has the richest string syntax of any pack: verbatim strings
+where a backslash is ordinary and a doubled quote is an escape, interpolated
+strings whose substitutions are code, and both combined in either order
+(`$@"…"` / `@$"…"`). All are declared longest-opener-first, and `StringRule`
+gained `doubled_close_escapes` so `@"say ""hi"""` is not cut short at its own
+escaped quote. Its `unsafe-deserialization` rule requires the file to name a
+formatter that rebuilds arbitrary object graphs, because `Deserialize` is also
+how every safe JSON library spells its entry point.
+
+Their imports are **not** resolved. Java and C# are scanned at lexical depth but
+their module connectivity still comes from the filename tally, and triage
+declares that. Analysis depth and connectivity resolution are independent
+claims, and the language matrix reports them in separate columns so neither is
+read as implying the other.
+
+### One false positive, and the engine change it forced
+
+Auditing the two packs against idiomatic benign code produced a single finding:
+`File.ReadAllText(target)` where `target = Path.Combine(root, ConfigName)`. It
+exposed two defects, one shallow and one not.
+
+The shallow one: `path` was a taint stem for both packs, and it matched the
+`Path`/`Paths` *namespace* — the same collision the JavaScript pack had already
+been taught to avoid. It is gone from both.
+
+The real one: a variable was treated as suspicious because of what it was
+*called*, never what was assigned to it. Every conventional destination-path
+name — `target`, `filename`, `name` — was a traversal candidate the moment a
+normalizer was not visible on the same line. `untainted_names` now clears any
+assigned name whose expression shows nothing externally-shaped, through the
+same fixed point the sanitizer set already used, so `target = Path.Combine(root,
+ConfigName)` is clean while `target = Path.Combine(userInput, ConfigName)` is
+not. Only *assigned* names can be cleared: a function parameter has no visible
+origin and stays suspicious, which is the case the rule exists to preserve.
+
+Java's deserialization pattern also matched both the construction and the read
+of an `ObjectInputStream`, so one boundary produced two findings on one line at
+different columns — which the runtime's deduplication, keyed partly on column,
+could not collapse. The read is the boundary; the construction is its setup.

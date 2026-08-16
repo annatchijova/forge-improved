@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from forge.languages.engine import call_span, credential_findings, sql_findings
+from forge.languages.engine import call_span, credential_findings, sql_findings, untainted_names
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
@@ -75,6 +75,7 @@ def _shell_commands(context: ScanContext) -> list[LexicalFinding]:
 
 def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Filesystem calls whose path argument shows no visible cleaning."""
+    benign = untainted_names(context, _TAINT_NAMES)
     findings: list[LexicalFinding] = []
     for number, masked in enumerate(context.masked, 1):
         match = _PATH_SINKS.search(masked)
@@ -82,7 +83,7 @@ def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
             continue
         span = call_span(context, number)
         text = span if span is not None else masked
-        names = set(_TAINT_NAMES.findall(text))
+        names = set(_TAINT_NAMES.findall(text)) - benign
         if not names - set(context.sanitized_names) or _PATH_NORMALIZERS.search(text):
             continue
         findings.append(LexicalFinding(

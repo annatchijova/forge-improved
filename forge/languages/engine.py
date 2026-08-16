@@ -77,6 +77,12 @@ def _mask_string_literal(
                 index += 1
             continue
         if source.startswith(rule.close, index):
+            if rule.doubled_close_escapes and source.startswith(rule.close * 2, index):
+                for offset in range(2 * len(rule.close)):
+                    if source[index + offset] != "\n":
+                        out[index + offset] = " "
+                index += 2 * len(rule.close)
+                continue
             return index + len(rule.close)
         if char != "\n":
             out[index] = " "
@@ -368,6 +374,36 @@ def credential_findings(context: ScanContext, language: str) -> list[LexicalFind
                 column=match.start() + 1, language=language,
             ))
     return findings
+
+
+def untainted_names(context: ScanContext, taint: re.Pattern[str]) -> frozenset[str]:
+    """Names whose assigned expression shows nothing externally-shaped.
+
+    A variable is not suspicious merely because it is *called* ``target``. What
+    matters is what flowed into it: ``target = Path.Combine(root, ConfigName)``
+    carries nothing external, while ``target = Path.Combine(userInput, name)``
+    does. Without this distinction every conventional destination-path name
+    reported as a traversal candidate the moment a normalizer was not visible
+    on the same line.
+
+    Only *assigned* names can be cleared. A function parameter has no visible
+    origin, so it stays suspicious -- which is the case the rule exists to keep.
+    """
+    assignments = [
+        (match.group(1), match.group(2))
+        for match in _ASSIGNMENT.finditer("\n".join(context.masked))
+    ]
+    tainted = {target for target, expression in assignments if taint.search(expression)}
+    changed = True
+    while changed:
+        changed = False
+        for target, expression in assignments:
+            if target in tainted:
+                continue
+            if any(re.search(rf"\b{re.escape(name)}\b", expression) for name in tainted):
+                tainted.add(target)
+                changed = True
+    return frozenset({target for target, _ in assignments} - tainted)
 
 
 def build_context(pack: LanguagePack, path: str, source: str) -> ScanContext:

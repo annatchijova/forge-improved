@@ -24,7 +24,9 @@ from forge.languages import (
     pack_for_path,
     scan_source,
 )
+from forge.languages.csharp import PACK as CSHARP
 from forge.languages.go import PACK as GO
+from forge.languages.java import PACK as JAVA
 from forge.languages.javascript import PACK as JS
 from forge.languages.rust import PACK as RUST
 
@@ -59,7 +61,9 @@ def test_analysis_depth_distinguishes_parsed_from_scanned_from_unanalyzed():
     assert analysis_depth(".go") == "lexical"
     assert analysis_depth(".rs") == "lexical"
     assert analysis_depth(".tsx") == "lexical"
-    assert analysis_depth(".java") == "none"
+    assert analysis_depth(".java") == "lexical"
+    assert analysis_depth(".cs") == "lexical"
+    assert analysis_depth(".kt") == "none"
     assert analysis_depth(".md") == "none"
 
 
@@ -68,7 +72,7 @@ def test_recognized_languages_is_a_superset_of_what_is_analyzed():
     # coverage would file a supported file under "not source at all".
     assert ANALYZED_EXTENSIONS <= set(RECOGNIZED_LANGUAGES)
     assert language_name(".go") == "Go"
-    assert language_name(".java") is None
+    assert language_name(".kt") is None
 
 
 def test_pack_lookup_is_by_extension_and_case_insensitive():
@@ -431,3 +435,164 @@ def test_benign_idiomatic_go_service_is_clean_except_declared_boundaries():
     # filepath.Join with a constant, a checked Unmarshal, and `tmpl.Execute`
     # (which is not `Exec(`) must all stay silent.
     assert not families(GO, source)
+
+
+# --------------------------------------------------------------------------
+# Java pack
+# --------------------------------------------------------------------------
+
+def test_java_reports_its_declared_families():
+    source = (
+        'import javax.script.ScriptEngineManager;\n'
+        'public class Bad {\n'
+        '  static final String apiKey = "sk-live-77";\n'
+        '  void h(String userInput, Statement st, ScriptEngine e) throws Exception {\n'
+        '    Files.readString(Paths.get(userInput));\n'
+        '    st.executeQuery("SELECT * FROM t WHERE n = \'" + userInput + "\'");\n'
+        '    Runtime.getRuntime().exec(userInput);\n'
+        '    new ObjectInputStream(in).readObject();\n'
+        '    e.eval(userInput);\n'
+        '    DocumentBuilderFactory.newInstance();\n'
+        '  }\n'
+        '}\n'
+    )
+    assert families(JAVA, source) == {
+        ("hardcoded-credential", 3),
+        ("path-traversal", 5),
+        ("sql-injection", 6),
+        ("subprocess", 7),
+        ("unsafe-deserialization", 8),
+        ("dynamic-evaluation", 9),
+        ("parser-boundary", 10),
+    }
+
+
+def test_java_deserialization_reports_once_per_read():
+    # `new ObjectInputStream(in).readObject()` matched a construction pattern
+    # and a read pattern, so one boundary produced two findings on one line at
+    # different columns -- which the runtime's deduplication cannot collapse.
+    findings = scan_source(JAVA, "s.java", "new ObjectInputStream(in).readObject();\n")
+    assert [item.family for item in findings] == ["unsafe-deserialization"]
+
+
+def test_java_benign_service_is_clean():
+    source = (
+        'public class UserService {\n'
+        '    private static final String CONFIG = "application.yml";\n'
+        '    public String loadConfig(Path root) throws Exception {\n'
+        '        Path target = root.resolve(CONFIG).normalize();\n'
+        '        return Files.readString(target);\n'
+        '    }\n'
+        '    public String findUser(Connection conn, long id) throws SQLException {\n'
+        '        PreparedStatement ps = conn.prepareStatement("SELECT name FROM users WHERE id = ?");\n'
+        '        ps.setLong(1, id);\n'
+        '        return ps.executeQuery().getString(1);\n'
+        '    }\n'
+        '    public String describe(String name) { return "user " + name + " loaded"; }\n'
+        '}\n'
+    )
+    assert not families(JAVA, source)
+
+
+def test_java_xml_hardening_anywhere_in_the_file_clears_the_factory():
+    # Hardening is conventionally applied a few lines below the factory, so the
+    # check is file-scoped. A line-scoped one would report every correct usage.
+    unhardened = "DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();\n"
+    hardened = unhardened + 'f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);\n'
+    assert families(JAVA, unhardened) == {("parser-boundary", 1)}
+    assert not families(JAVA, hardened)
+
+
+def test_java_eval_is_only_a_boundary_where_a_script_engine_is_imported():
+    # Every other `eval` in a Java file is someone's ordinary method.
+    assert not families(JAVA, "int total = calculator.eval(expression);\n")
+    with_engine = "import javax.script.ScriptEngineManager;\nengine.eval(userInput);\n"
+    assert families(JAVA, with_engine) == {("dynamic-evaluation", 2)}
+
+
+def test_java_text_block_does_not_leak_its_contents_as_code():
+    source = 'String doc = """\nRuntime.getRuntime().exec(evil)\n""";\nnew ProcessBuilder(cmd);\n'
+    assert families(JAVA, source) == {("subprocess", 4)}
+
+
+# --------------------------------------------------------------------------
+# C# pack
+# --------------------------------------------------------------------------
+
+def test_csharp_reports_its_declared_families():
+    source = (
+        'class Bad {\n'
+        '  const string ApiKey = "sk-live-88";\n'
+        '  void H(string userInput, SqlConnection c) {\n'
+        '    var body = File.ReadAllText(userInput);\n'
+        '    var cmd = new SqlCommand($"SELECT * FROM t WHERE n = {userInput}", c);\n'
+        '    Process.Start(userInput);\n'
+        '    var f = new BinaryFormatter();\n'
+        '    var o = f.Deserialize(stream);\n'
+        '  }\n'
+        '}\n'
+    )
+    assert families(CSHARP, source) == {
+        ("hardcoded-credential", 2),
+        ("path-traversal", 4),
+        ("sql-injection", 5),
+        ("subprocess", 6),
+        ("unsafe-deserialization", 8),
+    }
+
+
+def test_csharp_verbatim_string_keeps_backslashes_from_becoming_escapes():
+    # `@"C:\reports\"` ends at its own quote; treating the backslash as an
+    # escape would swallow the terminator and blank the rest of the file.
+    source = 'var banner = @"C:\\reports\\daily";\nProcess.Start(userInput);\n'
+    assert families(CSHARP, source) == {("subprocess", 2)}
+
+
+def test_csharp_doubled_quote_inside_a_verbatim_string_is_not_a_terminator():
+    source = 'var q = @"say ""Process.Start(evil)"" now";\nProcess.Start(userInput);\n'
+    assert families(CSHARP, source) == {("subprocess", 2)}
+
+
+def test_csharp_interpolation_survives_masking_but_literal_text_does_not():
+    from forge.languages import mask_source
+
+    masked = mask_source('var s = $"prefix {userInput} suffix";\n', CSHARP)
+    assert "{userInput}" in masked[0]
+    assert "prefix" not in masked[0]
+
+
+def test_csharp_safe_json_deserialize_is_not_native_deserialization():
+    # `Deserialize` is how every safe JSON library spells its entry point, so
+    # the file must name a formatter that rebuilds arbitrary object graphs.
+    assert not families(CSHARP, "var c = JsonSerializer.Deserialize<Config>(body);\n")
+    unsafe = "var f = new BinaryFormatter();\nvar o = f.Deserialize(stream);\n"
+    assert families(CSHARP, unsafe) == {("unsafe-deserialization", 2)}
+
+
+def test_csharp_benign_repository_is_clean():
+    source = (
+        'class OrderRepository {\n'
+        '    private const string ConfigName = "appsettings.json";\n'
+        '    public Config LoadConfig(string root) {\n'
+        '        var target = Path.Combine(root, ConfigName);\n'
+        '        var body = File.ReadAllText(target);\n'
+        '        return JsonSerializer.Deserialize<Config>(body);\n'
+        '    }\n'
+        '    public string FindOrder(SqlConnection conn, int id) {\n'
+        '        var cmd = new SqlCommand("SELECT code FROM orders WHERE id = @id", conn);\n'
+        '        cmd.Parameters.AddWithValue("@id", id);\n'
+        '        return (string)cmd.ExecuteScalar();\n'
+        '    }\n'
+        '}\n'
+    )
+    assert not families(CSHARP, source)
+
+
+def test_a_name_is_not_tainted_merely_by_being_called_target():
+    # `target = Path.Combine(root, ConfigName)` carries nothing external, while
+    # the same shape fed from a parameter does. Judging by the name alone made
+    # every conventional destination-path variable a traversal candidate.
+    benign = 'var target = Path.Combine(root, ConfigName);\nvar body = File.ReadAllText(target);\n'
+    assert not families(CSHARP, benign)
+    tainted = 'var target = Path.Combine(userInput, ConfigName);\nvar body = File.ReadAllText(target);\n'
+    assert families(CSHARP, tainted) == {("path-traversal", 2)}

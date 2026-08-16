@@ -34,6 +34,11 @@ class StringRule:
     escape: str | None = "\\"
     allow_newline: bool = False
     interpolation: tuple[str, str] | None = None
+    # A doubled close token is an escaped literal, not a terminator. This is how
+    # C# verbatim strings spell a quote (``@"say ""hi"""``) and how SQL-flavoured
+    # languages escape one; without it the masker would end the literal early and
+    # read the remaining text as code.
+    doubled_close_escapes: bool = False
 
 
 @dataclass(frozen=True)

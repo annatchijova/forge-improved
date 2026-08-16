@@ -5,7 +5,7 @@
 # FORGE
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Analyzes](https://img.shields.io/badge/analyzes-Python%20%C2%B7%20JS%2FTS%20%C2%B7%20Go%20%C2%B7%20Rust-blueviolet)
+![Analyzes](https://img.shields.io/badge/analyzes-Python%20%C2%B7%20JS%2FTS%20%C2%B7%20Go%20%C2%B7%20Rust%20%C2%B7%20Java%20%C2%B7%20C%23-blueviolet)
 ![Architecture](https://img.shields.io/badge/architecture-multi--agent-darkgreen)
 ![Deterministic](https://img.shields.io/badge/decision%20path-deterministic-success)
 ![Audit](https://img.shields.io/badge/audit-SHA--256%20sealed-brightgreen)
@@ -300,7 +300,9 @@ at `NOT_ASSESSED` for exploitability by construction, not by convention.
 | **Go** | `.go` | lexical | 7 | resolved (`go.mod` package paths) |
 | **Rust** | `.rs` | lexical | 7 | resolved (`mod` chain, `use crate::`) |
 | **JavaScript / TypeScript** | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | lexical | 6 | resolved (relative specifiers) |
-| Java, Ruby, C, C++, C# | `.java` `.rb` `.c` `.cpp` `.cs` | **none** | — | approximated (filename tally) |
+| **Java** | `.java` | lexical | 7 | approximated (filename tally) |
+| **C#** | `.cs` | lexical | 5 | approximated (filename tally) |
+| Ruby, C, C++, Kotlin, PHP, … | `.rb` `.c` `.cpp` `.kt` `.php` | **none** | — | approximated (filename tally) |
 | Everything else | — | **none** | — | — |
 
 A language with no detector is **abstained from, never reported as clean**. It
@@ -308,6 +310,11 @@ appears in coverage as `unsupported_language_not_analyzed` and reaches the audit
 disposition as an explicit boundary. Recognised-but-unanalysed languages are
 still triaged into module health classes, and triage declares in the manifest
 that their connectivity was approximated rather than resolved.
+
+Analysis depth and connectivity are independent claims. Java and C# are scanned
+by a language pack, but their imports are not resolved, so their module
+connectivity still comes from the filename tally — and triage says so in the
+manifest rather than letting an approximated count read as a resolved one.
 
 Coverage reports analysis depth per language, so a mixed repository shows
 exactly what it got:
@@ -317,7 +324,7 @@ exactly what it got:
   "Python": { "analyzed": 12, "abstained": 0, "depth": "ast" },
   "Go":     { "analyzed":  6, "abstained": 1, "depth": "lexical" },
   "Rust":   { "analyzed":  4, "abstained": 0, "depth": "lexical" },
-  "Java":   { "analyzed":  0, "abstained": 3, "depth": "none" }
+  "Kotlin": { "analyzed":  0, "abstained": 3, "depth": "none" }
 }
 ```
 
@@ -331,8 +338,9 @@ non-backtracking pass that preserves line and column geometry.
 
 Masking is per-language because it has to be. Rust lifetimes (`&'a str`), Go
 rune literals (`'"'`), nested block comments, variable-width raw-string fences
-(`r##"..."##`), and JavaScript regular-expression character classes each look
-like an opening quote to a naive scanner. Any one of them, mishandled, blanks
+(`r##"..."##`), Java text blocks, C# verbatim strings where a backslash is
+ordinary and a doubled quote is an escape, and JavaScript regular-expression
+character classes each look like an opening quote to a naive scanner. Any one of them, mishandled, blanks
 the remainder of a file — which would silently turn an unanalysed file into a
 clean one. Two exceptions to masking are deliberate: string *delimiters* survive
 so a detector can tell an argument was a literal, and JavaScript template

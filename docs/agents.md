@@ -31,8 +31,8 @@ distinction is contractual rather than cosmetic — see
               │               │                │
               │   ┌───────────────────┐ ┌────────────────────┐
               │   │   WEB AUDITOR     │ │  LEXICAL AUDITOR   │
-              │   │ JS/TS masked-text │ │ Go + Rust masked-  │
-              │   │ boundary scan     │ │ text boundary scan │
+              │   │ JS/TS masked-text │ │ Go · Rust · Java · │
+              │   │ boundary scan     │ │ C# masked-text scan│
               │   └───────────────────┘ └────────────────────┘
               │        lexical depth — no scope, type or
               │        reachability; exploitability NOT_ASSESSED
@@ -72,7 +72,7 @@ FORGE currently has exactly nine agent modules:
 | Security Auditor | Yes | AST | AST security checks |
 | Integrity Inspector | Yes | AST | decision-path and serialization integrity |
 | Web Auditor | Yes | lexical | bounded boundaries in JavaScript/TypeScript |
-| Lexical Auditor | Yes | lexical | bounded boundaries in Go and Rust |
+| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java and C# |
 | Report Composer | Yes, presentation only | — | HTML rendering |
 | Patch Reviewer | No | — | review a requested unified diff |
 | Recommendation Agent | No | — | propose bounded changes after the audit |
@@ -279,6 +279,10 @@ languages were triaged into module health classes and then inspected by nothing,
 so a finding-free Go repository produced a clean-looking report whose
 cleanliness came from having looked at nothing.
 
+It owns four packs. Adding the fourth cost a specification and a benign-code
+audit, not a new agent -- which is the return the language registry exists to
+pay.
+
 Go (7 families) leans on the language's stable, fully-qualified selectors:
 `exec.Command`, `os.ReadFile`, `db.Query`. A discarded `Unmarshal` error is
 visible in the assignment form itself (`_ =` or a bare statement), which is why
@@ -293,6 +297,20 @@ MEDIUM so it never competes with an injectable sink for attention. Rust's
 masking is the most demanding of any pack: lifetimes and char literals share the
 apostrophe, raw strings carry a variable-width hash fence, block comments nest,
 and ordinary strings may span lines.
+
+Java (7 families) is the one pack with file-scoped rules, because that is where
+its evidence lives. XXE is proven by an *absence* -- no `setFeature`, no secure
+processing anywhere in the compilation unit -- and hardening is conventionally
+applied a few lines below the factory, not on it. A script engine's `eval` is
+only treated as a data-to-code boundary in a file that imports the scripting
+API; every other `eval` in Java is someone's ordinary method.
+
+C# (5 families) has the richest string syntax here: verbatim strings where a
+backslash is ordinary and a doubled quote is an escape, interpolated strings
+whose substitutions are code, and both combined in either order. Its
+`unsafe-deserialization` rule requires the file to name a formatter that
+rebuilds arbitrary object graphs, because `Deserialize` is also how every safe
+JSON library spells its entry point.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 
