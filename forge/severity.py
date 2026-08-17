@@ -22,6 +22,10 @@ _IMPACT_BY_FAMILY = {
     # is reported so coverage is honest, and rated MEDIUM so it never competes
     # with an actual injectable sink for a reviewer's attention.
     "unsafe-block": "MEDIUM",
+    # An unbounded copy is a memory-safety boundary whose danger is inherent to
+    # the function chosen. Rated HIGH rather than CRITICAL because a lexical
+    # scan cannot show the destination is actually too small.
+    "unbounded-copy": "HIGH",
 }
 _CONFIDENCE_CEILING = {
     "PLAUSIBLE HYPOTHESIS": "MEDIUM",

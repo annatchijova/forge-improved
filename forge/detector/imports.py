@@ -47,9 +47,15 @@ PHP
     PSR-4 puts one class in one file named after it, so a declared
     ``namespace`` plus the filename resolves a ``use`` exactly. Literal
     ``require`` paths resolve relative to the including file.
+C/C++
+    Only a quoted ``#include`` can name a repository file; an angle-bracket
+    include is a system header. A translation unit is compiled rather than
+    included, so only headers can be shown orphaned.
 
-Languages with no resolver here keep the stem tally, and triage records that
-their connectivity is approximate rather than pretending otherwise.
+Every language a pack can analyse now resolves its own references. The stem
+tally survives only for recognised languages with no pack at all, and triage
+records that their connectivity is approximate rather than pretending
+otherwise.
 """
 from __future__ import annotations
 
@@ -423,13 +429,61 @@ def php_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
     return references
 
 
+C_SUFFIXES = frozenset({".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx"})
+_C_INCLUDE_LOCAL = re.compile(r'^\s*#\s*include\s*"([^"\n]+)"', re.M)
+#: Common places a build system puts headers on the include path.
+_C_INCLUDE_ROOTS = ("", "include/", "src/", "lib/", "inc/")
+
+
+def c_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
+    """Resolve ``#include "..."`` to repository headers.
+
+    Only the quoted form can name a repository file; ``#include <stdio.h>`` is a
+    system header and credits nothing, the same way a bare npm specifier does.
+    A quoted include resolves against the including file's directory first and
+    then the conventional header roots, and an ambiguous trailing match is left
+    unresolved rather than guessed.
+
+    Note what this graph does *not* contain. A translation unit is compiled by
+    the build system, never included, so ``.c`` and ``.cpp`` files have no
+    callers here by construction -- the pack marks them entry points for that
+    reason. Only headers can be shown orphaned.
+    """
+    sources = [path for path in paths if path.suffix.lower() in C_SUFFIXES]
+    if not sources:
+        return {}
+    known = {str(path.relative_to(root)) for path in sources}
+    references: dict[str, set[str]] = {name: set() for name in known}
+    for path in sources:
+        source = str(path.relative_to(root))
+        for included in _C_INCLUDE_LOCAL.findall(_read(path)):
+            target = _resolve_c_include(source, included, known)
+            if target and target != source:
+                references[target].add(source)
+    return references
+
+
+def _resolve_c_include(source: str, included: str, known: set[str]) -> str | None:
+    relative = _normalize(str(PurePosixPath(source).parent / included))
+    candidates = [relative] + [_normalize(prefix + included) for prefix in _C_INCLUDE_ROOTS]
+    resolved = _first_known(candidates, known)
+    if resolved:
+        return resolved
+    # The real include path is a build-system fact this scanner cannot see.
+    # Accept a unique trailing match and nothing else, because crediting the
+    # wrong header is worse than leaving connectivity undetermined.
+    matches = [item for item in known if item.endswith("/" + included)]
+    return matches[0] if len(matches) == 1 else None
+
+
 RESOLVED_SUFFIXES = frozenset({
     ".go", ".rs", ".java", ".cs", ".rb", ".rake", ".php", ".phtml",
-}) | JS_SUFFIXES
+}) | JS_SUFFIXES | C_SUFFIXES
 
 _RESOLVERS = (
     javascript_references, go_references, rust_references,
     java_references, csharp_references, ruby_references, php_references,
+    c_references,
 )
 
 
@@ -444,7 +498,8 @@ def resolved_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]
 
 
 __all__ = (
-    "JS_EXTENSIONS", "JS_SUFFIXES", "RESOLVED_SUFFIXES", "csharp_references",
+    "C_SUFFIXES", "JS_EXTENSIONS", "JS_SUFFIXES", "RESOLVED_SUFFIXES",
+    "c_references", "csharp_references",
     "go_references", "java_references", "javascript_references",
     "php_references", "resolved_references", "ruby_references",
     "rust_references",

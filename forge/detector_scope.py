@@ -13,7 +13,7 @@ MODELED_DETECTOR_FAMILIES = (
     "deterministic-core", "dynamic-evaluation", "hardcoded-credential",
     "honest-degradation", "money-as-float", "parser-boundary",
     "path-traversal", "sql-aggregation-not-materialization", "sql-injection",
-    "subprocess", "tamper-evident-audit-chain", "unsafe-block",
+    "subprocess", "tamper-evident-audit-chain", "unbounded-copy", "unsafe-block",
     "unsafe-deserialization", "unverified-webhook", "unversioned-serialization",
     "validate-at-the-boundary",
 )
@@ -60,6 +60,10 @@ FAMILIES_BY_LANGUAGE = {
         "dynamic-evaluation", "hardcoded-credential", "path-traversal",
         "sql-injection", "subprocess", "unsafe-deserialization",
     ),
+    "C/C++": (
+        "command-injection", "dynamic-evaluation", "hardcoded-credential",
+        "path-traversal", "sql-injection", "subprocess", "unbounded-copy",
+    ),
 }
 
 UNMODELED_DEFECT_CLASSES = (
@@ -93,7 +97,7 @@ def language_scope_statement() -> str:
 
     depths = {
         "Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go",
-        "Rust": ".rs", "Java": ".java", "C#": ".cs", "Ruby": ".rb", "PHP": ".php",
+        "Rust": ".rs", "Java": ".java", "C#": ".cs", "Ruby": ".rb", "PHP": ".php", "C/C++": ".c",
     }
     parts = [
         f"{language} ({analysis_depth(depths[language])}): " + ", ".join(families)

@@ -1016,3 +1016,59 @@ the check and nulled the entire parent coverage claim. The comparison is an
 allowlist now. Under it a new field is simply not compared — the anomaly check
 gets no weaker than it already was, and no user-visible claim collapses. That
 is the safer direction for a check whose failure mode is an abstention.
+
+## The C/C++ pack, and what it forced the shared query rule to admit
+
+C and C++ share one pack because `.h` belongs to neither exclusively, and a
+scanner that had to decide which language a header was written in before
+reading it would guess more often than it resolved.
+
+The pack is deliberately narrow about what a masked view can see. The defects C
+is best known for — use-after-free, double free, out-of-bounds indexing — need
+types, lifetimes and a call graph, and none of that survives masking, so the
+pack does not pretend to look for them. What it does report is the family of
+*unbounded* standard-library calls whose danger is inherent to the function
+chosen rather than to how it was used. `strcpy` cannot be made safe by its
+arguments; that is exactly why it reads well lexically and a bounds bug does
+not. The new `unbounded-copy` family is rated HIGH rather than CRITICAL,
+because a lexical scan cannot show the destination is actually too small.
+
+C++ raw strings pick their own delimiter and close with `)tag"`, unlike Rust's
+`"##`, so `raw_string_close` became a declared template rather than an assumed
+shape.
+
+### Connectivity here works differently, and that is the honest model
+
+A translation unit is compiled by the build system, never included by another
+source file, so `.c` and `.cpp` have no callers by construction. They are
+treated as entry points for the same reason a controller is. Headers are the
+files that actually get included, and an unincluded header is genuinely
+orphaned — the only C file this graph can show as dead.
+
+Detecting a `.c` that no build target compiles would mean reading the Makefile
+or CMakeLists, which the pack does not do, and the limitation is stated rather
+than papered over.
+
+With `#include` resolved, **every language triage can classify now resolves its
+own references**. The repository-wide filename tally is unreachable. It is kept
+as the declared fallback for a language added to `LANG_EXT` without a resolver,
+and tested directly so it does not rot into dead code.
+
+### A false negative the pack exposed in shared code
+
+`mysql_query(conn, sprintf(q, "SELECT …", user_input))` did not report. The
+shared query rule inspected **argument zero**, which had been the fix for an
+earlier false positive where a constructed *bound parameter* was read as an
+injection. But C and the procedural PHP drivers take a connection handle first
+and the query second, so a fixed index was wrong in one direction or the other
+for every language.
+
+Neither index is the answer: the query is whichever argument *contains SQL*.
+The rule now walks the argument spans and requires one argument to show both
+construction and SQL. That closed the C and PHP `mysqli_query` misses without
+reintroducing the Go bound-parameter false positive — verified against both.
+
+Argument spans are offsets rather than substrings, because masking preserves
+geometry: the same slice indexes the same argument in the masked and raw views,
+which is how one rule checks structure in one and a literal's value in the
+other.

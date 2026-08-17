@@ -82,9 +82,14 @@ class LanguagePack:
     block_comments: tuple[tuple[str, str], ...] = ()
     nested_block_comments: bool = False
     strings: tuple[StringRule, ...] = ()
-    # Matched at the cursor; group 1 must be the hash fence so the engine can
-    # find the matching close (Rust ``r##"..."##``).
+    # Matched at the cursor; group 1 is the fence the closing token repeats, so
+    # the engine can find the matching end of a raw string whose delimiter the
+    # author chose (Rust ``r##"..."##``, C++ ``R"tag(...)tag"``).
     raw_string_fence: re.Pattern[str] | None = None
+    # How that fence spells the close. Rust repeats it after the quote; C++ puts
+    # it between a parenthesis and the quote, so the shape has to be declared
+    # rather than assumed.
+    raw_string_close: str = '"{fence}'
     # Matched at the cursor and consumed verbatim, before any string rule is
     # tried. This is how a language keeps the masker away from tokens that
     # merely look like a quote: Rust lifetimes and Go rune literals must not

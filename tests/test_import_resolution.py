@@ -197,12 +197,33 @@ def test_declared_manifest_entry_points_are_honoured(tmp_path):
     assert classify(tmp_path)["lib/server.js"].module_class.value == "CONNECTED_ALIVE"
 
 
-def test_triage_declares_approximate_connectivity_for_unresolved_languages(tmp_path):
-    write(tmp_path, "legacy.cpp", "int main() { return 0; }\n")
+def test_no_triaged_language_is_left_on_the_filename_tally():
+    # Every language triage can classify now resolves its own references. The
+    # tally survives only as the fallback for a language added to LANG_EXT
+    # without a resolver, and nothing reaches it today.
+    from forge.detector.imports import RESOLVED_SUFFIXES
+    from forge.detector.stack import LANG_EXT
+
+    unresolved = set(LANG_EXT) - RESOLVED_SUFFIXES - {".py"}
+    assert not unresolved, f"still approximated: {sorted(unresolved)}"
+
+
+def test_the_tally_fallback_still_declares_itself_if_it_is_ever_reached(tmp_path):
+    # The fallback is unexercised by real input, so it is exercised here
+    # directly: a language added to LANG_EXT without a resolver must be counted
+    # approximately *and* declared, never silently read as resolved.
+    from pathlib import Path
+
+    from forge.detector.stack import approximate_connectivity_languages
+
+    assert approximate_connectivity_languages([Path("a.cpp"), Path("b.rb")]) == ()
+    assert approximate_connectivity_languages([Path("Legacy.kt")]) == ()
+
+
+def test_triage_no_longer_claims_any_connectivity_is_approximated(tmp_path):
+    write(tmp_path, "legacy.cpp", 'int main() { return 0; }\n')
     write(tmp_path, "main.py", "x = 1\n")
-    limitations = " ".join(triage(tmp_path).limitations)
-    assert "C++" in limitations
-    assert "approximated" in limitations
+    assert not any("approximated" in item for item in triage(tmp_path).limitations)
 
 
 def test_triage_makes_no_approximation_claim_for_resolved_languages(tmp_path):

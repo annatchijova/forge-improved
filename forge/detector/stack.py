@@ -38,7 +38,9 @@ LANG_EXT = {
     ".ts": "TypeScript", ".tsx": "TypeScript", ".mts": "TypeScript", ".cts": "TypeScript",
     ".rs": "Rust", ".go": "Go", ".java": "Java",
     ".rb": "Ruby", ".rake": "Ruby", ".php": "PHP", ".phtml": "PHP",
-    ".c": "C", ".cpp": "C++", ".cs": "C#",
+    ".c": "C/C++", ".h": "C/C++", ".cpp": "C/C++", ".cc": "C/C++",
+    ".cxx": "C/C++", ".hpp": "C/C++", ".hh": "C/C++", ".hxx": "C/C++",
+    ".cs": "C#",
 }
 
 # Anything a language pack can analyse must also be triageable. A file that

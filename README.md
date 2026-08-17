@@ -5,7 +5,7 @@
 # FORGE
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Analyzes](https://img.shields.io/badge/analyzes-8%20languages-blueviolet)
+![Analyzes](https://img.shields.io/badge/analyzes-9%20languages-blueviolet)
 ![Architecture](https://img.shields.io/badge/architecture-multi--agent-darkgreen)
 ![Deterministic](https://img.shields.io/badge/decision%20path-deterministic-success)
 ![Audit](https://img.shields.io/badge/audit-SHA--256%20sealed-brightgreen)
@@ -304,7 +304,7 @@ at `NOT_ASSESSED` for exploitability by construction, not by convention.
 | **C#** | `.cs` | lexical | 5 | resolved (namespace + `using`) |
 | **Ruby** | `.rb` `.rake` | lexical | 6 | resolved (`require`, autoloaded constants) |
 | **PHP** | `.php` `.phtml` | lexical | 6 | resolved (PSR-4 namespace + `use`, literal includes) |
-| C, C++, Kotlin, Scala, Swift, … | `.c` `.cpp` `.kt` `.scala` `.swift` | **none** | — | approximated (filename tally) |
+| **C / C++** | `.c` `.h` `.cpp` `.cc` `.cxx` `.hpp` `.hh` `.hxx` | lexical | 7 | resolved (quoted `#include`) |
 | Everything else | — | **none** | — | — |
 
 A language with no detector is **abstained from, never reported as clean**. It
@@ -314,10 +314,16 @@ still triaged into module health classes, and triage declares in the manifest
 that their connectivity was approximated rather than resolved.
 
 Analysis depth and connectivity are independent claims, and the matrix reports
-them separately. Every analysed language now resolves its own imports the way
-that language defines reference; only C and C++ remain on the filename tally,
-and triage declares that in the manifest rather than letting an approximated
-count read as a resolved one.
+them separately. Every analysed language resolves its own references the way
+that language defines them — the repository-wide filename tally that used to
+stand in is now unreachable, and survives only as the declared fallback should
+a language ever be triaged without a resolver.
+
+C and C++ are the exception worth naming: a translation unit is compiled by the
+build system rather than included, so `.c` and `.cpp` have no callers by
+construction and are treated as entry points. Only a header can be shown
+orphaned. Detecting a `.c` that no build target compiles would mean reading the
+Makefile or CMakeLists, which FORGE does not do.
 
 Connectivity also recognises **framework entry points**. A controller, job,
 migration or test has no importer by construction, so without that convention it
@@ -375,7 +381,8 @@ non-backtracking pass that preserves line and column geometry.
 
 Masking is per-language because it has to be. Rust lifetimes (`&'a str`), Go
 rune literals (`'"'`), nested block comments, variable-width raw-string fences
-(`r##"..."##`), Java text blocks, C# verbatim strings where a backslash is
+(`r##"..."##`), C++ raw strings that pick their own delimiter
+(`R"tag(...)tag"`), Java text blocks, C# verbatim strings where a backslash is
 ordinary and a doubled quote is an escape, Ruby symbols and character literals,
 heredocs in Ruby and PHP, and JavaScript regular-expression character classes
 each look like an opening quote to a naive scanner. PHP goes further still: a

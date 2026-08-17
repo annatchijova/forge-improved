@@ -220,7 +220,7 @@ def mask_source(source: str, pack: LanguagePack) -> list[str]:
         if pack.raw_string_fence is not None:
             fence = pack.raw_string_fence.match(source, index)
             if fence:
-                closer = '"' + fence.group(1)
+                closer = pack.raw_string_close.format(fence=fence.group(1))
                 closing = source.find(closer, fence.end())
                 content_end = length if closing < 0 else closing
                 blank(fence.end(), content_end)
@@ -282,16 +282,23 @@ def span_lines(context: ScanContext, line_number: int, max_lines: int = 32) -> t
     return " ".join(masked_parts), " ".join(raw_parts)
 
 
-def argument_zero(text: str, open_index: int) -> str:
-    """Return the first argument of the call whose ``(`` is at ``open_index``.
+def argument_spans(text: str, open_index: int) -> list[tuple[int, int]]:
+    """Return ``(start, end)`` offsets for each argument of a call.
 
-    Which argument matters is the whole question for a query sink. In
-    ``db.QueryRow("SELECT name WHERE id = $1", fmt.Sprintf("%s", raw))`` the
-    query is a constant and the constructed value is a *bound parameter* --
-    the safe form, and the one a whole-call scan reports as an injection.
+    Which argument matters is the whole question for a query sink, and it is
+    not a fixed index. ``db.QueryRow("SELECT … $1", fmt.Sprintf("%s", raw))``
+    puts the query first and a bound parameter second -- the safe form. C and
+    the procedural PHP drivers put a connection handle first and the query
+    second: ``mysql_query(conn, sprintf(…))``. Fixing on argument zero reported
+    the first as an injection and missed the second entirely.
+
+    Offsets rather than substrings, because masking preserves geometry: the
+    same slice of the raw text is the same argument, which is how a rule can
+    check structure in the masked view and a literal's value in the raw one.
     """
     depth = 0
     start = open_index + 1
+    spans: list[tuple[int, int]] = []
     for index in range(open_index, len(text)):
         char = text[index]
         if char in "([{":
@@ -299,10 +306,13 @@ def argument_zero(text: str, open_index: int) -> str:
         elif char in ")]}":
             depth -= 1
             if depth == 0:
-                return text[start:index]
+                spans.append((start, index))
+                return spans
         elif char == "," and depth == 1:
-            return text[start:index]
-    return text[start:]
+            spans.append((start, index))
+            start = index + 1
+    spans.append((start, len(text)))
+    return spans
 
 
 #: A query sink's first argument has to actually look like a query. Without
@@ -326,14 +336,19 @@ def sql_findings(
     """Report query text built by formatting or concatenation instead of binding.
 
     Three conditions must hold together, and each one removes a class of false
-    positive observed against idiomatic code: the call is real code in the
-    masked view, its *first* argument shows construction, and the raw text of
-    that call actually contains SQL.
+    positive or negative observed against idiomatic code: the call is real code
+    in the masked view, *some* argument shows construction, and that same
+    argument actually contains SQL.
 
-    ``require_sql_keyword`` relaxes the third condition for sinks whose *name*
-    already proves the argument is SQL. An ORM fragment method such as Rails'
-    ``.where`` takes a WHERE clause, not a whole statement, so demanding a
-    ``SELECT`` there loses the real injection ``.where("n = '#{param}'")``
+    The conditions apply to one argument rather than to the call as a whole.
+    Checking the whole span reported a constructed *bound parameter* as an
+    injection; fixing on argument zero then missed every driver that takes a
+    connection handle first.
+
+    ``require_sql_keyword`` relaxes the SQL condition for sinks whose *name*
+    already proves the argument is a query. An ORM fragment method such as
+    Rails' ``.where`` takes a WHERE clause, not a whole statement, so demanding
+    a ``SELECT`` there loses the real injection ``.where("n = '#{param}'")``
     while protecting nothing.
     """
     findings: list[LexicalFinding] = []
@@ -341,21 +356,25 @@ def sql_findings(
         match = call_pattern.search(masked)
         if not match:
             continue
+        # The masked and raw spans have identical geometry, so one pair of
+        # offsets indexes the same argument in both views.
         span_masked, span_raw = span_lines(context, number)
-        located = call_pattern.search(span_masked) or match
-        source = span_masked if call_pattern.search(span_masked) else masked
-        open_index = source.find("(", located.end() - 1)
+        located = call_pattern.search(span_masked)
+        if located is None:
+            continue
+        open_index = span_masked.find("(", located.end() - 1)
         if open_index < 0:
             continue
-        argument = argument_zero(source, open_index)
-        if not constructed.search(argument):
-            continue
-        if require_sql_keyword and not SQL_KEYWORD.search(span_raw):
-            continue
-        findings.append(LexicalFinding(
-            "sql-injection", context.path, number, description,
-            column=match.start() + 1, language=language,
-        ))
+        for start, end in argument_spans(span_masked, open_index):
+            if not constructed.search(span_masked[start:end]):
+                continue
+            if require_sql_keyword and not SQL_KEYWORD.search(span_raw[start:end]):
+                continue
+            findings.append(LexicalFinding(
+                "sql-injection", context.path, number, description,
+                column=match.start() + 1, language=language,
+            ))
+            break
     return findings
 
 
@@ -548,7 +567,8 @@ def read_source(path: Path) -> tuple[str | None, str | None]:
 
 
 __all__ = (
-    "build_context", "call_span", "credential_findings", "guarded_lines",
+    "argument_spans", "build_context", "call_span", "credential_findings",
+    "guarded_lines",
     "has_interpolation", "mask_source", "read_source", "sanitized_names",
     "scan_source",
 )

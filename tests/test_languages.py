@@ -24,6 +24,7 @@ from forge.languages import (
     pack_for_path,
     scan_source,
 )
+from forge.languages.cpp import PACK as CPP
 from forge.languages.csharp import PACK as CSHARP
 from forge.languages.go import PACK as GO
 from forge.languages.java import PACK as JAVA
@@ -790,3 +791,83 @@ def test_declared_families_cover_every_pack_the_lexical_auditor_owns():
 
     assert set(DECLARED_FAMILIES) == {pack.name for pack in LEXICAL_AUDITOR_PACKS}
     assert all(DECLARED_FAMILIES[name] for name in DECLARED_FAMILIES)
+
+
+# --------------------------------------------------------------------------
+# C / C++ pack
+# --------------------------------------------------------------------------
+
+def test_c_reports_its_declared_families():
+    source = (
+        '#include <stdio.h>\n'
+        'static const char *api_key = "sk-live-42";\n'
+        'void handle(char *user_input, char *dst) {\n'
+        '    strcpy(dst, user_input);\n'
+        '    sprintf(cmd, "echo %s", user_input);\n'
+        '    system(cmd);\n'
+        '    FILE *f = fopen(user_input, "r");\n'
+        '    void *lib = dlopen(user_input, RTLD_NOW);\n'
+        '}\n'
+    )
+    assert families(CPP, source) == {
+        ("hardcoded-credential", 2),
+        ("unbounded-copy", 4),
+        ("unbounded-copy", 5),
+        ("command-injection", 6),
+        ("subprocess", 6),
+        ("path-traversal", 7),
+        ("dynamic-evaluation", 8),
+    }
+
+
+def test_c_benign_service_is_clean_except_the_declared_subprocess():
+    source = (
+        '/* Legacy note: this used to call system(cmd) and strcpy(dst, argv[1]). */\n'
+        'static const char *CONFIG_NAME = "server.conf";\n'
+        'int load_config(const char *root, char *out, size_t n) {\n'
+        '    char resolved[PATH_MAX];\n'
+        '    if (realpath(root, resolved) == NULL) { return -1; }\n'
+        '    snprintf(out, n, "%s/%s", resolved, CONFIG_NAME);\n'
+        '    FILE *fp = fopen(out, "r");\n'
+        '    return fp == NULL ? -1 : 0;\n'
+        '}\n'
+        'int run_backup(void) { return system("/usr/local/bin/backup --quiet"); }\n'
+    )
+    # A literal command is a declared subprocess boundary and nothing more.
+    assert families(CPP, source) == {("subprocess", 10)}
+
+
+def test_c_bounded_copy_is_not_an_unbounded_one():
+    assert not families(CPP, "snprintf(dst, n, \"%s\", src);\nstrncpy(dst, src, n);\n")
+    assert families(CPP, "strcpy(dst, src);\n") == {("unbounded-copy", 1)}
+
+
+def test_cpp_raw_string_uses_its_own_delimiter_to_close():
+    # C++ closes with `)tag"`, not Rust's `"##`, so the shape is declared.
+    source = 'const char *s = R"tag(strcpy(a, b); system(cmd);)tag";\nstrcpy(dst, src);\n'
+    assert families(CPP, source) == {("unbounded-copy", 2)}
+
+
+def test_c_character_literal_holding_a_quote_does_not_open_a_string():
+    source = "char q = '\\\"';\nstrcpy(dst, src);\n"
+    assert families(CPP, source) == {("unbounded-copy", 2)}
+
+
+def test_c_query_is_found_when_the_driver_takes_the_handle_first():
+    # `mysql_query(conn, query)` puts the query second. Fixing on argument zero
+    # missed it entirely while reporting a constructed bound parameter
+    # elsewhere as an injection.
+    source = 'mysql_query(conn, sprintf(q, "SELECT * FROM t WHERE n = %s", user_input));\n'
+    assert ("sql-injection", 1) in families(CPP, source)
+
+
+def test_php_query_is_found_when_the_driver_takes_the_handle_first():
+    source = '<?php\nmysqli_query($link, "SELECT * FROM t WHERE n = $id");\n'
+    assert ("sql-injection", 2) in families(PHP, source)
+
+
+def test_a_constructed_bound_parameter_is_still_not_an_injection():
+    # The per-argument rule must not reintroduce the false positive that the
+    # argument-zero restriction was added to remove.
+    source = 'err := db.QueryRow("SELECT count(*) FROM e WHERE ts > $1", fmt.Sprintf("%s", since)).Scan(&n)\n'
+    assert not families(GO, source)

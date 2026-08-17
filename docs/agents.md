@@ -31,8 +31,8 @@ distinction is contractual rather than cosmetic — see
               │               │                │
               │   ┌───────────────────┐ ┌────────────────────┐
               │   │   WEB AUDITOR     │ │  LEXICAL AUDITOR   │
-              │   │ JS/TS masked-text │ │ Go · Rust · Java · │
-              │   │ boundary scan     │ │ C# · Ruby · PHP    │
+              │   │ JS/TS masked-text │ │ Go·Rust·Java·C#·   │
+              │   │ boundary scan     │ │ Ruby·PHP·C/C++     │
               │   └───────────────────┘ └────────────────────┘
               │        lexical depth — no scope, type or
               │        reachability; exploitability NOT_ASSESSED
@@ -72,7 +72,7 @@ FORGE currently has exactly nine agent modules:
 | Security Auditor | Yes | AST | AST security checks |
 | Integrity Inspector | Yes | AST | decision-path and serialization integrity |
 | Web Auditor | Yes | lexical | bounded boundaries in JavaScript/TypeScript |
-| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java, C#, Ruby and PHP |
+| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java, C#, Ruby, PHP and C/C++ |
 | Report Composer | Yes, presentation only | — | HTML rendering |
 | Patch Reviewer | No | — | review a requested unified diff |
 | Recommendation Agent | No | — | propose bounded changes after the audit |
@@ -279,8 +279,9 @@ languages were triaged into module health classes and then inspected by nothing,
 so a finding-free Go repository produced a clean-looking report whose
 cleanliness came from having looked at nothing.
 
-It owns six packs. Each new one cost a specification and a benign-code audit,
-not a new agent -- which is the return the language registry exists to pay.
+It owns seven packs. Each new one cost a specification and a benign-code
+audit, not a new agent -- which is the return the language registry exists to
+pay.
 
 Go (7 families) leans on the language's stable, fully-qualified selectors:
 `exec.Command`, `os.ReadFile`, `db.Query`. A discarded `Unmarshal` error is
@@ -325,6 +326,15 @@ a double-quoted string, which is what makes an interpolated query visible as a
 value reaching a sink. `include $page` is reported as `dynamic-evaluation`
 rather than a file read, because it resolves a path at runtime and then executes
 it.
+
+C/C++ (7 families) is deliberately narrow about what a lexical view can see.
+The defects C is best known for -- use-after-free, double free, out-of-bounds
+indexing -- need types, lifetimes and a call graph, none of which survives
+masking, so the pack does not pretend to look for them. What it does report is
+the family of *unbounded* standard-library calls whose danger is inherent to
+the function chosen rather than to how it was used: `strcpy` cannot be made
+safe by its arguments, which is exactly why it reads well lexically and a
+bounds bug does not.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 
