@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 from forge.detector.imports import RESOLVED_SUFFIXES, resolved_references
-from forge.languages import ANALYZED_EXTENSIONS, entry_point_names
+from forge.languages import ANALYZED_EXTENSIONS, entry_point_names, is_framework_entry_point
 from forge.models import Evidence, ModuleClass, ModuleRecord, StackFingerprint, TriageManifest
 
 # Repository policy: agents audit authored application/source files only.
@@ -382,6 +382,7 @@ def _entry_point_paths(root: Path, paths: Iterable[Path]) -> set[str]:
         for path in candidates
         if path.name in conventional
         or any(part in {"bin", "scripts", "tests"} for part in path.relative_to(root).parts)
+        or is_framework_entry_point(str(path.relative_to(root)))
     }
     entry_points |= _manifest_entry_points(root, candidates)
     pyproject = root / "pyproject.toml"

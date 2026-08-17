@@ -105,6 +105,13 @@ class LanguagePack:
     interpolation_markers: tuple[str, ...] = ()
     custom_rules: tuple[Callable[["ScanContext"], list["LexicalFinding"]], ...] = ()
     entry_point_names: frozenset[str] = frozenset()
+    # Repository-relative path patterns for files a *framework* invokes rather
+    # than application code importing them. A controller, job, migration or
+    # test has no importer by construction, so without this it scores zero
+    # references and is classified dead weight -- and then dropped from detector
+    # scope, which for a controller means dropping the exact file where
+    # untrusted input enters.
+    entry_point_patterns: tuple[re.Pattern[str], ...] = ()
 
     def owns(self, suffix: str) -> bool:
         return suffix.lower() in self.extensions

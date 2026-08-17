@@ -128,6 +128,24 @@ def entry_point_names() -> frozenset[str]:
     return frozenset(name for pack in PACKS for name in pack.entry_point_names)
 
 
+def is_framework_entry_point(relative_path: str) -> bool:
+    """Whether a path is one a framework dispatches into rather than imports.
+
+    A controller, job, migration or test has no importer by construction. Left
+    unrecognised it scores zero references, is classified dead weight, and is
+    then dropped from detector scope -- which for a controller means dropping
+    the exact file where untrusted input enters the system.
+
+    Only the owning pack's patterns are consulted, so a Rails path convention
+    cannot vouch for a Java file.
+    """
+    pack = pack_for_path(relative_path)
+    if pack is None:
+        return False
+    normalized = str(relative_path).replace("\\", "/")
+    return any(pattern.search(normalized) for pattern in pack.entry_point_patterns)
+
+
 def scan_path(path: str | Path, root: str | Path) -> tuple[tuple[LexicalFinding, ...], str]:
     """Scan one file with its owning pack.
 
@@ -150,6 +168,7 @@ __all__ = (
     "ANALYZED_EXTENSIONS", "AST_EXTENSIONS", "LEXICAL_EXTENSIONS", "PACKS",
     "LEXICAL_AUDITOR_PACKS", "RECOGNIZED_LANGUAGES", "WEB_PACKS", "LanguagePack",
     "LexicalFinding", "ScanContext", "SinkRule", "StringRule", "analysis_depth",
-    "build_context", "entry_point_names", "language_name", "mask_source",
+    "build_context", "entry_point_names", "is_framework_entry_point",
+    "language_name", "mask_source",
     "pack_for_path", "pack_for_suffix", "scan_path", "scan_source",
 )

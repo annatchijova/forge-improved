@@ -300,10 +300,10 @@ at `NOT_ASSESSED` for exploitability by construction, not by convention.
 | **Go** | `.go` | lexical | 7 | resolved (`go.mod` package paths) |
 | **Rust** | `.rs` | lexical | 7 | resolved (`mod` chain, `use crate::`) |
 | **JavaScript / TypeScript** | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | lexical | 6 | resolved (relative specifiers) |
-| **Java** | `.java` | lexical | 7 | approximated (filename tally) |
-| **C#** | `.cs` | lexical | 5 | approximated (filename tally) |
-| **Ruby** | `.rb` `.rake` | lexical | 6 | approximated (filename tally) |
-| **PHP** | `.php` `.phtml` | lexical | 6 | approximated (filename tally) |
+| **Java** | `.java` | lexical | 7 | resolved (package + import, same-package siblings) |
+| **C#** | `.cs` | lexical | 5 | resolved (namespace + `using`) |
+| **Ruby** | `.rb` `.rake` | lexical | 6 | resolved (`require`, autoloaded constants) |
+| **PHP** | `.php` `.phtml` | lexical | 6 | resolved (PSR-4 namespace + `use`, literal includes) |
 | C, C++, Kotlin, Scala, Swift, … | `.c` `.cpp` `.kt` `.scala` `.swift` | **none** | — | approximated (filename tally) |
 | Everything else | — | **none** | — | — |
 
@@ -313,10 +313,16 @@ disposition as an explicit boundary. Recognised-but-unanalysed languages are
 still triaged into module health classes, and triage declares in the manifest
 that their connectivity was approximated rather than resolved.
 
-Analysis depth and connectivity are independent claims. Java, C#, Ruby and PHP
-are scanned by a language pack, but their imports are not resolved, so their
-module connectivity still comes from the filename tally — and triage says so in
-the manifest rather than letting an approximated count read as a resolved one.
+Analysis depth and connectivity are independent claims, and the matrix reports
+them separately. Every analysed language now resolves its own imports the way
+that language defines reference; only C and C++ remain on the filename tally,
+and triage declares that in the manifest rather than letting an approximated
+count read as a resolved one.
+
+Connectivity also recognises **framework entry points**. A controller, job,
+migration or test has no importer by construction, so without that convention it
+scores zero references, is classified dead weight, and drops out of detector
+scope — discarding the exact file where untrusted input enters.
 
 Anything a pack can read must also be triageable, or it would be invisible
 rather than declared out of scope; the registry enforces that at import.

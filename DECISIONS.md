@@ -908,3 +908,54 @@ one outcome the coverage contract exists to prevent.
 Anything a pack can analyse must therefore be triageable, and that is now
 checked at import: registering a pack whose extensions triage cannot classify
 raises rather than silently producing an unreachable language.
+
+## Resolving connectivity for Java, C#, Ruby and PHP
+
+Those four were scanned by a language pack while their module connectivity
+still came from the repository-wide filename tally. Depth and connectivity are
+independent claims, but leaving half of them approximated meant a detector's
+scope was decided by a heuristic already documented as wrong in both directions.
+
+Each resolver answers the question its language actually asks. A Java import
+names a fully-qualified type, and a public type conventionally lives in the file
+named after it inside its package directory, so the declared `package` plus the
+filename resolves one exactly; a wildcard credits the package. A C# `using`
+imports a *namespace* rather than a type, so it credits every file declaring it.
+A PHP `use` resolves the same way through PSR-4, with literal `require` paths
+resolved relative to the including file.
+
+Two of them needed something imports alone cannot give.
+
+**Same-scope siblings.** Java and C# reference a sibling type in the same
+package or namespace with no import statement at all. An import-only resolver
+would report every same-package collaborator as dead weight. Those are counted
+by simple name — but bounded to the package, never repository-wide, because two
+classes called `Config` in different packages are different classes and
+crediting both is precisely the defect the stem tally had.
+
+**Autoloaded constants.** A Rails application frequently contains no `require`
+at all: a file is reached because something names the constant it defines. The
+constant is derived from the filename and counted, and dropped entirely when two
+files would claim the same one. A camelized constant is distinctive enough that
+this is far tighter than a stem tally, and the ambiguity rule keeps it from
+reintroducing the same error.
+
+### Framework entry points
+
+Testing the resolvers against realistic layouts surfaced a defect worse than the
+one being fixed: **controllers were classified dead weight in Java, Ruby and
+PHP**. Nothing imports a controller — the framework dispatches into it — so
+precise resolution correctly finds zero references, and the module then drops
+out of detector scope. For a controller that discards the exact file where
+untrusted input enters the system. Precision without this convention is worse
+than the tally it replaced.
+
+The mechanism already existed for Python (`__main__.py`, `bin/`, `scripts/`,
+`tests/`). Packs now declare `entry_point_patterns` for the paths their
+framework dispatches into: controllers, jobs, mailers, migrations, servlets,
+tests. Only the owning pack's patterns are consulted, so a Rails path convention
+cannot vouch for a Go file that happens to sit under `app/controllers/`. The
+convention is not a blanket amnesty either — an orphaned service beside a
+recognised controller stays dead weight.
+
+C and C++ remain on the filename tally, and triage still declares that.

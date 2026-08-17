@@ -28,6 +28,26 @@ JavaScript/TypeScript
     are packages and are ignored, which is exactly the false credit the stem
     tally used to hand out.
 
+Java
+    An import names a fully-qualified type, and a public type conventionally
+    lives in the file named after it inside its package directory. Siblings in
+    the same package are referenced with no import at all, so those are counted
+    by simple name -- bounded to the package, never repository-wide.
+C#
+    A ``using`` imports a *namespace* rather than a type, so it credits every
+    file declaring it; types are then named simply, counted within the
+    namespace.
+Ruby
+    ``require_relative`` and ``require`` resolve to files, but a Rails
+    application autoloads by convention and often contains no ``require`` at
+    all. A file is reached by something naming the constant it defines, so the
+    constant is derived from the filename and counted -- and dropped entirely
+    when two files would claim the same one.
+PHP
+    PSR-4 puts one class in one file named after it, so a declared
+    ``namespace`` plus the filename resolves a ``use`` exactly. Literal
+    ``require`` paths resolve relative to the including file.
+
 Languages with no resolver here keep the stem tally, and triage records that
 their connectivity is approximate rather than pretending otherwise.
 """
@@ -198,9 +218,219 @@ def rust_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
 
 
 #: Extensions whose connectivity is resolved rather than approximated.
-RESOLVED_SUFFIXES = frozenset({".go", ".rs"}) | JS_SUFFIXES
+def _scoped_name_references(
+    texts: dict[str, str], names: dict[str, str],
+) -> dict[str, set[str]]:
+    """Credit each file that mentions another's declared name, in one pass.
 
-_RESOLVERS = (javascript_references, go_references, rust_references)
+    Used only *within* a package or namespace, never across the repository. A
+    simple name is weak evidence globally -- two classes called ``Config`` in
+    different packages are different classes -- but inside one package it is
+    exactly how the language refers to a sibling, with no import statement to
+    resolve. Scanning all names at once keeps this linear in total text rather
+    than quadratic in members.
+    """
+    if len(names) < 2:
+        return {}
+    pattern = re.compile(r"\b(" + "|".join(re.escape(name) for name in sorted(names)) + r")\b")
+    references: dict[str, set[str]] = {}
+    for source, text in texts.items():
+        for name in set(pattern.findall(text)):
+            target = names[name]
+            if target != source:
+                references.setdefault(target, set()).add(source)
+    return references
+
+
+_JAVA_PACKAGE = re.compile(r"^\s*package\s+([\w.]+)\s*;", re.M)
+_JAVA_IMPORT = re.compile(r"^\s*import\s+(?:static\s+)?([\w.]+(?:\.\*)?)\s*;", re.M)
+
+
+def java_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
+    """Resolve Java imports through declared packages, plus same-package use.
+
+    A Java import names a fully-qualified type, and by convention a public type
+    lives in the file named after it inside its package directory -- so the
+    declared ``package`` plus the filename is enough to resolve one exactly.
+    A wildcard import credits the whole package.
+
+    Sibling types in the same package are referenced with no import at all, so
+    those are counted by simple name, bounded to that package.
+    """
+    sources = [path for path in paths if path.suffix.lower() == ".java"]
+    if not sources:
+        return {}
+    texts = {str(path.relative_to(root)): _read(path) for path in sources}
+    references: dict[str, set[str]] = {name: set() for name in texts}
+    by_fqn: dict[str, str] = {}
+    by_package: dict[str, dict[str, str]] = {}
+    for relative, text in texts.items():
+        match = _JAVA_PACKAGE.search(text)
+        package = match.group(1) if match else ""
+        simple = PurePosixPath(relative).stem
+        by_fqn[f"{package}.{simple}" if package else simple] = relative
+        by_package.setdefault(package, {})[simple] = relative
+    for relative, text in texts.items():
+        for imported in _JAVA_IMPORT.findall(text):
+            if imported.endswith(".*"):
+                for target in by_package.get(imported[:-2], {}).values():
+                    if target != relative:
+                        references[target].add(relative)
+            elif imported in by_fqn and by_fqn[imported] != relative:
+                references[by_fqn[imported]].add(relative)
+    for package, members in by_package.items():
+        scoped = {name: text for name, text in texts.items() if name in set(members.values())}
+        for target, callers in _scoped_name_references(scoped, members).items():
+            references[target].update(callers)
+    return references
+
+
+_CSHARP_NAMESPACE = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
+_CSHARP_USING = re.compile(r"^\s*(?:global\s+)?using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
+
+
+def csharp_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
+    """Resolve C# ``using`` directives against declared namespaces.
+
+    A ``using`` imports a *namespace*, not a type, so it credits every file
+    declaring that namespace. Types are then referenced by simple name, which
+    is counted inside the namespace only -- the same bound Java's same-package
+    rule uses, and for the same reason.
+    """
+    sources = [path for path in paths if path.suffix.lower() == ".cs"]
+    if not sources:
+        return {}
+    texts = {str(path.relative_to(root)): _read(path) for path in sources}
+    references: dict[str, set[str]] = {name: set() for name in texts}
+    by_namespace: dict[str, dict[str, str]] = {}
+    for relative, text in texts.items():
+        match = _CSHARP_NAMESPACE.search(text)
+        namespace = match.group(1) if match else ""
+        by_namespace.setdefault(namespace, {})[PurePosixPath(relative).stem] = relative
+    for relative, text in texts.items():
+        for used in _CSHARP_USING.findall(text):
+            for target in by_namespace.get(used, {}).values():
+                if target != relative:
+                    references[target].add(relative)
+    for namespace, members in by_namespace.items():
+        scoped = {name: text for name, text in texts.items() if name in set(members.values())}
+        for target, callers in _scoped_name_references(scoped, members).items():
+            references[target].update(callers)
+    return references
+
+
+_RUBY_REQUIRE = re.compile(r"\brequire(?P<relative>_relative)?\s*\(?\s*['\"]([^'\"\n]+)['\"]")
+
+
+def _camelize(stem: str) -> str:
+    """Convert a Ruby filename stem to the constant it conventionally defines."""
+    return "".join(part[:1].upper() + part[1:] for part in stem.split("_") if part)
+
+
+def ruby_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
+    """Resolve Ruby requires, and the constant references autoloading relies on.
+
+    ``require_relative`` resolves against the requiring file's directory and
+    ``require`` against the repository's load-path-ish roots. Neither is enough
+    on its own: a Rails application autoloads by *convention* and frequently
+    contains no ``require`` at all, so a file is reached purely by something
+    naming the constant it defines. Deriving that constant from the filename
+    and counting whole-word references to it is how the graph gets built at all
+    for such a project -- and a camelized constant is distinctive enough that
+    this is far tighter than the repository-wide stem tally it replaces.
+    """
+    sources = [path for path in paths if path.suffix.lower() in {".rb", ".rake"}]
+    if not sources:
+        return {}
+    texts = {str(path.relative_to(root)): _read(path) for path in sources}
+    known = set(texts)
+    references: dict[str, set[str]] = {name: set() for name in known}
+    for relative, text in texts.items():
+        for is_relative, specifier in _RUBY_REQUIRE.findall(text):
+            target = _resolve_ruby_require(relative, specifier, known, bool(is_relative))
+            if target and target != relative:
+                references[target].add(relative)
+    constants: dict[str, str] = {}
+    for relative in known:
+        constant = _camelize(PurePosixPath(relative).stem)
+        # An ambiguous constant proves nothing: two files claiming `Config`
+        # would each inherit the other's callers, which is the exact defect the
+        # stem tally had.
+        constants[constant] = "" if constant in constants else relative
+    unambiguous = {name: target for name, target in constants.items() if target}
+    for target, callers in _scoped_name_references(texts, unambiguous).items():
+        references[target].update(callers)
+    return references
+
+
+def _resolve_ruby_require(
+    source: str, specifier: str, known: set[str], relative: bool,
+) -> str | None:
+    candidate = specifier if specifier.endswith(".rb") else specifier + ".rb"
+    if relative:
+        return _first_known([_normalize(str(PurePosixPath(source).parent / candidate))], known)
+    direct = [candidate, f"lib/{candidate}", f"app/{candidate}"]
+    resolved = _first_known([_normalize(item) for item in direct], known)
+    if resolved:
+        return resolved
+    # A bare `require "foo/bar"` may resolve through a configured load path the
+    # scanner cannot see. Accept a unique trailing match and nothing else.
+    matches = [item for item in known if item.endswith("/" + candidate)]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _first_known(candidates: list[str], known: set[str]) -> str | None:
+    return next((item for item in candidates if item in known), None)
+
+
+_PHP_NAMESPACE = re.compile(r"^\s*namespace\s+([\w\\]+)\s*[;{]", re.M)
+_PHP_USE = re.compile(r"^\s*use\s+(?:function\s+|const\s+)?([\w\\]+)", re.M)
+_PHP_INCLUDE = re.compile(
+    r"\b(?:include|include_once|require|require_once)\s*\(?\s*"
+    r"(?:__DIR__\s*\.\s*)?['\"]([^'\"\n]+)['\"]"
+)
+
+
+def php_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
+    """Resolve PHP ``use`` against declared namespaces, plus literal includes.
+
+    PSR-4 puts one class in one file named after it, so a declared
+    ``namespace`` plus the filename resolves a ``use`` exactly. A literal
+    ``require`` path is resolved relative to the including file, which is how
+    projects without an autoloader are wired.
+    """
+    sources = [path for path in paths if path.suffix.lower() in {".php", ".phtml"}]
+    if not sources:
+        return {}
+    texts = {str(path.relative_to(root)): _read(path) for path in sources}
+    known = set(texts)
+    references: dict[str, set[str]] = {name: set() for name in known}
+    by_fqn: dict[str, str] = {}
+    for relative, text in texts.items():
+        match = _PHP_NAMESPACE.search(text)
+        namespace = match.group(1).strip("\\") if match else ""
+        simple = PurePosixPath(relative).stem
+        by_fqn[f"{namespace}\\{simple}" if namespace else simple] = relative
+    for relative, text in texts.items():
+        for used in _PHP_USE.findall(text):
+            target = by_fqn.get(used.strip("\\"))
+            if target and target != relative:
+                references[target].add(relative)
+        for included in _PHP_INCLUDE.findall(text):
+            target = _normalize(str(PurePosixPath(relative).parent / included.lstrip("/")))
+            if target in known and target != relative:
+                references[target].add(relative)
+    return references
+
+
+RESOLVED_SUFFIXES = frozenset({
+    ".go", ".rs", ".java", ".cs", ".rb", ".rake", ".php", ".phtml",
+}) | JS_SUFFIXES
+
+_RESOLVERS = (
+    javascript_references, go_references, rust_references,
+    java_references, csharp_references, ruby_references, php_references,
+)
 
 
 def resolved_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]]:
@@ -214,6 +444,8 @@ def resolved_references(root: Path, paths: Iterable[Path]) -> dict[str, set[str]
 
 
 __all__ = (
-    "JS_EXTENSIONS", "JS_SUFFIXES", "RESOLVED_SUFFIXES", "go_references",
-    "javascript_references", "resolved_references", "rust_references",
+    "JS_EXTENSIONS", "JS_SUFFIXES", "RESOLVED_SUFFIXES", "csharp_references",
+    "go_references", "java_references", "javascript_references",
+    "php_references", "resolved_references", "ruby_references",
+    "rust_references",
 )

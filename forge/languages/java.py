@@ -151,6 +151,11 @@ PACK = LanguagePack(
         _xml_entity_boundaries, _credentials,
     ),
     entry_point_names=frozenset({"Main.java", "Application.java"}),
+    entry_point_patterns=(
+        # Spring, Jakarta and JUnit all dispatch into these; nothing imports them.
+        re.compile(r"(?:^|/)\w*(?:Controller|Application|Resource|Servlet|Filter|Listener|Job|Task|Test|Tests|IT)\.java$"),
+        re.compile(r"^(?:src/test|test|tests)/"),
+    ),
 )
 
 

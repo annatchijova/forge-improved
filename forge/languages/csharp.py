@@ -120,6 +120,10 @@ PACK = LanguagePack(
     interpolation_markers=("{", "+", "string.Format"),
     custom_rules=(_path_boundaries, _sql_boundaries, _unsafe_deserialization, _credentials),
     entry_point_names=frozenset({"Program.cs", "Startup.cs"}),
+    entry_point_patterns=(
+        re.compile(r"(?:^|/)\w*(?:Controller|Hub|Worker|Middleware|Migration|Tests?)\.cs$"),
+        re.compile(r"^(?:tests?|Migrations)/"),
+    ),
 )
 
 

@@ -139,6 +139,12 @@ PACK = LanguagePack(
     interpolation_markers=("#{", "+"),
     custom_rules=(_path_boundaries, _sql_boundaries, _unsafe_deserialization, _credentials),
     entry_point_names=frozenset({"application.rb", "config.ru", "Rakefile"}),
+    entry_point_patterns=(
+        # Rails resolves these by convention; no file requires them.
+        re.compile(r"^app/(?:controllers|jobs|mailers|channels|helpers|views)/"),
+        re.compile(r"^(?:config|db/migrate|spec|test|lib/tasks)/"),
+        re.compile(r"_(?:spec|test)\.rb$"),
+    ),
 )
 
 
