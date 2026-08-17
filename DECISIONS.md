@@ -696,3 +696,379 @@ read "instead of placeholder binding", which made any module holding both
 findings abstain the entire audit under `CONTRADICTORY_EVIDENCE` for a reason
 nobody had asserted. Finding text must avoid those words; a test over every pack
 enforces it.
+
+## Sharded coverage: union the shard-scoped half, pin the repository snapshot
+
+Sharding bounds detector attention on repositories with more than
+`max_connected` live modules. Two defects in how its results were combined made
+a sharded audit weaker than a single-shard one, and adding language packs made
+both worse rather than better.
+
+### Coverage aggregation compared what it should have unioned
+
+The parent coverage was published only when every shard's snapshot was
+byte-identical, and otherwise abstained with `ABSTAIN_INCONSISTENT_SHARD_SNAPSHOTS`.
+But shard snapshots are not supposed to be identical. Parsing is repository-wide:
+`_coverage` parses every Python file regardless of which shard is running, and
+language and exclusion classification are decided by extension. Lexical analysis
+is not: a Go, Rust or TypeScript file is scanned only by the shard whose
+`CONNECTED_ALIVE` scope contains it and is `out_of_detector_scope` in every
+other. Requiring identical snapshots therefore guaranteed a mismatch on any
+repository containing lexically-scanned source, and collapsed *every* parent
+count — `files_analyzed`, `coverage_ratio`, the entire language matrix — to
+null. FORGE's own repository, which shards into three, reported no coverage at
+all.
+
+The two halves are now treated according to what they are. Repository-wide facts
+must agree, and a disagreement still abstains, because it means the shards did
+not audit the same tree. The shard-scoped half is unioned: the lexical agents run
+once over the full connected set, which is exactly the union each shard
+contributes a slice of, and one repository-wide snapshot is built from that.
+Per-shard detector scope stays listed separately, so no reader can mistake a
+union of scopes for a single shard's attention.
+
+### Shards attested different trees
+
+Shards run sequentially, and each shard's audit walked the filesystem itself. With
+the output directory inside the audited repository — which is what the documented
+`forge audit . -o forge-run` quick start produces — every shard after the first
+discovered the artifacts its predecessors had just written. On a five-file
+fixture, three shards discovered 5, 23 and 41 files and sealed three *different*
+`repository_snapshot_sha256` values for one audit of one unchanged repository.
+
+That is a seal-integrity problem, not a reporting one: a snapshot hash is an
+attestation about the tree that was audited, and three conflicting attestations
+for the same run cannot all be true. Discovery is now taken once, before the
+first shard starts, and pinned for every shard through `discovery_override`. All
+shards attest the repository as it stood when the audit began.
+
+### Report rendering
+
+The language matrix reached the HTML report as an escaped Python `dict`, which
+made the report's single most important qualifier — whether a language was
+parsed or merely scanned — effectively unreadable. It is a table now, sorted so
+that depth reads as a hierarchy of evidence, with the per-language family list
+kept in a collapsible block rather than dumped into the lede. The three
+not-analysed buckets each carry the reason a reviewer would act on, so a
+`README.md` no longer presents as the same kind of gap as an unanalysed Java
+file.
+
+## Auditing the language packs against benign code
+
+The packs shipped with positive fixtures and benign twins written alongside the
+detectors, which is exactly the corpus most likely to agree with them. Running
+them instead over idiomatic Go and Rust written independently -- a config
+loader, a bound query, a git invocation, a default-port parse -- surfaced four
+false positives that the paired twins had not.
+
+**A constructed bound parameter is not a constructed query.** In
+`db.QueryRow("SELECT count(*) FROM e WHERE ts > $1", fmt.Sprintf("%s", since))`
+the query is a constant and the formatting builds a *bound parameter* -- the
+safe form. Scanning the whole call span reported it as injection. The rule now
+inspects argument zero only.
+
+**`execute` and `query` are not reserved for databases.**
+`step.execute(format!("step-{}", step.id))` is ordinary domain code. A query
+sink's first argument must now actually contain SQL, checked against the raw
+text after the masked view has established the call is real code -- the same
+discipline the credential rule already used.
+
+**Parsing a compile-time constant cannot fail at runtime.**
+`"8080".parse().unwrap()` and `let raw = "3"; raw.parse().expect(...)` were
+reported as panicking parser boundaries. Idiomatic Rust is full of both, and
+neither is actionable. A literal receiver, directly or through a
+literal-only binding, is excluded; masking keeps the quotes while blanking their
+contents, which is enough to tell a constant from a runtime value without
+reading what the constant said.
+
+All four fixes narrow the rules rather than suppress the families: the
+concatenated-SQL form, `sqlx::query(&format!(...))`, and
+`raw_header.parse().unwrap()` all still report. Each false positive is now a
+regression test, and the benign service files are fixtures in their own right.
+
+The one remaining Go finding on that corpus -- `exec.Command("git", "log", ...)`
+reported as `subprocess` -- is deliberate and consistent with the JavaScript
+pack reporting every `child_process.exec`. Process creation is a declared
+boundary; only handing a constructed string to a shell is escalated to
+`command-injection`.
+
+## Java and C# packs, and what auditing them changed in the engine
+
+Adding two languages cost two specifications and two benign-code audits, not
+two agents. That is the return the language registry exists to pay, and it is
+the first evidence that the abstraction holds.
+
+Both are owned by `lexical_auditor`. Its former constant `SYSTEMS_PACKS` was
+renamed `LEXICAL_AUDITOR_PACKS`: the split from `web_auditor` is by agent
+ownership, and calling Java and C# "systems languages" would have been a
+taxonomy claim the code does not need to make.
+
+### What each pack can honestly see
+
+Java (7 families) is the only pack with **file-scoped** rules, because that is
+where its evidence lives. XXE is proven by an absence — no `setFeature`, no
+secure processing anywhere in the compilation unit — and hardening is
+conventionally written a few lines below the factory, not on it, so a
+line-scoped check would report every correct usage. A script engine's `eval` is
+treated as a data-to-code boundary only in a file that imports the scripting
+API; every other `eval` in Java is someone's ordinary method.
+
+C# (5 families) has the richest string syntax of any pack: verbatim strings
+where a backslash is ordinary and a doubled quote is an escape, interpolated
+strings whose substitutions are code, and both combined in either order
+(`$@"…"` / `@$"…"`). All are declared longest-opener-first, and `StringRule`
+gained `doubled_close_escapes` so `@"say ""hi"""` is not cut short at its own
+escaped quote. Its `unsafe-deserialization` rule requires the file to name a
+formatter that rebuilds arbitrary object graphs, because `Deserialize` is also
+how every safe JSON library spells its entry point.
+
+Their imports are **not** resolved. Java and C# are scanned at lexical depth but
+their module connectivity still comes from the filename tally, and triage
+declares that. Analysis depth and connectivity resolution are independent
+claims, and the language matrix reports them in separate columns so neither is
+read as implying the other.
+
+### One false positive, and the engine change it forced
+
+Auditing the two packs against idiomatic benign code produced a single finding:
+`File.ReadAllText(target)` where `target = Path.Combine(root, ConfigName)`. It
+exposed two defects, one shallow and one not.
+
+The shallow one: `path` was a taint stem for both packs, and it matched the
+`Path`/`Paths` *namespace* — the same collision the JavaScript pack had already
+been taught to avoid. It is gone from both.
+
+The real one: a variable was treated as suspicious because of what it was
+*called*, never what was assigned to it. Every conventional destination-path
+name — `target`, `filename`, `name` — was a traversal candidate the moment a
+normalizer was not visible on the same line. `untainted_names` now clears any
+assigned name whose expression shows nothing externally-shaped, through the
+same fixed point the sanitizer set already used, so `target = Path.Combine(root,
+ConfigName)` is clean while `target = Path.Combine(userInput, ConfigName)` is
+not. Only *assigned* names can be cleared: a function parameter has no visible
+origin and stays suspicious, which is the case the rule exists to preserve.
+
+Java's deserialization pattern also matched both the construction and the read
+of an `ObjectInputStream`, so one boundary produced two findings on one line at
+different columns — which the runtime's deduplication, keyed partly on column,
+could not collapse. The read is the boundary; the construction is its setup.
+
+## Ruby and PHP packs, and the invariant they exposed
+
+These two put nearly all their difficulty in the masker rather than the rules,
+which is why adding them required three new engine capabilities rather than
+just two specifications.
+
+**Heredocs.** Ruby and PHP both keep SQL and shell text in heredocs. Without
+support the body is read as code, which invents findings out of quoted data. A
+pack now declares a heredoc opener whose `label` group names the terminator, and
+the body runs to the first later line whose stripped text is that label.
+
+**Code regions.** PHP is the only language here where a file is not code by
+default: a template is HTML until `<?php` opens. `code_delimiters` blanks
+everything outside a code region, so prose in the markup — including a
+sink-shaped sentence in a paragraph — is never scanned.
+
+**Simple in-string preservation.** `interpolation` handles the nesting-aware
+brace form; PHP's bare `$name` needed a plain regex, so `StringRule.preserve`
+was added. Both keep an interpolated query visible as a value reaching a sink
+rather than as inert text.
+
+### Two defects found by auditing, and one by testing
+
+Ruby's `=begin`/`=end` block never matched. The opener is line-anchored, so the
+pack declares it with a leading newline — but the masker skipped newlines before
+trying block comments, so the scanner was never standing where the opener began.
+Every such block was invisible and its prose was scanned as code; the benign
+corpus produced two findings out of a comment saying what the code *used to* do.
+The newline skip is gone, and `_block_opener` also matches a line-anchored
+opener at offset zero, where a licence header has no preceding newline.
+
+The SQL keyword guard added for the earlier false-positive pass turned out to
+cost a true positive here. Rails' `.where("n = '#{param}'")` is a real injection,
+but an ORM fragment method receives a *clause*, never a whole statement, so
+demanding `SELECT` lost the finding while protecting nothing. `sql_findings`
+grew `require_sql_keyword`, and Ruby splits raw sinks (generic names, keyword
+required) from fragment methods (the name itself is the proof).
+
+PHP's taint pattern captured the `$` sigil while assignment targets are recorded
+without it, so the sanitized and untainted sets could never match a name up and
+a provably-cleared path was still reported. Found by a test rather than by the
+benign corpus, because the corpus happened to use a sink the pack does not model.
+
+### The invariant
+
+`index.php` finished the first end-to-end run in `out_of_detector_scope`: the
+pack could read it, but `LANG_EXT` did not list `.php`, so triage never
+classified it, it never became `CONNECTED_ALIVE`, and no detector could reach
+it. That is the same latent defect `.tsx` had, and `.rake` and `.phtml` had it
+too — a file that is *invisible* rather than declared out of scope, which is the
+one outcome the coverage contract exists to prevent.
+
+Anything a pack can analyse must therefore be triageable, and that is now
+checked at import: registering a pack whose extensions triage cannot classify
+raises rather than silently producing an unreachable language.
+
+## Resolving connectivity for Java, C#, Ruby and PHP
+
+Those four were scanned by a language pack while their module connectivity
+still came from the repository-wide filename tally. Depth and connectivity are
+independent claims, but leaving half of them approximated meant a detector's
+scope was decided by a heuristic already documented as wrong in both directions.
+
+Each resolver answers the question its language actually asks. A Java import
+names a fully-qualified type, and a public type conventionally lives in the file
+named after it inside its package directory, so the declared `package` plus the
+filename resolves one exactly; a wildcard credits the package. A C# `using`
+imports a *namespace* rather than a type, so it credits every file declaring it.
+A PHP `use` resolves the same way through PSR-4, with literal `require` paths
+resolved relative to the including file.
+
+Two of them needed something imports alone cannot give.
+
+**Same-scope siblings.** Java and C# reference a sibling type in the same
+package or namespace with no import statement at all. An import-only resolver
+would report every same-package collaborator as dead weight. Those are counted
+by simple name — but bounded to the package, never repository-wide, because two
+classes called `Config` in different packages are different classes and
+crediting both is precisely the defect the stem tally had.
+
+**Autoloaded constants.** A Rails application frequently contains no `require`
+at all: a file is reached because something names the constant it defines. The
+constant is derived from the filename and counted, and dropped entirely when two
+files would claim the same one. A camelized constant is distinctive enough that
+this is far tighter than a stem tally, and the ambiguity rule keeps it from
+reintroducing the same error.
+
+### Framework entry points
+
+Testing the resolvers against realistic layouts surfaced a defect worse than the
+one being fixed: **controllers were classified dead weight in Java, Ruby and
+PHP**. Nothing imports a controller — the framework dispatches into it — so
+precise resolution correctly finds zero references, and the module then drops
+out of detector scope. For a controller that discards the exact file where
+untrusted input enters the system. Precision without this convention is worse
+than the tally it replaced.
+
+The mechanism already existed for Python (`__main__.py`, `bin/`, `scripts/`,
+`tests/`). Packs now declare `entry_point_patterns` for the paths their
+framework dispatches into: controllers, jobs, mailers, migrations, servlets,
+tests. Only the owning pack's patterns are consulted, so a Rails path convention
+cannot vouch for a Go file that happens to sit under `app/controllers/`. The
+convention is not a blanket amnesty either — an orphaned service beside a
+recognised controller stays dead weight.
+
+C and C++ remain on the filename tally, and triage still declares that.
+
+## Syntax verification for lexically scanned languages
+
+Python source is parsed before it is analysed, so a file FORGE cannot parse
+lands in `syntax_error` and blocks the audit's completeness claim. No lexical
+language had any equivalent. A masked-text scan reads a malformed file exactly
+as happily as a valid one, so FORGE would report `system($_GET["c"])` out of a
+file that `php -l` rejects outright — and the disposition never knew.
+
+`syntax_error` therefore only ever meant *Python*, while a reader would
+reasonably take an empty bucket to cover the repository. That is the asymmetry
+this closes, using each language's own parser.
+
+### The constraints are the design
+
+**Parse-only, never execution.** `ruby -c`, `php -l` and `node --check` parse
+and exit. FORGE audits repositories it does not trust; executing their code to
+settle a syntax question would trade a reporting gap for a far worse one. This
+is also why the feature is *not* induction: the epistemic ceiling on lexical
+findings is unchanged, and exploitability stays `NOT_ASSESSED`.
+
+**Opt-in, never auto-detected.** Deciding by what happens to be installed would
+make the same repository audit differently on two machines, and the seal is
+meant to be reproducible bit-for-bit. The choice is part of the run
+configuration and is recorded in coverage.
+
+**Absence is a boundary, not a pass.** A declared validator that is missing
+yields `validator_unavailable`; an extension with no validator yields
+`no_validator_declared`. FORGE never converts "could not check" into "checked
+and fine".
+
+**Declared per extension, not per pack.** `node --check` rejects `.jsx`
+outright and accepts `.ts` only on newer Node. A pack-wide declaration would
+have fabricated a blocking syntax error on valid JSX and made the verdict
+depend on the installed toolchain version, so only `.js`, `.mjs` and `.cjs`
+declare it. One unverifiable spelling downgrades the whole language's claim,
+which is why this repository's own self-audit reports JavaScript/TypeScript as
+`no_validator_declared` rather than verified.
+
+A rejected file keeps its findings. FORGE does not hide evidence: a malformed
+file may still hold a real defect that survives the syntax being fixed, so the
+finding stands and the unverified source boundary is reported beside it.
+
+### Two defects the work exposed
+
+The runtime rebuilt `CoverageReport` field by field late in the audit, which
+silently dropped every field added to the model after that copy was written —
+`syntax_verification` reached the artifact as an empty dict. Replaced with
+`replace()`, which cannot drop a field it does not know about.
+
+Adding the field also broke sharded aggregation, because the shard-snapshot
+comparison used a *denylist* of shard-sensitive keys: every new field was
+compared by default, so one that legitimately varies per shard silently failed
+the check and nulled the entire parent coverage claim. The comparison is an
+allowlist now. Under it a new field is simply not compared — the anomaly check
+gets no weaker than it already was, and no user-visible claim collapses. That
+is the safer direction for a check whose failure mode is an abstention.
+
+## The C/C++ pack, and what it forced the shared query rule to admit
+
+C and C++ share one pack because `.h` belongs to neither exclusively, and a
+scanner that had to decide which language a header was written in before
+reading it would guess more often than it resolved.
+
+The pack is deliberately narrow about what a masked view can see. The defects C
+is best known for — use-after-free, double free, out-of-bounds indexing — need
+types, lifetimes and a call graph, and none of that survives masking, so the
+pack does not pretend to look for them. What it does report is the family of
+*unbounded* standard-library calls whose danger is inherent to the function
+chosen rather than to how it was used. `strcpy` cannot be made safe by its
+arguments; that is exactly why it reads well lexically and a bounds bug does
+not. The new `unbounded-copy` family is rated HIGH rather than CRITICAL,
+because a lexical scan cannot show the destination is actually too small.
+
+C++ raw strings pick their own delimiter and close with `)tag"`, unlike Rust's
+`"##`, so `raw_string_close` became a declared template rather than an assumed
+shape.
+
+### Connectivity here works differently, and that is the honest model
+
+A translation unit is compiled by the build system, never included by another
+source file, so `.c` and `.cpp` have no callers by construction. They are
+treated as entry points for the same reason a controller is. Headers are the
+files that actually get included, and an unincluded header is genuinely
+orphaned — the only C file this graph can show as dead.
+
+Detecting a `.c` that no build target compiles would mean reading the Makefile
+or CMakeLists, which the pack does not do, and the limitation is stated rather
+than papered over.
+
+With `#include` resolved, **every language triage can classify now resolves its
+own references**. The repository-wide filename tally is unreachable. It is kept
+as the declared fallback for a language added to `LANG_EXT` without a resolver,
+and tested directly so it does not rot into dead code.
+
+### A false negative the pack exposed in shared code
+
+`mysql_query(conn, sprintf(q, "SELECT …", user_input))` did not report. The
+shared query rule inspected **argument zero**, which had been the fix for an
+earlier false positive where a constructed *bound parameter* was read as an
+injection. But C and the procedural PHP drivers take a connection handle first
+and the query second, so a fixed index was wrong in one direction or the other
+for every language.
+
+Neither index is the answer: the query is whichever argument *contains SQL*.
+The rule now walks the argument spans and requires one argument to show both
+construction and SQL. That closed the C and PHP `mysqli_query` misses without
+reintroducing the Go bound-parameter false positive — verified against both.
+
+Argument spans are offsets rather than substrings, because masking preserves
+geometry: the same slice indexes the same argument in the masked and raw views,
+which is how one rule checks structure in one and a literal's value in the
+other.

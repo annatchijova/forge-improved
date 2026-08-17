@@ -13,7 +13,7 @@ MODELED_DETECTOR_FAMILIES = (
     "deterministic-core", "dynamic-evaluation", "hardcoded-credential",
     "honest-degradation", "money-as-float", "parser-boundary",
     "path-traversal", "sql-aggregation-not-materialization", "sql-injection",
-    "subprocess", "tamper-evident-audit-chain", "unsafe-block",
+    "subprocess", "tamper-evident-audit-chain", "unbounded-copy", "unsafe-block",
     "unsafe-deserialization", "unverified-webhook", "unversioned-serialization",
     "validate-at-the-boundary",
 )
@@ -43,6 +43,26 @@ FAMILIES_BY_LANGUAGE = {
     "Rust": (
         "command-injection", "hardcoded-credential", "parser-boundary",
         "path-traversal", "sql-injection", "subprocess", "unsafe-block",
+    ),
+    "Java": (
+        "dynamic-evaluation", "hardcoded-credential", "parser-boundary",
+        "path-traversal", "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
+    "C#": (
+        "hardcoded-credential", "path-traversal", "sql-injection", "subprocess",
+        "unsafe-deserialization",
+    ),
+    "Ruby": (
+        "dynamic-evaluation", "hardcoded-credential", "path-traversal",
+        "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
+    "PHP": (
+        "dynamic-evaluation", "hardcoded-credential", "path-traversal",
+        "sql-injection", "subprocess", "unsafe-deserialization",
+    ),
+    "C/C++": (
+        "command-injection", "dynamic-evaluation", "hardcoded-credential",
+        "path-traversal", "sql-injection", "subprocess", "unbounded-copy",
     ),
 }
 
@@ -75,7 +95,10 @@ def language_scope_statement() -> str:
     """
     from forge.languages import analysis_depth
 
-    depths = {"Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go", "Rust": ".rs"}
+    depths = {
+        "Python": ".py", "JavaScript/TypeScript": ".ts", "Go": ".go",
+        "Rust": ".rs", "Java": ".java", "C#": ".cs", "Ruby": ".rb", "PHP": ".php", "C/C++": ".c",
+    }
     parts = [
         f"{language} ({analysis_depth(depths[language])}): " + ", ".join(families)
         for language, families in sorted(FAMILIES_BY_LANGUAGE.items())

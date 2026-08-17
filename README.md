@@ -5,7 +5,7 @@
 # FORGE
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
-![Analyzes](https://img.shields.io/badge/analyzes-Python%20%C2%B7%20JS%2FTS%20%C2%B7%20Go%20%C2%B7%20Rust-blueviolet)
+![Analyzes](https://img.shields.io/badge/analyzes-9%20languages-blueviolet)
 ![Architecture](https://img.shields.io/badge/architecture-multi--agent-darkgreen)
 ![Deterministic](https://img.shields.io/badge/decision%20path-deterministic-success)
 ![Audit](https://img.shields.io/badge/audit-SHA--256%20sealed-brightgreen)
@@ -300,7 +300,11 @@ at `NOT_ASSESSED` for exploitability by construction, not by convention.
 | **Go** | `.go` | lexical | 7 | resolved (`go.mod` package paths) |
 | **Rust** | `.rs` | lexical | 7 | resolved (`mod` chain, `use crate::`) |
 | **JavaScript / TypeScript** | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | lexical | 6 | resolved (relative specifiers) |
-| Java, Ruby, C, C++, C# | `.java` `.rb` `.c` `.cpp` `.cs` | **none** | — | approximated (filename tally) |
+| **Java** | `.java` | lexical | 7 | resolved (package + import, same-package siblings) |
+| **C#** | `.cs` | lexical | 5 | resolved (namespace + `using`) |
+| **Ruby** | `.rb` `.rake` | lexical | 6 | resolved (`require`, autoloaded constants) |
+| **PHP** | `.php` `.phtml` | lexical | 6 | resolved (PSR-4 namespace + `use`, literal includes) |
+| **C / C++** | `.c` `.h` `.cpp` `.cc` `.cxx` `.hpp` `.hh` `.hxx` | lexical | 7 | resolved (quoted `#include`) |
 | Everything else | — | **none** | — | — |
 
 A language with no detector is **abstained from, never reported as clean**. It
@@ -308,6 +312,52 @@ appears in coverage as `unsupported_language_not_analyzed` and reaches the audit
 disposition as an explicit boundary. Recognised-but-unanalysed languages are
 still triaged into module health classes, and triage declares in the manifest
 that their connectivity was approximated rather than resolved.
+
+Analysis depth and connectivity are independent claims, and the matrix reports
+them separately. Every analysed language resolves its own references the way
+that language defines them — the repository-wide filename tally that used to
+stand in is now unreachable, and survives only as the declared fallback should
+a language ever be triaged without a resolver.
+
+C and C++ are the exception worth naming: a translation unit is compiled by the
+build system rather than included, so `.c` and `.cpp` have no callers by
+construction and are treated as entry points. Only a header can be shown
+orphaned. Detecting a `.c` that no build target compiles would mean reading the
+Makefile or CMakeLists, which FORGE does not do.
+
+Connectivity also recognises **framework entry points**. A controller, job,
+migration or test has no importer by construction, so without that convention it
+scores zero references, is classified dead weight, and drops out of detector
+scope — discarding the exact file where untrusted input enters.
+
+Anything a pack can read must also be triageable, or it would be invisible
+rather than declared out of scope; the registry enforces that at import.
+
+### Syntax verification
+
+Python source is parsed before it is analysed, so a file FORGE cannot parse
+lands in `syntax_error` and blocks the completeness claim. A masked-text scan
+has no such gate: it reads a malformed file exactly as happily as a valid one.
+`syntax_error` therefore only ever meant *Python*, while an empty bucket looked
+like it covered the repository.
+
+`forge audit --verify-syntax` closes that, running each language's own
+**parse-only** tool — `ruby -c`, `php -l`, `node --check`. Three constraints
+keep it honest:
+
+* **Never execution.** FORGE audits repositories it does not trust; running
+  their code to settle a syntax question would trade a reporting gap for a
+  worse one.
+* **Opt-in, never auto-detected.** Deciding by what happens to be installed
+  would make one repository audit differently on two machines, and the seal is
+  meant to be reproducible bit-for-bit.
+* **Absence is a boundary, not a pass.** A missing or undeclared validator
+  reports as unverified. `node --check` rejects `.jsx` and accepts `.ts` only
+  on newer Node, so those spellings declare no validator rather than risk a
+  fabricated syntax error — and coverage says so.
+
+Coverage states the claim in **both** modes, so an empty `syntax_error` bucket
+can never be read as "nothing was malformed" when nothing was examined.
 
 Coverage reports analysis depth per language, so a mixed repository shows
 exactly what it got:
@@ -317,7 +367,7 @@ exactly what it got:
   "Python": { "analyzed": 12, "abstained": 0, "depth": "ast" },
   "Go":     { "analyzed":  6, "abstained": 1, "depth": "lexical" },
   "Rust":   { "analyzed":  4, "abstained": 0, "depth": "lexical" },
-  "Java":   { "analyzed":  0, "abstained": 3, "depth": "none" }
+  "Kotlin": { "analyzed":  0, "abstained": 3, "depth": "none" }
 }
 ```
 
@@ -331,8 +381,13 @@ non-backtracking pass that preserves line and column geometry.
 
 Masking is per-language because it has to be. Rust lifetimes (`&'a str`), Go
 rune literals (`'"'`), nested block comments, variable-width raw-string fences
-(`r##"..."##`), and JavaScript regular-expression character classes each look
-like an opening quote to a naive scanner. Any one of them, mishandled, blanks
+(`r##"..."##`), C++ raw strings that pick their own delimiter
+(`R"tag(...)tag"`), Java text blocks, C# verbatim strings where a backslash is
+ordinary and a doubled quote is an escape, Ruby symbols and character literals,
+heredocs in Ruby and PHP, and JavaScript regular-expression character classes
+each look like an opening quote to a naive scanner. PHP goes further still: a
+template file is HTML until `<?php` opens, so everything outside a code region
+is blanked before any rule runs. Any one of them, mishandled, blanks
 the remainder of a file — which would silently turn an unanalysed file into a
 clean one. Two exceptions to masking are deliberate: string *delimiters* survive
 so a detector can tell an argument was a literal, and JavaScript template

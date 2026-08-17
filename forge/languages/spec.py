@@ -34,6 +34,15 @@ class StringRule:
     escape: str | None = "\\"
     allow_newline: bool = False
     interpolation: tuple[str, str] | None = None
+    # A doubled close token is an escaped literal, not a terminator. This is how
+    # C# verbatim strings spell a quote (``@"say ""hi"""``) and how SQL-flavoured
+    # languages escape one; without it the masker would end the literal early and
+    # read the remaining text as code.
+    doubled_close_escapes: bool = False
+    # Spans inside the literal that are code and must survive masking, matched at
+    # the cursor. ``interpolation`` handles the nesting-aware brace form; this
+    # handles the ones a plain regex describes, such as PHP's bare ``$name``.
+    preserve: re.Pattern[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -73,20 +82,52 @@ class LanguagePack:
     block_comments: tuple[tuple[str, str], ...] = ()
     nested_block_comments: bool = False
     strings: tuple[StringRule, ...] = ()
-    # Matched at the cursor; group 1 must be the hash fence so the engine can
-    # find the matching close (Rust ``r##"..."##``).
+    # Matched at the cursor; group 1 is the fence the closing token repeats, so
+    # the engine can find the matching end of a raw string whose delimiter the
+    # author chose (Rust ``r##"..."##``, C++ ``R"tag(...)tag"``).
     raw_string_fence: re.Pattern[str] | None = None
+    # How that fence spells the close. Rust repeats it after the quote; C++ puts
+    # it between a parenthesis and the quote, so the shape has to be declared
+    # rather than assumed.
+    raw_string_close: str = '"{fence}'
     # Matched at the cursor and consumed verbatim, before any string rule is
     # tried. This is how a language keeps the masker away from tokens that
     # merely look like a quote: Rust lifetimes and Go rune literals must not
     # open a string, and a JavaScript regular-expression literal must not have
     # its bracket class mistaken for one.
     skip_patterns: tuple[re.Pattern[str], ...] = ()
+    # A heredoc opener whose ``label`` group names the terminator. The body runs
+    # to the first later line whose stripped text is that label. Ruby and PHP
+    # both put SQL and shell text in heredocs, and without this the body is read
+    # as code -- which invents findings out of quoted data.
+    heredoc: re.Pattern[str] | None = None
+    # When set, only text *inside* these delimiters is code and everything else
+    # is blanked. PHP needs it: a template file is HTML until ``<?php`` opens,
+    # and prose in the markup must never be scanned for sinks.
+    code_delimiters: tuple[tuple[str, str], ...] = ()
     sinks: tuple[SinkRule, ...] = ()
     sanitizers: re.Pattern[str] | None = None
     interpolation_markers: tuple[str, ...] = ()
     custom_rules: tuple[Callable[["ScanContext"], list["LexicalFinding"]], ...] = ()
     entry_point_names: frozenset[str] = frozenset()
+    # Repository-relative path patterns for files a *framework* invokes rather
+    # than application code importing them. A controller, job, migration or
+    # test has no importer by construction, so without this it scores zero
+    # references and is classified dead weight -- and then dropped from detector
+    # scope, which for a controller means dropping the exact file where
+    # untrusted input enters.
+    entry_point_patterns: tuple[re.Pattern[str], ...] = ()
+    # **Parse-only** commands that decide whether a file is valid source, keyed
+    # by extension and invoked with the path appended. They must never execute
+    # the file: ``ruby -c`` and ``php -l`` parse and exit.
+    #
+    # Keyed by extension rather than by pack because a language's own tool does
+    # not always cover the whole language. ``node --check`` rejects ``.jsx``
+    # outright and accepts ``.ts`` only on newer Node, so declaring it
+    # pack-wide would fabricate a blocking syntax error on valid source, and
+    # would make the verdict depend on the installed toolchain version. An
+    # extension with no entry here is reported as unverified, never as valid.
+    syntax_commands: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     def owns(self, suffix: str) -> bool:
         return suffix.lower() in self.extensions

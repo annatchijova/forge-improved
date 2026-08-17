@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 from forge.detector.imports import RESOLVED_SUFFIXES, resolved_references
-from forge.languages import entry_point_names
+from forge.languages import ANALYZED_EXTENSIONS, entry_point_names, is_framework_entry_point
 from forge.models import Evidence, ModuleClass, ModuleRecord, StackFingerprint, TriageManifest
 
 # Repository policy: agents audit authored application/source files only.
@@ -36,9 +36,24 @@ LANG_EXT = {
     ".py": "Python",
     ".js": "JavaScript", ".jsx": "JavaScript", ".mjs": "JavaScript", ".cjs": "JavaScript",
     ".ts": "TypeScript", ".tsx": "TypeScript", ".mts": "TypeScript", ".cts": "TypeScript",
-    ".rs": "Rust", ".go": "Go", ".java": "Java", ".rb": "Ruby",
-    ".c": "C", ".cpp": "C++", ".cs": "C#",
+    ".rs": "Rust", ".go": "Go", ".java": "Java",
+    ".rb": "Ruby", ".rake": "Ruby", ".php": "PHP", ".phtml": "PHP",
+    ".c": "C/C++", ".h": "C/C++", ".cpp": "C/C++", ".cc": "C/C++",
+    ".cxx": "C/C++", ".hpp": "C/C++", ".hh": "C/C++", ".hxx": "C/C++",
+    ".cs": "C#",
 }
+
+# Anything a language pack can analyse must also be triageable. A file that
+# triage never classifies can never become CONNECTED_ALIVE, so no detector ever
+# reaches it -- it is invisible rather than declared out of scope, which is the
+# one outcome the coverage contract exists to prevent. Checked at import so a
+# new pack cannot be registered without its extensions being triaged.
+_UNTRIAGEABLE = ANALYZED_EXTENSIONS - set(LANG_EXT)
+if _UNTRIAGEABLE:
+    raise ValueError(
+        "language packs claim extensions that triage cannot classify: "
+        + ", ".join(sorted(_UNTRIAGEABLE))
+    )
 MANIFESTS = {
     "pyproject.toml": "Python", "setup.py": "Python", "requirements.txt": "Python", "Pipfile": "Python",
     "package.json": "Node.js", "Cargo.toml": "Rust", "go.mod": "Go", "pom.xml": "Java", "build.gradle": "Java", "Gemfile": "Ruby",
@@ -369,6 +384,7 @@ def _entry_point_paths(root: Path, paths: Iterable[Path]) -> set[str]:
         for path in candidates
         if path.name in conventional
         or any(part in {"bin", "scripts", "tests"} for part in path.relative_to(root).parts)
+        or is_framework_entry_point(str(path.relative_to(root)))
     }
     entry_points |= _manifest_entry_points(root, candidates)
     pyproject = root / "pyproject.toml"

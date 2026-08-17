@@ -21,19 +21,25 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from forge.languages import go, javascript, rust
+from forge.languages import cpp, csharp, go, java, javascript, php, ruby, rust
 from forge.languages.engine import build_context, mask_source, read_source, scan_source
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
 #: Packs in a fixed order. Iteration order reaches finding order, which reaches
 #: the audit seal, so this is a tuple and never a set.
-PACKS: tuple[LanguagePack, ...] = (javascript.PACK, go.PACK, rust.PACK)
+PACKS: tuple[LanguagePack, ...] = (
+    javascript.PACK, go.PACK, rust.PACK, java.PACK, csharp.PACK,
+    ruby.PACK, php.PACK, cpp.PACK,
+)
 
-#: Languages the web-facing agent owns, kept separate from the systems
-#: languages so each agent declares an honest scope in its protocol.
+#: Languages the web-facing agent owns, kept separate from the rest so each
+#: agent declares an honest scope in its protocol. The split is by agent
+#: ownership, not by a claim about language taxonomy.
 WEB_PACKS: tuple[LanguagePack, ...] = (javascript.PACK,)
-SYSTEMS_PACKS: tuple[LanguagePack, ...] = (go.PACK, rust.PACK)
+LEXICAL_AUDITOR_PACKS: tuple[LanguagePack, ...] = (
+    go.PACK, rust.PACK, java.PACK, csharp.PACK, ruby.PACK, php.PACK, cpp.PACK,
+)
 
 #: Extensions parsed into a real AST. Kept here so coverage has one source of
 #: truth for analysis depth instead of rediscovering ``.py`` in five modules.
@@ -79,8 +85,9 @@ RECOGNIZED_LANGUAGES: dict[str, str] = {
     ".mts": "JavaScript/TypeScript", ".cts": "JavaScript/TypeScript",
     ".go": "Go", ".rs": "Rust",
     ".java": "Java", ".kt": "Kotlin", ".scala": "Scala", ".rb": "Ruby",
-    ".php": "PHP", ".cs": "C#", ".swift": "Swift", ".m": "Objective-C",
-    ".c": "C", ".h": "C/C++", ".hpp": "C++", ".cc": "C++", ".cpp": "C++",
+    ".php": "PHP", ".phtml": "PHP", ".rake": "Ruby", ".cs": "C#", ".swift": "Swift", ".m": "Objective-C",
+    ".c": "C/C++", ".h": "C/C++", ".hpp": "C/C++", ".hh": "C/C++", ".hxx": "C/C++",
+    ".cc": "C/C++", ".cpp": "C/C++", ".cxx": "C/C++",
     ".sh": "Shell", ".bash": "Shell", ".ps1": "PowerShell", ".lua": "Lua",
     ".ex": "Elixir", ".exs": "Elixir", ".erl": "Erlang", ".dart": "Dart",
 }
@@ -122,6 +129,24 @@ def entry_point_names() -> frozenset[str]:
     return frozenset(name for pack in PACKS for name in pack.entry_point_names)
 
 
+def is_framework_entry_point(relative_path: str) -> bool:
+    """Whether a path is one a framework dispatches into rather than imports.
+
+    A controller, job, migration or test has no importer by construction. Left
+    unrecognised it scores zero references, is classified dead weight, and is
+    then dropped from detector scope -- which for a controller means dropping
+    the exact file where untrusted input enters the system.
+
+    Only the owning pack's patterns are consulted, so a Rails path convention
+    cannot vouch for a Java file.
+    """
+    pack = pack_for_path(relative_path)
+    if pack is None:
+        return False
+    normalized = str(relative_path).replace("\\", "/")
+    return any(pattern.search(normalized) for pattern in pack.entry_point_patterns)
+
+
 def scan_path(path: str | Path, root: str | Path) -> tuple[tuple[LexicalFinding, ...], str]:
     """Scan one file with its owning pack.
 
@@ -142,8 +167,9 @@ def scan_path(path: str | Path, root: str | Path) -> tuple[tuple[LexicalFinding,
 
 __all__ = (
     "ANALYZED_EXTENSIONS", "AST_EXTENSIONS", "LEXICAL_EXTENSIONS", "PACKS",
-    "RECOGNIZED_LANGUAGES", "SYSTEMS_PACKS", "WEB_PACKS", "LanguagePack",
+    "LEXICAL_AUDITOR_PACKS", "RECOGNIZED_LANGUAGES", "WEB_PACKS", "LanguagePack",
     "LexicalFinding", "ScanContext", "SinkRule", "StringRule", "analysis_depth",
-    "build_context", "entry_point_names", "language_name", "mask_source",
+    "build_context", "entry_point_names", "is_framework_entry_point",
+    "language_name", "mask_source",
     "pack_for_path", "pack_for_suffix", "scan_path", "scan_source",
 )

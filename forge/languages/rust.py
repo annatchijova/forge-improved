@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 
-from forge.languages.engine import call_span, credential_findings
+from forge.languages.engine import call_span, credential_findings, sql_findings, untainted_names
 from forge.languages.spec import LanguagePack, LexicalFinding, ScanContext, SinkRule, StringRule
 
 
@@ -32,6 +32,10 @@ _PARSE_CALLS = re.compile(
     r"\b(?:serde_json|serde_yaml|toml|bincode)::from_(?:str|slice|reader)\s*\(|\.parse\s*(?:::<[^>]*>)?\s*\("
 )
 _PANICKING = re.compile(r"\.(?:unwrap|expect)\s*\(")
+# Against masked source, so the quotes survive while their contents do not.
+_LITERAL_BINDING = re.compile(r"\b(?:let|const|static)\s+(?:mut\s+)?(\w+)[^=\n]*=\s*\"[^\"\n]*\"\s*;")
+_LITERAL_RECEIVER = re.compile(r"\"[^\"\n]*\"\s*$")
+_RECEIVER_NAME = re.compile(r"(\w+)\s*$")
 _UNSAFE_BLOCK = re.compile(r"\bunsafe\s*\{")
 _SQL_EXEC = re.compile(r"\b(?:sqlx::query|query|query_as|execute|batch_execute)\s*\(")
 _SQL_CONSTRUCTED = re.compile(r"format!\s*\(|\"\s*\+|\+\s*\"|\.push_str\s*\(")
@@ -67,6 +71,7 @@ def _shell_commands(context: ScanContext) -> list[LexicalFinding]:
 
 def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Filesystem calls whose path shows no visible canonicalization."""
+    benign = untainted_names(context, _TAINT_NAMES)
     findings: list[LexicalFinding] = []
     for number, masked in enumerate(context.masked, 1):
         match = _PATH_SINKS.search(masked)
@@ -74,7 +79,7 @@ def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
             continue
         span = call_span(context, number)
         text = span if span is not None else masked
-        names = set(_TAINT_NAMES.findall(text))
+        names = set(_TAINT_NAMES.findall(text)) - benign
         if not names - set(context.sanitized_names) or _PATH_NORMALIZERS.search(text):
             continue
         findings.append(LexicalFinding(
@@ -85,6 +90,19 @@ def _path_boundaries(context: ScanContext) -> list[LexicalFinding]:
     return findings
 
 
+def _literal_valued_names(context: ScanContext) -> frozenset[str]:
+    """Names bound to nothing but a string literal.
+
+    Masking blanks a literal's text but keeps its quotes, so ``let raw = "3";``
+    reads as ``let raw = "  ";`` -- enough to tell a compile-time constant from
+    a runtime value without looking at what the constant said.
+    """
+    return frozenset(
+        match.group(1)
+        for match in _LITERAL_BINDING.finditer("\n".join(context.masked))
+    )
+
+
 def _parser_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Deserialization whose failure is converted into a panic.
 
@@ -92,7 +110,12 @@ def _parser_boundaries(context: ScanContext) -> list[LexicalFinding]:
     the thread. On a request path that turns a parsing boundary into an
     availability boundary, which is worth stating even though a lexical scan
     cannot prove the input is remote.
+
+    A literal receiver is excluded. ``"8080".parse().unwrap()`` cannot fail at
+    runtime -- the value is fixed at compile time -- so reporting it says
+    nothing a reviewer can act on, and idiomatic Rust is full of it.
     """
+    literal_names = _literal_valued_names(context)
     findings: list[LexicalFinding] = []
     for number, masked in enumerate(context.masked, 1):
         match = _PARSE_CALLS.search(masked)
@@ -101,6 +124,12 @@ def _parser_boundaries(context: ScanContext) -> list[LexicalFinding]:
         span = call_span(context, number)
         text = span if span is not None else masked
         if not _PANICKING.search(text):
+            continue
+        prefix = masked[: match.start()]
+        if _LITERAL_RECEIVER.search(prefix):
+            continue
+        receiver = _RECEIVER_NAME.search(prefix)
+        if receiver and receiver.group(1) in literal_names:
             continue
         findings.append(LexicalFinding(
             "parser-boundary", context.path, number,
@@ -112,20 +141,10 @@ def _parser_boundaries(context: ScanContext) -> list[LexicalFinding]:
 
 def _sql_boundaries(context: ScanContext) -> list[LexicalFinding]:
     """Query text built by format! or concatenation instead of binding."""
-    findings: list[LexicalFinding] = []
-    for number, masked in enumerate(context.masked, 1):
-        match = _SQL_EXEC.search(masked)
-        if not match:
-            continue
-        span = call_span(context, number)
-        if not _SQL_CONSTRUCTED.search(span if span is not None else masked):
-            continue
-        findings.append(LexicalFinding(
-            "sql-injection", context.path, number,
-            "query text is built with format! or concatenation instead of bind parameters",
-            column=match.start() + 1, language="Rust",
-        ))
-    return findings
+    return sql_findings(
+        context, _SQL_EXEC, _SQL_CONSTRUCTED, "Rust",
+        "query text is built with format! or concatenation instead of bind parameters",
+    )
 
 
 PACK = LanguagePack(

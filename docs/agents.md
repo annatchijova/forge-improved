@@ -31,8 +31,8 @@ distinction is contractual rather than cosmetic — see
               │               │                │
               │   ┌───────────────────┐ ┌────────────────────┐
               │   │   WEB AUDITOR     │ │  LEXICAL AUDITOR   │
-              │   │ JS/TS masked-text │ │ Go + Rust masked-  │
-              │   │ boundary scan     │ │ text boundary scan │
+              │   │ JS/TS masked-text │ │ Go·Rust·Java·C#·   │
+              │   │ boundary scan     │ │ Ruby·PHP·C/C++     │
               │   └───────────────────┘ └────────────────────┘
               │        lexical depth — no scope, type or
               │        reachability; exploitability NOT_ASSESSED
@@ -72,7 +72,7 @@ FORGE currently has exactly nine agent modules:
 | Security Auditor | Yes | AST | AST security checks |
 | Integrity Inspector | Yes | AST | decision-path and serialization integrity |
 | Web Auditor | Yes | lexical | bounded boundaries in JavaScript/TypeScript |
-| Lexical Auditor | Yes | lexical | bounded boundaries in Go and Rust |
+| Lexical Auditor | Yes | lexical | bounded boundaries in Go, Rust, Java, C#, Ruby, PHP and C/C++ |
 | Report Composer | Yes, presentation only | — | HTML rendering |
 | Patch Reviewer | No | — | review a requested unified diff |
 | Recommendation Agent | No | — | propose bounded changes after the audit |
@@ -279,6 +279,10 @@ languages were triaged into module health classes and then inspected by nothing,
 so a finding-free Go repository produced a clean-looking report whose
 cleanliness came from having looked at nothing.
 
+It owns seven packs. Each new one cost a specification and a benign-code
+audit, not a new agent -- which is the return the language registry exists to
+pay.
+
 Go (7 families) leans on the language's stable, fully-qualified selectors:
 `exec.Command`, `os.ReadFile`, `db.Query`. A discarded `Unmarshal` error is
 visible in the assignment form itself (`_ =` or a bare statement), which is why
@@ -293,6 +297,44 @@ MEDIUM so it never competes with an injectable sink for attention. Rust's
 masking is the most demanding of any pack: lifetimes and char literals share the
 apostrophe, raw strings carry a variable-width hash fence, block comments nest,
 and ordinary strings may span lines.
+
+Java (7 families) is the one pack with file-scoped rules, because that is where
+its evidence lives. XXE is proven by an *absence* -- no `setFeature`, no secure
+processing anywhere in the compilation unit -- and hardening is conventionally
+applied a few lines below the factory, not on it. A script engine's `eval` is
+only treated as a data-to-code boundary in a file that imports the scripting
+API; every other `eval` in Java is someone's ordinary method.
+
+C# (5 families) has the richest string syntax here: verbatim strings where a
+backslash is ordinary and a doubled quote is an escape, interpolated strings
+whose substitutions are code, and both combined in either order. Its
+`unsafe-deserialization` rule requires the file to name a formatter that
+rebuilds arbitrary object graphs, because `Deserialize` is also how every safe
+JSON library spells its entry point.
+
+Ruby (6 families) puts nearly all of its difficulty in the masker rather than
+the rules: backticks execute rather than quote, `=begin`/`=end` is line-anchored,
+heredocs routinely hold SQL, and a symbol (`:name`) or character literal (`?a`)
+must not open a phantom string. Its query rule splits raw sinks, which need
+visible SQL in the argument, from ORM fragment methods like `.where`, whose own
+name is the proof that the argument is a clause.
+
+PHP (6 families) is the only language here where a file is not code by default.
+A template is HTML until `<?php` opens, so the pack declares code delimiters and
+everything outside them is blanked. `$name` and `{$expr}` survive masking inside
+a double-quoted string, which is what makes an interpolated query visible as a
+value reaching a sink. `include $page` is reported as `dynamic-evaluation`
+rather than a file read, because it resolves a path at runtime and then executes
+it.
+
+C/C++ (7 families) is deliberately narrow about what a lexical view can see.
+The defects C is best known for -- use-after-free, double free, out-of-bounds
+indexing -- need types, lifetimes and a call graph, none of which survives
+masking, so the pack does not pretend to look for them. What it does report is
+the family of *unbounded* standard-library calls whose danger is inherent to
+the function chosen rather than to how it was used: `strcpy` cannot be made
+safe by its arguments, which is exactly why it reads well lexically and a
+bounds bug does not.
 
 ## Patch Reviewer (`forge/agents/patch_reviewer.py`)
 
