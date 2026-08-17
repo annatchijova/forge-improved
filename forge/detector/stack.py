@@ -24,7 +24,7 @@ SKIP_DIRS = {
     "node_modules", "vendor", "third_party", "dependencies", "dependency",
     "__pycache__", ".mypy_cache", ".pytest_cache", ".next", ".turbo",
     ".yarn", ".pnpm-store", "dist", "build", "target", "reportes",
-    "resultados", "results", "artifacts", ".forge-results",
+    "resultados", "results", "artifacts", ".forge-results", "forge-run",
 }
 SKIP_FILE_NAMES = {".gitignore"}
 LANG_EXT = {".py": "Python", ".js": "JavaScript", ".ts": "TypeScript", ".rs": "Rust", ".go": "Go", ".java": "Java", ".rb": "Ruby", ".c": "C", ".cpp": "C++", ".cs": "C#"}
@@ -315,18 +315,29 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
     records: list[ModuleRecord] = []
     seen_hashes: dict[str, str] = {}
     duplicate_paths: set[str] = set()
+    unreadable: dict[str, str] = {}
     for p in files:
         rel = str(p.relative_to(base))
         caller_count, import_count = callers.get(rel, (0, 0))
-        content_hash = __import__("hashlib").sha256(p.read_bytes()).hexdigest()
+        try:
+            content_hash = __import__("hashlib").sha256(p.read_bytes()).hexdigest()
+        except OSError as exc:
+            unreadable[rel] = str(exc)
+            continue
         if content_hash in seen_hashes:
             duplicate_paths.add(rel); duplicate_paths.add(seen_hashes[content_hash])
         else:
             seen_hashes[content_hash] = rel
     for p in files:
         rel = str(p.relative_to(base)); caller_count, import_count = callers.get(rel, (0, 0))
+        if rel in unreadable:
+            continue
         epoch = git_epochs.get(rel) if git_ok else None
-        text = p.read_text(errors="ignore")
+        try:
+            text = p.read_text(errors="ignore")
+        except OSError as exc:
+            unreadable[rel] = str(exc)
+            continue
         keywords = tuple(sorted(set(re.findall(r"\b(score|verdict|classif(?:y|ication)|decision|gate|validate)\b", text, re.I))))
         age_days = (now - epoch) / 86400 if epoch else None
         if rel in duplicate_paths:
@@ -346,6 +357,8 @@ def triage(root: str | os.PathLike[str]) -> TriageManifest:
         records.append(ModuleRecord(rel, LANG_EXT[p.suffix.lower()], cls, epoch, caller_count, import_count, keywords, tuple(ev)))
     summary = Counter(r.module_class.value for r in records)
     limitations = [git_limitation] if git_limitation else []
+    if unreadable:
+        limitations.append(f"{len(unreadable)} file(s) unreadable and excluded from triage: " + ", ".join(sorted(unreadable)))
     return TriageManifest("1.1", "0.1.0", str(base), now, detect_stack(base), tuple(sorted(records, key=lambda r: r.path)), dict(summary), tuple(limitations))
 
 
