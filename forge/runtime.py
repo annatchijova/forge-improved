@@ -19,7 +19,8 @@ from typing import Any, Callable
 
 from forge.agents import archaeologist, bug_investigator, integrity_inspector, lexical_auditor, report_composer, security_auditor, web_auditor
 from forge.detector.stack import discover_files, exclusion_reason, write_manifest
-from forge.languages import ANALYZED_EXTENSIONS, RECOGNIZED_LANGUAGES, analysis_depth, language_name
+from forge.languages import ANALYZED_EXTENSIONS, RECOGNIZED_LANGUAGES, analysis_depth, language_name, pack_for_path
+from forge.languages.validation import VALID, INVALID, declared_validators, validate_syntax
 from forge.evidence_package import build_repository_profile, write_markdown_report, write_repository_profile
 from forge.governance.runtime import infer_domains, load_skills, run_skills
 from forge.hypotheses import generate_hypotheses, write_hypotheses_manifest
@@ -52,7 +53,70 @@ def _peak_rss_bytes() -> int | None:
     except (AttributeError, OSError, ValueError):
         return None
 
-def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> CoverageReport:
+def _syntax_verification(
+    root: Path, candidates: list[Path], enabled: bool,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Verify lexical source with each language's own parser, when asked to.
+
+    Returns the per-file status and a per-language summary. Python is absent
+    from both: it is parsed by ``_coverage`` itself, which is exactly the
+    asymmetry this closes. Before this, ``syntax_error`` could only ever mean
+    *Python*, so FORGE would report a finding out of a PHP file that ``php -l``
+    rejects while a reader took the empty bucket to cover the repository.
+
+    Disabled is the default and stays the stdlib-only path. It is opt-in rather
+    than auto-detected because deciding by what happens to be installed would
+    make one repository audit differently on two machines, and the seal is
+    meant to be reproducible bit-for-bit.
+    """
+    per_file: dict[str, str] = {}
+    per_language: dict[str, str] = {}
+    for path in candidates:
+        pack = pack_for_path(path)
+        if pack is None:
+            continue
+        if not enabled:
+            per_language.setdefault(pack.name, "not_requested")
+            continue
+        status = validate_syntax(path, pack)
+        per_file[str(path.relative_to(root))] = status
+        previous = per_language.get(pack.name)
+        # A language is only "verified" when every one of its extensions could
+        # actually be checked; one unverifiable spelling downgrades the claim.
+        if status in {VALID, INVALID}:
+            per_language.setdefault(pack.name, "verified")
+        elif previous in (None, "verified"):
+            per_language[pack.name] = status
+    return per_file, per_language
+
+
+def _syntax_summary(enabled: bool, by_language: dict[str, str]) -> dict[str, Any]:
+    """State the syntax-verification claim explicitly, in either mode.
+
+    Python is always parsed, so it is named as verified here rather than left
+    for a reader to infer. Every other language reports what actually happened
+    -- checked, not requested, or a declared validator that was missing -- so
+    an empty ``syntax_error`` bucket can never be read as "nothing was
+    malformed" when nothing was in fact examined.
+    """
+    return {
+        "requested": enabled,
+        "python": "verified_by_ast_parse",
+        "by_language": dict(sorted(by_language.items())),
+        "declared_validators": {
+            extension: " ".join(command)
+            for extension, command in sorted(declared_validators().items())
+        },
+        "note": (
+            "Parse-only tools; they never execute the audited source. An "
+            "extension with no declared validator is reported as unverified, "
+            "never as valid."
+        ),
+    }
+
+
+def _coverage(root: Path, families=(), discovered=None, analyzed_paths=(),
+              syntax_status: dict[str, str] | None = None) -> CoverageReport:
     """Account for every discovered file, and record at what depth it was read.
 
     Two distinctions here are load-bearing.
@@ -112,6 +176,11 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         except UnicodeDecodeError:
             skipped["non_utf8_text"].append(rel); account(path, "abstained"); continue
         if rel in analyzed_paths:
+            # A lexical file its own parser rejects is not analysed source: the
+            # masked scan read something that is not valid in that language, so
+            # the boundary is the same blocking one Python's syntax error is.
+            if (syntax_status or {}).get(rel) == "syntax_error":
+                skipped["syntax_error"].append(rel); account(path, "abstained"); continue
             analyzed += 1; account(path, "analyzed")
             continue
         if suffix != ".py":
@@ -141,40 +210,46 @@ def _coverage(root: Path, families=(), discovered=None, analyzed_paths=()) -> Co
         language_coverage=dict(sorted(language_coverage.items())),
     )
 
-# Coverage facts that do not depend on which shard is running: parsing is
-# repository-wide and language classification is by extension. Detector-scope
-# fields and the lexical `out_of_detector_scope` bucket are shard-sensitive by
-# design and are deliberately excluded from the comparison.
-_SHARD_SENSITIVE_COVERAGE_KEYS = frozenset({
-    "connected_alive_modules",
-    "detector_scope_excluded_modules",
-    "detector_scope_excluded_by_class",
-    "files_analyzed",
-    "files_skipped",
-    "coverage_ratio",
-    "discovery_ratio",
-    "language_coverage",
-})
+# Coverage facts that are pure functions of the discovered file set, and so
+# cannot differ between shards of one audit.
+#
+# This is an allowlist rather than a list of shard-sensitive keys to exclude,
+# and the direction is deliberate. Under a denylist every new CoverageReport
+# field is compared by default, so adding one that happens to vary per shard
+# silently makes the comparison fail and nulls the entire parent coverage
+# claim -- which is exactly what `syntax_verification` did the day it was
+# added. Under an allowlist a new field is simply not compared: the anomaly
+# check gets no weaker than it was, and no user-visible claim collapses.
+_REPOSITORY_WIDE_COVERAGE_KEYS = ("files_discovered", "eligible_source_files")
+
+# `syntax_error` is absent on purpose. Python's share of it is repository-wide,
+# but a lexical file is only syntax-checked by the shard that scanned it, so
+# the bucket mixes the two and cannot be compared for equality.
+_REPOSITORY_WIDE_SKIPPED_BUCKETS = (
+    "excluded_by_policy", "oversized_file", "binary_file", "unreadable_file",
+    "non_utf8_text", "unsupported_language_not_analyzed", "non_source_not_analyzed",
+)
 
 
 def _repository_wide_agreement(snapshots: list[dict[str, Any]]) -> bool:
     """Whether every shard saw the same repository, ignoring its own scope.
 
     A disagreement here means the shards did not audit the same tree -- a real
-    anomaly. A disagreement in the shard-sensitive fields means only that
-    sharding worked as designed, and must not invalidate the parent claim.
+    anomaly. A disagreement in a shard-sensitive field means only that sharding
+    worked as designed, and must not invalidate the parent claim.
     """
     def repository_wide(snapshot: dict[str, Any]) -> str:
-        skipped = {
-            key: sorted(value)
-            for key, value in (snapshot.get("skipped_reasons") or {}).items()
-            if key != "out_of_detector_scope"
-        }
-        rest = {
-            key: value for key, value in snapshot.items()
-            if key not in _SHARD_SENSITIVE_COVERAGE_KEYS and key != "skipped_reasons"
-        }
-        return json.dumps({"skipped_reasons": skipped, **rest}, sort_keys=True, default=str)
+        buckets = snapshot.get("skipped_reasons") or {}
+        return json.dumps(
+            {
+                "counts": {key: snapshot.get(key) for key in _REPOSITORY_WIDE_COVERAGE_KEYS},
+                "skipped": {
+                    key: sorted(buckets.get(key, ()))
+                    for key in _REPOSITORY_WIDE_SKIPPED_BUCKETS
+                },
+            },
+            sort_keys=True, default=str,
+        )
 
     return len({repository_wide(item) for item in snapshots}) == 1
 
@@ -318,7 +393,8 @@ class Runtime:
                  model_routing: ModelRouting | None = None,
                  cronos_db: str | Path | None = None,
                  induction: bool = True,
-                 discovery_override: list[Path] | None = None):
+                 discovery_override: list[Path] | None = None,
+                 syntax_validation: bool = False):
         """Create a runtime.
 
         By default triage uses Archaeologist's enriched path, including
@@ -327,7 +403,14 @@ class Runtime:
         compatibility tests); when set, that callable is used exactly and
         deletion judgments are not added by this runtime.
 
-        ``discovery_override`` pins the file-discovery snapshot instead of
+        ``syntax_validation`` runs each lexical language's own **parse-only** tool
+    (``ruby -c``, ``php -l``, ``node --check``) to decide whether a file is
+    valid source before its findings are treated as analysis of real code. It
+    is off by default: it shells out to a tool that may not be installed, and
+    deciding by availability would make one repository audit differently on two
+    machines. Coverage reports which state applied either way.
+
+    ``discovery_override`` pins the file-discovery snapshot instead of
         walking the tree again. Sharding needs this: shards run sequentially,
         so when the output directory sits inside the audited repository -- as
         the documented ``forge audit . -o forge-run`` quick start produces --
@@ -344,6 +427,7 @@ class Runtime:
         self.cronos_db = Path(cronos_db) if cronos_db is not None else None
         self.induction = induction
         self.discovery_override = discovery_override
+        self.syntax_validation = syntax_validation
 
     @staticmethod
     def _event(trace: RuntimeTrace, cronos, kind: str, **payload: Any) -> None:
@@ -468,13 +552,25 @@ class Runtime:
         self._event(trace, cronos, "agent_completed", agent="lexical_auditor", findings=len(systems_result.findings), examinations=systems_result.examinations)
         self._phase_end(trace, cronos, "lexical_agents", lexical_started)
         coverage_started = self._phase_start(trace, cronos, "coverage")
+        lexical_analyzed = tuple(web_analyzed_paths) + tuple(systems_analyzed_paths)
+        syntax_status, syntax_by_language = _syntax_verification(
+            root, [root / item for item in lexical_analyzed], self.syntax_validation,
+        )
+        self._event(
+            trace, cronos, "syntax_verification",
+            enabled=self.syntax_validation, by_language=syntax_by_language,
+            rejected=sorted(k for k, v in syntax_status.items() if v == INVALID),
+        )
         coverage = _with_detector_scope(
             _coverage(
-                root, discovered=discovered,
-                analyzed_paths=tuple(web_analyzed_paths) + tuple(systems_analyzed_paths),
+                root, discovered=discovered, analyzed_paths=lexical_analyzed,
+                syntax_status=syntax_status,
             ),
             triage_manifest,
         )
+        coverage = replace(coverage, syntax_verification=_syntax_summary(
+            self.syntax_validation, syntax_by_language,
+        ))
         self._event(trace, cronos, "coverage_collected", discovered=coverage.files_discovered, analyzed=coverage.files_analyzed, skipped=coverage.files_skipped, skipped_reasons=coverage.skipped_reasons)
         self._phase_end(trace, cronos, "coverage", coverage_started)
         governance_started = self._phase_start(trace, cronos, "governance")
@@ -551,20 +647,12 @@ class Runtime:
         self._phase_end(trace, cronos, "canonicalization", canonical_started)
         verification = VerificationManifest("2.0", "0.1.0", bug.verification.hypotheses_schema_version, str(root), int(time.time()), tuple(findings), bug.verification.discarded, bug.verification.ast_verified_families, bug.verification.ast_unverified_families, bug.verification.induction, repository_snapshot_sha256)
         verification = replace(verification, source_attestation=attest_manifest(verification.to_dict()))
-        coverage = CoverageReport(
-            files_discovered=coverage.files_discovered,
-            files_analyzed=coverage.files_analyzed,
-            eligible_source_files=coverage.eligible_source_files,
-            files_skipped=coverage.files_skipped,
-            skipped_reasons=coverage.skipped_reasons,
-            ast_verified_families=verification.ast_verified_families,
-            coverage_ratio=coverage.coverage_ratio,
-            discovery_ratio=coverage.discovery_ratio,
-            language_coverage=coverage.language_coverage,
-            connected_alive_modules=coverage.connected_alive_modules,
-            detector_scope_excluded_modules=coverage.detector_scope_excluded_modules,
-            detector_scope_excluded_by_class=coverage.detector_scope_excluded_by_class,
-        )
+        # Only the verified families are known this late, so attach them with
+        # `replace` rather than rebuilding the report field by field. The
+        # hand-written copy silently dropped every field added to
+        # CoverageReport after it was written -- `syntax_verification` reached
+        # the audit as an empty dict for exactly that reason.
+        coverage = replace(coverage, ast_verified_families=verification.ast_verified_families)
         triage_path, hypotheses_path = out / "triage-manifest.json", out / "hypotheses-manifest.json"
         verification_path, sealed_path, coverage_path = out / "verification-manifest.json", out / "verification-manifest.sealed.json", out / "coverage-report.json"
         skills_path, metrics_path, report_path = out / "skills-runtime.json", out / "metrics.json", out / "forge-report.html"
@@ -742,9 +830,18 @@ class Runtime:
                 except Exception as exc:
                     lexical_degraded.append(f"{agent}: {type(exc).__name__}: {exc}")
                     self._event(trace, cronos, "agent_degraded", agent=agent, error=str(exc))
-            coverage = _with_detector_scope(
-                _coverage(root, discovered=discovered, analyzed_paths=tuple(lexical_analyzed)),
-                triage_manifest,
+            syntax_status, syntax_by_language = _syntax_verification(
+                root, [root / item for item in lexical_analyzed], self.syntax_validation,
+            )
+            coverage = replace(
+                _with_detector_scope(
+                    _coverage(
+                        root, discovered=discovered, analyzed_paths=tuple(lexical_analyzed),
+                        syntax_status=syntax_status,
+                    ),
+                    triage_manifest,
+                ),
+                syntax_verification=_syntax_summary(self.syntax_validation, syntax_by_language),
             ).to_dict()
             coverage.update({
                 "sharded": True,

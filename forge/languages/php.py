@@ -128,6 +128,7 @@ PACK = LanguagePack(
     sanitizers=_PATH_NORMALIZERS,
     interpolation_markers=("$", "."),
     custom_rules=(_path_boundaries, _sql_boundaries, _dynamic_includes, _credentials),
+    syntax_commands={extension: ("php", "-l") for extension in (".php", ".phtml")},
     entry_point_names=frozenset({"index.php", "index.phtml"}),
     entry_point_patterns=(
         re.compile(r"(?:^|/)\w*Controller\.php$"),

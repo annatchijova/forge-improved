@@ -204,6 +204,10 @@ PACK = LanguagePack(
         _destructured_subprocess, _parser_boundaries, _path_boundaries,
         _sql_boundaries, _credentials,
     ),
+    # Only the spellings `node --check` handles reliably across versions.
+    # `.jsx` is rejected outright and `.ts` depends on the Node release, so
+    # both stay unverified rather than risk a fabricated syntax error.
+    syntax_commands={extension: ("node", "--check") for extension in (".js", ".mjs", ".cjs")},
     entry_point_names=frozenset({"index.js", "index.ts", "main.js", "main.ts", "server.js", "server.ts"}),
 )
 

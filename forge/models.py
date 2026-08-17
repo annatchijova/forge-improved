@@ -104,6 +104,10 @@ class CoverageReport:
     connected_alive_modules: int = 0
     detector_scope_excluded_modules: int = 0
     detector_scope_excluded_by_class: dict[str, int] = field(default_factory=dict)
+    # Whether each language's own parser confirmed its files are valid source.
+    # Python is always parsed; the lexical languages only when asked, so the
+    # claim has to be stated rather than inferred from an empty error bucket.
+    syntax_verification: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)

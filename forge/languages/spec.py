@@ -112,6 +112,17 @@ class LanguagePack:
     # scope, which for a controller means dropping the exact file where
     # untrusted input enters.
     entry_point_patterns: tuple[re.Pattern[str], ...] = ()
+    # **Parse-only** commands that decide whether a file is valid source, keyed
+    # by extension and invoked with the path appended. They must never execute
+    # the file: ``ruby -c`` and ``php -l`` parse and exit.
+    #
+    # Keyed by extension rather than by pack because a language's own tool does
+    # not always cover the whole language. ``node --check`` rejects ``.jsx``
+    # outright and accepts ``.ts`` only on newer Node, so declaring it
+    # pack-wide would fabricate a blocking syntax error on valid source, and
+    # would make the verdict depend on the installed toolchain version. An
+    # extension with no entry here is reported as unverified, never as valid.
+    syntax_commands: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     def owns(self, suffix: str) -> bool:
         return suffix.lower() in self.extensions

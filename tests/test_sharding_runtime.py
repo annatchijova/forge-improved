@@ -105,3 +105,25 @@ def test_every_shard_seals_the_same_repository_snapshot(tmp_path):
     # And the parent still publishes real counts rather than abstaining.
     assert result.coverage["coverage_aggregation"] == "REPOSITORY_WIDE_SNAPSHOT_WITH_UNIONED_LEXICAL_SCOPE"
     assert result.coverage["files_analyzed"] == 5
+
+
+def test_a_new_shard_sensitive_coverage_field_cannot_null_the_parent_claim():
+    # The comparison is an allowlist on purpose. Under a denylist every new
+    # CoverageReport field was compared by default, so adding one that varies
+    # per shard silently failed the check and nulled every parent count --
+    # which is what `syntax_verification` did the day it was added.
+    from forge.runtime import _repository_wide_agreement
+
+    base = {
+        "files_discovered": 10,
+        "eligible_source_files": 4,
+        "skipped_reasons": {"excluded_by_policy": ["a.py"], "out_of_detector_scope": ["x.ts"]},
+    }
+    with_new_field = {**base, "a_future_per_shard_field": {"Ruby": "verified"}}
+    assert _repository_wide_agreement([base, with_new_field])
+
+    # A genuine tree disagreement still abstains.
+    assert not _repository_wide_agreement([base, {**base, "files_discovered": 11}])
+    assert not _repository_wide_agreement(
+        [base, {**base, "skipped_reasons": {"excluded_by_policy": ["a.py", "b.py"]}}]
+    )

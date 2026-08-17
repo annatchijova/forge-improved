@@ -327,6 +327,32 @@ scope — discarding the exact file where untrusted input enters.
 Anything a pack can read must also be triageable, or it would be invisible
 rather than declared out of scope; the registry enforces that at import.
 
+### Syntax verification
+
+Python source is parsed before it is analysed, so a file FORGE cannot parse
+lands in `syntax_error` and blocks the completeness claim. A masked-text scan
+has no such gate: it reads a malformed file exactly as happily as a valid one.
+`syntax_error` therefore only ever meant *Python*, while an empty bucket looked
+like it covered the repository.
+
+`forge audit --verify-syntax` closes that, running each language's own
+**parse-only** tool — `ruby -c`, `php -l`, `node --check`. Three constraints
+keep it honest:
+
+* **Never execution.** FORGE audits repositories it does not trust; running
+  their code to settle a syntax question would trade a reporting gap for a
+  worse one.
+* **Opt-in, never auto-detected.** Deciding by what happens to be installed
+  would make one repository audit differently on two machines, and the seal is
+  meant to be reproducible bit-for-bit.
+* **Absence is a boundary, not a pass.** A missing or undeclared validator
+  reports as unverified. `node --check` rejects `.jsx` and accepts `.ts` only
+  on newer Node, so those spellings declare no validator rather than risk a
+  fabricated syntax error — and coverage says so.
+
+Coverage states the claim in **both** modes, so an empty `syntax_error` bucket
+can never be read as "nothing was malformed" when nothing was examined.
+
 Coverage reports analysis depth per language, so a mixed repository shows
 exactly what it got:
 

@@ -138,6 +138,7 @@ PACK = LanguagePack(
     sanitizers=_PATH_NORMALIZERS,
     interpolation_markers=("#{", "+"),
     custom_rules=(_path_boundaries, _sql_boundaries, _unsafe_deserialization, _credentials),
+    syntax_commands={extension: ("ruby", "-c") for extension in (".rb", ".rake")},
     entry_point_names=frozenset({"application.rb", "config.ru", "Rakefile"}),
     entry_point_patterns=(
         # Rails resolves these by convention; no file requires them.

@@ -959,3 +959,60 @@ convention is not a blanket amnesty either — an orphaned service beside a
 recognised controller stays dead weight.
 
 C and C++ remain on the filename tally, and triage still declares that.
+
+## Syntax verification for lexically scanned languages
+
+Python source is parsed before it is analysed, so a file FORGE cannot parse
+lands in `syntax_error` and blocks the audit's completeness claim. No lexical
+language had any equivalent. A masked-text scan reads a malformed file exactly
+as happily as a valid one, so FORGE would report `system($_GET["c"])` out of a
+file that `php -l` rejects outright — and the disposition never knew.
+
+`syntax_error` therefore only ever meant *Python*, while a reader would
+reasonably take an empty bucket to cover the repository. That is the asymmetry
+this closes, using each language's own parser.
+
+### The constraints are the design
+
+**Parse-only, never execution.** `ruby -c`, `php -l` and `node --check` parse
+and exit. FORGE audits repositories it does not trust; executing their code to
+settle a syntax question would trade a reporting gap for a far worse one. This
+is also why the feature is *not* induction: the epistemic ceiling on lexical
+findings is unchanged, and exploitability stays `NOT_ASSESSED`.
+
+**Opt-in, never auto-detected.** Deciding by what happens to be installed would
+make the same repository audit differently on two machines, and the seal is
+meant to be reproducible bit-for-bit. The choice is part of the run
+configuration and is recorded in coverage.
+
+**Absence is a boundary, not a pass.** A declared validator that is missing
+yields `validator_unavailable`; an extension with no validator yields
+`no_validator_declared`. FORGE never converts "could not check" into "checked
+and fine".
+
+**Declared per extension, not per pack.** `node --check` rejects `.jsx`
+outright and accepts `.ts` only on newer Node. A pack-wide declaration would
+have fabricated a blocking syntax error on valid JSX and made the verdict
+depend on the installed toolchain version, so only `.js`, `.mjs` and `.cjs`
+declare it. One unverifiable spelling downgrades the whole language's claim,
+which is why this repository's own self-audit reports JavaScript/TypeScript as
+`no_validator_declared` rather than verified.
+
+A rejected file keeps its findings. FORGE does not hide evidence: a malformed
+file may still hold a real defect that survives the syntax being fixed, so the
+finding stands and the unverified source boundary is reported beside it.
+
+### Two defects the work exposed
+
+The runtime rebuilt `CoverageReport` field by field late in the audit, which
+silently dropped every field added to the model after that copy was written —
+`syntax_verification` reached the artifact as an empty dict. Replaced with
+`replace()`, which cannot drop a field it does not know about.
+
+Adding the field also broke sharded aggregation, because the shard-snapshot
+comparison used a *denylist* of shard-sensitive keys: every new field was
+compared by default, so one that legitimately varies per shard silently failed
+the check and nulled the entire parent coverage claim. The comparison is an
+allowlist now. Under it a new field is simply not compared — the anomaly check
+gets no weaker than it already was, and no user-visible claim collapses. That
+is the safer direction for a check whose failure mode is an abstention.
