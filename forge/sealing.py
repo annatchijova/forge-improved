@@ -203,3 +203,17 @@ def write_findings_jsonl(sealed: dict[str, Any], destination: str | Path) -> Non
         }
         lines.append(json.dumps(record, sort_keys=True))
     Path(destination).write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
+
+def write_findings_sarif(sealed: dict[str, Any], destination: str | Path, *, tool_version: str = "0.1.0") -> None:
+    """Render the sealed findings as SARIF 2.1.0 beside the other artifacts.
+
+    SARIF is a *rendering* of the already-sealed findings, never an input to the
+    seal: this reads ``entry["finding"]`` out of the sealed chain (the same
+    source ``write_findings_jsonl`` uses) and does not touch any sealed value.
+    Import is local so the seal layer takes no hard dependency on the renderer.
+    """
+    from forge.sarif import write_sarif
+
+    findings = [entry["finding"] for entry in sealed.get("chain", [])]
+    write_sarif(findings, destination, tool_version=tool_version)

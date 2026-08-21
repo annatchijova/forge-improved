@@ -36,7 +36,7 @@ from forge.contradictions import find_contradictions
 from forge.snapshot import snapshot_sha256
 from forge.report import render_report
 from forge.reporting import render_dashboard
-from forge.sealing import read_and_verify, write_sealed_manifest, write_findings_jsonl
+from forge.sealing import read_and_verify, write_sealed_manifest, write_findings_jsonl, write_findings_sarif
 from forge.tracing import RuntimeTrace
 from forge.verification import verify_hypotheses, write_verification_manifest
 from forge.git_refs import archive_ref, changed_files, resolve_ref
@@ -514,13 +514,19 @@ class Runtime:
         findings_jsonl_path = out / "findings.jsonl"
         # Per-finding hashes exclude audit_trace_hash (see seal_findings), so
         # this is stable whether written from the provisional or final seal.
-        write_findings_jsonl(load_json(sealed_path, f"sealed manifest {sealed_path}"), findings_jsonl_path)
+        sealed_for_jsonl = load_json(sealed_path, f"sealed manifest {sealed_path}")
+        write_findings_jsonl(sealed_for_jsonl, findings_jsonl_path)
         self._event(trace, cronos, "artifact_written", artifact="findings_jsonl", path=str(findings_jsonl_path))
+        findings_sarif_path = out / "findings.sarif"
+        # SARIF is an additive rendering of the sealed findings (GitHub code
+        # scanning / CI consumers); it never feeds back into the seal.
+        write_findings_sarif(sealed_for_jsonl, findings_sarif_path)
+        self._event(trace, cronos, "artifact_written", artifact="findings_sarif", path=str(findings_sarif_path))
         self._event(trace, cronos, "run_completed", findings=len(findings), elapsed_seconds=str(round(time.monotonic() - started, 6)))
         trace_path = out / "audit-trace.json"
         trace_path.write_text(json.dumps(trace.to_dict(), indent=2, sort_keys=True) + "\n")
         write_sealed_manifest(verification, sealed_path, trace.to_dict())
-        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path), "recommendations": str(recommendations_path), "findings_jsonl": str(findings_jsonl_path), **{key: value for key, value in rendered_reports.items() if key != "report"}, "report_json": str(report_json_path)}
+        artifacts = {"triage": str(triage_path), "hypotheses": str(hypotheses_path), "verification": str(verification_path), "sealed": str(sealed_path), "coverage": str(coverage_path), "skills": str(skills_path), "metrics": str(metrics_path), "profile": str(profile_path), "report": str(report_path), "markdown": str(markdown_path), "trace": str(trace_path), "recommendations": str(recommendations_path), "findings_jsonl": str(findings_jsonl_path), "findings_sarif": str(findings_sarif_path), **{key: value for key, value in rendered_reports.items() if key != "report"}, "report_json": str(report_json_path)}
         if self.cronos_db is not None:
             artifacts["cronos_db"] = str(self.cronos_db)
         return AuditResult(str(root), connected, len(findings), len(verification.discarded), tuple(findings), coverage.to_dict(), artifacts)
