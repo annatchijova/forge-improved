@@ -6,7 +6,7 @@ MCP-capable agent (Claude, Claude Code, custom agents) can record its
 own reasoning trace: recalls, tool calls, hypotheses, evidence,
 discards, and the final decision.
 
-This is the hackathon-required technology integration:
+This is the required technology integration:
   Slack Agent Builder Challenge → "MCP server integration".
 
 Design notes

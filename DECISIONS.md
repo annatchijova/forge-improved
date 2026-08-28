@@ -266,7 +266,7 @@ via `importlib.util.spec_from_file_location(...)` and
 the FORGE process with FORGE's own privileges — there is no signature check,
 hash pinning, or sandboxing. A compromised or malicious skill file has full
 access to the FORGE process, not a restricted capability set. This is an
-explicit, accepted scope boundary for the hackathon timeline, not an
+explicit, accepted scope boundary for the initial timeline, not an
 oversight: **skills must only be loaded from directories controlled by the
 FORGE operator** (the default is `forge/skills/`, versioned in this repo;
 `skills_root` in `load_skills()`/`run_skills()` must never be pointed at an

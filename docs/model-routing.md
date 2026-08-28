@@ -71,7 +71,7 @@ model_backed_detector_calls: <measured count or unknown>
 source: <session UI / provider meter / runtime instrumentation>
 ```
 
-This distinction is important for the hackathon pitch: **FORGE's audit
+This distinction matters: **FORGE's audit
 decisions are deterministic and token-light by architecture; building new
 detectors, orchestrating the session, optional natural-language narration, and
 future model-backed stages can still consume credits.** We report those costs

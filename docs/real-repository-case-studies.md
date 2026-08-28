@@ -13,7 +13,7 @@ repositories themselves.
 
 Repository: [GitHub: annatchijova/stylometry](https://github.com/annatchijova/stylometry) · [GitLab mirror](https://gitlab.com/anna.tchijova/stylometry)
 
-Stylometry was a real repository that had won a Google hackathon. It had not
+Stylometry was a real, independently recognized repository. It had not
 been modified for approximately a month before the audit, and no defects were
 introduced for the demo. FORGE ran against a fixed public revision and emitted
 sealed artifacts and HTML reports that are available in the public
