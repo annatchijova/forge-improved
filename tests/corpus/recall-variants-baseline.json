@@ -1,6 +1,6 @@
 {
   "recall_variants_schema_version": "1.0",
-  "recall_variant_global": {"detected": 30, "total": 39, "recall": 0.769231},
+  "recall_variant_global": {"detected": 32, "total": 39, "recall": 0.820513},
   "recall_variant_by_family": {
     "command-injection": {"detected": 2, "total": 3, "recall": 0.666667},
     "decision-adjacent-float": {"detected": 2, "total": 3, "recall": 0.666667},
@@ -8,9 +8,9 @@
     "hardcoded-credential": {"detected": 3, "total": 4, "recall": 0.75},
     "honest-degradation": {"detected": 3, "total": 3, "recall": 1.0},
     "parser-boundary": {"detected": 2, "total": 3, "recall": 0.666667},
-    "path-traversal": {"detected": 5, "total": 7, "recall": 0.714286},
+    "path-traversal": {"detected": 6, "total": 7, "recall": 0.857143},
     "sql-injection": {"detected": 4, "total": 4, "recall": 1.0},
-    "subprocess": {"detected": 0, "total": 1, "recall": 0.0},
+    "subprocess": {"detected": 1, "total": 1, "recall": 1.0},
     "unsafe-deserialization": {"detected": 4, "total": 4, "recall": 1.0},
     "unversioned-serialization": {"detected": 2, "total": 3, "recall": 0.666667}
   },
@@ -19,8 +19,6 @@
     {"case": "variant-command-shell-variable", "family": "command-injection", "disposition": "undecided"},
     {"case": "variant-float-interprocedural", "family": "decision-adjacent-float", "disposition": "undecided"},
     {"case": "variant-serialization-yaml-dump", "family": "unversioned-serialization", "disposition": "undecided"},
-    {"case": "variant-parser-yaml-safe", "family": "parser-boundary", "disposition": "undecided"},
-    {"case": "variant-web-template-path", "family": "path-traversal", "disposition": "close_gap"},
-    {"case": "variant-web-exec-file", "family": "subprocess", "disposition": "close_gap"}
+    {"case": "variant-parser-yaml-safe", "family": "parser-boundary", "disposition": "undecided"}
   ]
 }

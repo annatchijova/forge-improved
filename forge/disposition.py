@@ -9,14 +9,33 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any, Iterable
 
-from forge.detector_scope import detector_scope_statement
+from forge.detector_scope import detector_scope_statement, language_scope_statement
+
+# Named once. A clean conclusion has to carry the reason it is allowed to be
+# clean, and that reason must say which languages were analysed at which depth
+# rather than implying the whole repository got the same treatment.
+_ENGINE_BOUNDARY = (
+    "unsupported_language_not_analyzed is an intentional engine boundary: source "
+    "in a language with no registered detector is abstained from, never reported "
+    "as clean"
+)
 
 
-_SOURCE_LANGUAGES = {
-    ".go": "Go", ".rs": "Rust", ".java": "Java", ".js": "JavaScript",
-    ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript",
-    ".c": "C", ".h": "C/C++", ".cpp": "C++", ".cc": "C++",
-}
+def _unanalyzed_languages() -> dict[str, str]:
+    """Extensions that name a language FORGE has no detector for.
+
+    Derived from the language registry rather than restated here, so shipping a
+    pack removes its language from the abstention automatically. The previous
+    hand-maintained copy would have kept reporting Go and Rust as unsupported
+    long after they became supported.
+    """
+    from forge.languages import ANALYZED_EXTENSIONS, RECOGNIZED_LANGUAGES
+
+    return {
+        suffix: language
+        for suffix, language in RECOGNIZED_LANGUAGES.items()
+        if suffix not in ANALYZED_EXTENSIONS
+    }
 
 
 @dataclass(frozen=True)
@@ -64,9 +83,13 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
         if key in {"syntax_error", "oversized_file", "binary_file", "unreadable_file", "non_utf8_text"} and value
     }
     unsupported_sources: dict[str, int] = {}
-    for path in skipped.get("non_python_not_analyzed", ()):
+    languages = _unanalyzed_languages()
+    # A file lands here when it is real source in a language no detector
+    # reaches, or when it is a supported language that stayed outside the
+    # detector's scope. Only the former is an engine limit worth naming.
+    for path in skipped.get("unsupported_language_not_analyzed", ()):
         suffix = str(path).rsplit(".", 1)[-1].lower() if "." in str(path).rsplit("/", 1)[-1] else ""
-        language = _SOURCE_LANGUAGES.get(f".{suffix}")
+        language = languages.get(f".{suffix}")
         if language:
             unsupported_sources[language] = unsupported_sources.get(language, 0) + 1
     excluded_modules = tuple(
@@ -159,14 +182,14 @@ def determine_disposition(*, coverage: Any, triage: Any, governance: Any,
             "AUDIT_SCOPE_VERIFIED",
             "The declared source scope was verified and findings survived the pipeline.",
             "Review findings and their evidence.",
-            ("non_python_not_analyzed is an intentional engine boundary",),
+            (_ENGINE_BOUNDARY,),
         )
     return AuditDisposition(
         "COMPLETE_NO_FINDINGS",
         "AUDIT_SCOPE_VERIFIED",
         "The declared source scope and detector scope were verified; no modeled finding survived the pipeline.",
         "No action required within the declared source and detector scopes.",
-        ("non_python_not_analyzed is an intentional engine boundary", detector_scope_statement()),
+        (_ENGINE_BOUNDARY, detector_scope_statement(), language_scope_statement()),
     )
 
 

@@ -92,3 +92,51 @@ def test_report_does_not_style_abstention_as_green_and_links_metrics(tmp_path):
     assert "dashboard-status ok" not in report
     assert 'href="metrics.json"' in report
     assert 'Raw metrics' not in report
+
+
+def test_language_coverage_renders_depth_as_a_table_not_a_python_dict():
+    from forge.report import _language_coverage_html
+
+    html = _language_coverage_html({
+        "Python": {"analyzed": 12, "abstained": 0, "depth": "ast"},
+        "Rust": {"analyzed": 4, "abstained": 1, "depth": "lexical"},
+        "Java": {"analyzed": 0, "abstained": 3, "depth": "none"},
+    })
+    # The escaped `dict` repr this replaced made the report's most important
+    # qualifier -- parsed versus merely scanned -- effectively unreadable.
+    assert "&#x27;" not in html and "{" not in html
+    assert '<table class="data-table">' in html
+    assert "depth-ast" in html and "depth-lexical" in html and "depth-none" in html
+    # Parsed languages sort ahead of scanned ones, and scanned ahead of
+    # unanalysed, so depth reads as a hierarchy of evidence.
+    assert html.index("Python") < html.index("Rust") < html.index("Java")
+    assert "no scope, type or reachability" in html
+
+
+def test_language_coverage_handles_a_missing_or_empty_matrix():
+    from forge.report import _language_coverage_html
+
+    assert "No language coverage recorded." in _language_coverage_html({})
+    assert "No language coverage recorded." in _language_coverage_html(None)
+
+
+def test_skipped_reasons_explain_each_boundary_distinctly():
+    from forge.report import _skipped_reasons_html
+
+    html = _skipped_reasons_html({
+        "unsupported_language_not_analyzed": ["Legacy.java"],
+        "non_source_not_analyzed": ["README.md"],
+        "out_of_detector_scope": ["orphan.ts"],
+    })
+    # These three are different facts and must not read as one kind of gap.
+    assert "engine limit" in html
+    assert "not source code" in html
+    assert "outside the connected scope" in html
+
+
+def test_skipped_reasons_truncates_long_file_lists_without_hiding_the_count():
+    from forge.report import _skipped_reasons_html
+
+    html = _skipped_reasons_html({"excluded_by_policy": [f"vendor/f{i}.py" for i in range(20)]})
+    assert "20" in html
+    assert "+14 more" in html

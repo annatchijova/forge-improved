@@ -31,6 +31,7 @@ def main() -> int:
         audit_parser.add_argument("--agent-model", action="append", default=[], metavar="AGENT=MODEL", help="agent model routing; repeatable")
         audit_parser.add_argument("--cronos-db", type=Path, help="optional SQLite CRONOS trace store")
         audit_parser.add_argument("--no-induction", action="store_true", help="disable target-code induction; keep static verification only")
+        audit_parser.add_argument("--verify-syntax", action="store_true", help="verify lexically scanned source with each language's own parse-only tool (ruby -c, php -l, node --check); off by default because it shells out and availability would vary the result per machine")
         audit_parser.add_argument("--summary", action="store_true", help="print compact run metrics instead of all finding records")
         audit_parser.add_argument("--quiet", action="store_true", help="print only the output directory after a successful run")
         audit_args = audit_parser.parse_args(sys.argv[2:])
@@ -43,7 +44,7 @@ def main() -> int:
                 audit_parser.error("--agent-model must use non-empty AGENT=MODEL")
             agent_models[agent] = model
         routing = ModelRouting(audit_args.orchestrator_model, agent_models)
-        result = Runtime(max_connected=audit_args.max_connected, model_routing=routing, cronos_db=audit_args.cronos_db, induction=not audit_args.no_induction).audit(audit_args.repo, audit_args.output_dir)
+        result = Runtime(max_connected=audit_args.max_connected, model_routing=routing, cronos_db=audit_args.cronos_db, induction=not audit_args.no_induction, syntax_validation=audit_args.verify_syntax).audit(audit_args.repo, audit_args.output_dir)
         if audit_args.quiet:
             print(audit_args.output_dir)
         elif audit_args.summary:

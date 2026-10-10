@@ -18,6 +18,7 @@ _SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
 from forge.sealing import verify_sealed
 from forge.io import load_json
+from forge.detector_scope import language_scope_statement
 
 
 def _e(value: Any) -> str:
@@ -91,6 +92,84 @@ def _metric_block(agent: str, values: Any) -> str:
     other = {k: v for k, v in values.items() if k != "examinations"}
     other_text = f": {_e(other)}" if other else ""
     return f"<li><strong>{_e(agent)}</strong>{other_text}{_examinations_html(examinations)}</li>"
+
+
+_DEPTH_NOTE = {
+    "ast": "parsed into a syntax tree; scope and data flow available",
+    "lexical": "masked-text scan; no scope, type or reachability information",
+    "none": "no detector registered for this language",
+}
+
+
+def _language_coverage_html(language_coverage: Any) -> str:
+    """Render the per-language matrix, with the analysis depth behind each count.
+
+    This used to be an escaped Python ``dict`` dumped into a paragraph, which
+    made the single most important qualifier in the report -- whether a language
+    was parsed or merely scanned -- effectively unreadable.
+    """
+    if not isinstance(language_coverage, dict) or not language_coverage:
+        return '<p class="empty-state">No language coverage recorded.</p>'
+    order = {"ast": 0, "lexical": 1, "none": 2}
+    rows = []
+    for language, record in sorted(
+        language_coverage.items(),
+        key=lambda item: (order.get((item[1] or {}).get("depth"), 3), item[0]),
+    ):
+        record = record if isinstance(record, dict) else {}
+        depth = str(record.get("depth", "none"))
+        rows.append(
+            f"<tr><td>{_e(language)}</td>"
+            f'<td><span class="depth-tag depth-{_e(depth)}">{_e(depth)}</span></td>'
+            f"<td>{_e(record.get('analyzed', 0))}</td>"
+            f"<td>{_e(record.get('abstained', 0))}</td>"
+            f"<td>{_e(_DEPTH_NOTE.get(depth, 'unrecognized depth'))}</td></tr>"
+        )
+    return (
+        '<table class="data-table"><thead><tr><th>Language</th><th>Depth</th>'
+        "<th>Analyzed</th><th>Abstained</th><th>What that depth establishes</th>"
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+    )
+
+
+_SKIPPED_REASON_NOTE = {
+    "excluded_by_policy": "dependency trees, build output, caches and VCS metadata are never an audit scope",
+    "oversized_file": "larger than the audit file-size limit",
+    "binary_file": "binary content, not source text",
+    "unreadable_file": "could not be read",
+    "non_utf8_text": "readable bytes that are not UTF-8 text",
+    "syntax_error": "source FORGE could not parse — a blocking boundary",
+    "out_of_detector_scope": "a supported language, but outside the connected scope the detectors ran over",
+    "unsupported_language_not_analyzed": "source in a language with no registered detector — an engine limit",
+    "non_source_not_analyzed": "not source code",
+}
+
+
+def _skipped_reasons_html(skipped: Any) -> str:
+    """Render why each file was not analysed, grouped by cause rather than dumped.
+
+    The three not-analysed buckets mean different things -- a scope decision, an
+    engine limit, and a file that was never source -- so each carries the reason
+    a reviewer would act on.
+    """
+    if not isinstance(skipped, dict) or not skipped:
+        return '<p class="empty-state">Every discovered file was analyzed.</p>'
+    rows = []
+    for reason, paths in sorted(skipped.items()):
+        paths = list(paths) if isinstance(paths, (list, tuple)) else []
+        sample = ", ".join(sorted(paths)[:6])
+        if len(paths) > 6:
+            sample += f", … (+{len(paths) - 6} more)"
+        rows.append(
+            f"<tr><td><code>{_e(reason)}</code></td><td>{_e(len(paths))}</td>"
+            f"<td>{_e(_SKIPPED_REASON_NOTE.get(reason, 'unclassified boundary'))}</td>"
+            f"<td>{_e(sample)}</td></tr>"
+        )
+    return (
+        '<table class="data-table"><thead><tr><th>Boundary</th><th>Files</th>'
+        "<th>Meaning</th><th>Examples</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
 
 
 def _bar_rows(values: Any) -> str:
@@ -252,8 +331,16 @@ def render_report(triage_path: str | Path, hypotheses_path: str | Path, sealed_p
             f'<p class="section-lede">Semantic coverage means modules that received detector attention, not only files that parsed.</p>'
             f'<div class="coverage-hero"><div><strong>Source coverage</strong><b>{_e(ratio_text)}</b><span>eligible source files parsed</span></div><div><strong>Detector scope</strong><b>{_e(f"{detector_scope}/{scope_denominator} ({scope_percent:.1f}%)")}</b><span>CONNECTED_ALIVE modules receiving detector attention</span></div><small>{_e(coverage_data.get("detector_scope_excluded_modules", 0))} modules outside detector scope · {_e(coverage_data.get("files_skipped", 0))} files skipped · {_e(coverage_data.get("files_discovered", 0))} discovered. File and module counts are different measures.</small></div>'
             f'<p><strong>Finding origin check:</strong> {_e(dict(finding_scope_counts))}. CONNECTED_ALIVE describes specialized-agent scope; some detector families and governance skills may run more broadly.</p>'
-            f'<p>Language coverage: {_e(coverage_data.get("language_coverage", {}))}</p>'
-            f'<p>Skipped reasons: {_e(coverage_data.get("skipped_reasons", {}))}</p></section>'
+            f'<h3>Language coverage</h3>'
+            f'<p class="section-lede">Analysis depth is part of the claim: an <code>ast</code> '
+            f'language was parsed, a <code>lexical</code> language was scanned as masked text with '
+            f'no scope, type or reachability information, and a language shown as <code>none</code> '
+            f'was abstained from rather than reported clean.</p>'
+            f'{_language_coverage_html(coverage_data.get("language_coverage", {}))}'
+            f'<details class="metrics-details"><summary>Which finding families were reachable in which language</summary>'
+            f'<p>{_e(language_scope_statement())}</p></details>'
+            f'<h3>Why files were not analyzed</h3>'
+            f'{_skipped_reasons_html(coverage_data.get("skipped_reasons", {}))}</section>'
         )
 
     objective_html = (
@@ -402,6 +489,13 @@ table.data-table td,table.data-table th{{ text-align:left; padding:8px 12px; bor
 table.data-table th{{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); background:var(--bg-sunken); }}
 table.data-table tr:last-child td{{ border-bottom:none; }}
 table.data-table td:first-child{{ font-family:var(--mono); font-size:12.5px; white-space:nowrap; }}
+/* Analysis depth is the qualifier a reader most easily skips, so it is a tag
+   rather than a word in a sentence: `ast` is a parse, `lexical` is a masked
+   text scan, `none` means the language had no detector at all. */
+.depth-tag{{ display:inline-block; font:10.5px var(--mono); text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:999px; border:1px solid var(--rule-strong); }}
+.depth-tag.depth-ast{{ border-color:#A9C9B0; background:#EDF7EF; color:#2A5A3C; }}
+.depth-tag.depth-lexical{{ border-color:#D89A70; background:#FFF4E9; color:#7A3A14; }}
+.depth-tag.depth-none{{ border-color:var(--rule-strong); background:var(--bg-sunken); color:var(--ink-muted); }}
 .chain-block{{ font-family:var(--mono); font-size:13px; background:var(--bg-sunken); padding:14px 18px; border-radius:3px; white-space:pre-wrap; }}
 .dashboard{{ background:linear-gradient(135deg,#fff 0%,#fff 62%,#F8E9E9 100%); overflow:hidden; }}
 .dashboard-heading{{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }}
